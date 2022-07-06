@@ -1,9 +1,14 @@
 #include "server.h"
 
+using namespace std;
+
 // error printing
 void error(const char *msg){
+    Color::Modifier BRed(Color::BG_RED);
+    Color::Modifier BDef(Color::BG_DEFAULT);
+    cout << BRed << "! WARNING !" << BDef << endl;
     perror(msg);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 
@@ -11,7 +16,7 @@ int main(int argc, char *argv[]){
 
     // create the server master socket
     int master_socket;
-    if((master_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         error("master_socket instantiation");
     cout << "master_socket opened" << endl;
 
@@ -27,6 +32,8 @@ int main(int argc, char *argv[]){
     // set the parameters for server_address
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = INADDR_ANY;
+    // parameters
+    constexpr int SERVER_PORT = 3490;     // the port users will connect to
     server_address.sin_port = htons(SERVER_PORT); 
 
     // bind the socket with address and port
@@ -35,27 +42,31 @@ int main(int argc, char *argv[]){
     cout << "master_socket binded" << endl;
 
     // place incoming connections into a backlog queue
-    if((listen(master_socket, BACKLOG_QUEUE)) <0)
+    // SOMAXCONN is defined in sys/socket.h
+    if((listen(master_socket, SOMAXCONN)) == -1)
         error("master_socket listen");
     cout << "master_socket is listening..." << endl;
 
     // accept connections
     while(1){
-        
-        // address length
-        socklen_t addr_size;
 
         // declare and clear the client_address structure
         struct sockaddr_in client_address;
         memset((void*) &client_address, 0, sizeof(client_address));
 
+        // address length
+        socklen_t addr_size;
+        addr_size = sizeof(struct sockaddr_in);
+
         // create the new socket for the connection with a client
         int client_socket;
-        if((client_socket = accept(master_socket, (struct sockaddr *) &client_address, addr_size)) < 0){
+        if((client_socket = accept(master_socket, (struct sockaddr *) &client_address, &addr_size)) == -1){
             error("client_socket instantiation");
             continue;
         }
-        cout << "connection accepted from: " + inet_ntoa(client_address.sin_addr) + ": " + ntohs(client_address.sin_port_p) << endl;
+        string connected_address = inet_ntoa(client_address.sin_addr);
+        unsigned connected_port = ntohs(client_address.sin_port);
+        cout << "connection accepted from: " + connected_address << ":" << connected_port << endl;
                 
                                   
         pid_t child_pid = fork();
@@ -66,23 +77,38 @@ int main(int argc, char *argv[]){
 
         // child
         if(child_pid == 0){  
-            if(close(master_socket) < 0)
+            if(close(master_socket) == -1)
                 error("master_socket closure");
             cout << "master_socket closed" << endl;
 
+            /* 
+            // test connection
             if(send(client_socket, "Hello, world!\n", 14, 0) == -1)
                 error("send");
+            */ 
+
+
+            Color::Modifier green(Color::FG_GREEN);
+            Color::Modifier def(Color::FG_DEFAULT);
+            // 1) AUTHENTICATION (using public key certificates)
+            cout << green << "Authentication is starting..." << def << endl;
+
+            // 2) SYMMETRIC SESSION KEY ESTEBLISHMENT (perfect Forward Secrecy)
+            cout << green << "Symmetric Session Key Establishment is starting..." << def << endl;
+
+            // 3) SESSION (encrypted and authenicated)
+            cout << green << "Exchange of application data is starting..." << def <<  endl;
+
             
-            close(client_socket);
-            exit(0);
-            // send and receive
-            // ...
-            // TODO 
+            if(close(client_socket) == -1)
+                error("client_socket closure");
+            cout << "client_socket closed" << endl;
+            return 0;
         } 
         
         // parent doesn't need this
-        if(close(client_socket) < 0)
-            error("master_socket closure");
+        if(close(client_socket) == -1)
+            error("client_socket closure");
         cout << "client_socket closed" << endl;
     }     
 

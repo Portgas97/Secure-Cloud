@@ -1,19 +1,15 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<unistd.h>
-#include<errno.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<sys/wait.h>
-#include<netinet/in.h>
-#include<arpa/inet.h>
-#include<signal.h>
-
-
-// parameters
-#define SERVER_PORT 3490     // the port users will be connecting to
-#define BACKLOG_QUEUE 10      // how many pending connections queue will be hold
+#include <cstdio>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include "colors.h"
 
 
 
