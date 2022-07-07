@@ -4,15 +4,20 @@ using namespace std;
 
 // error printing
 void error(const char *msg){
-    Color::Modifier BRed(Color::BG_RED);
-    Color::Modifier BDef(Color::BG_DEFAULT);
-    cout << BRed << "! WARNING !" << BDef << endl;
+    Color::Modifier red(Color::FG_RED);
+    Color::Modifier def(Color::FG_DEFAULT);
+    cout << red << "! WARNING !" << def << endl;
     perror(msg);
     exit(EXIT_FAILURE);
 }
 
 
 int main(int argc, char *argv[]){
+
+    // colour the terminal output
+    Color::Modifier green(Color::FG_GREEN); // green
+    Color::Modifier red(Color::FG_RED);     // red
+    Color::Modifier def(Color::FG_DEFAULT); // default
 
     // create the server master socket
     int master_socket;
@@ -87,9 +92,7 @@ int main(int argc, char *argv[]){
                 error("send");
             */ 
 
-
-            Color::Modifier green(Color::FG_GREEN);
-            Color::Modifier def(Color::FG_DEFAULT);
+            
             // 1) AUTHENTICATION (using public key certificates)
             cout << green << "Authentication is starting..." << def << endl;
 
