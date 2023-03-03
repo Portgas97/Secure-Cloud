@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,20 @@
 // parameters
 #define SERVER_PORT 3490     // the port users will be connecting to
 #define BACKLOG_QUEUE 10      // how many pending connections queue will be hold
+=======
+#include <cstdio>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include "colors.h"
+>>>>>>> 10733e8c9cc0e50a754d6f3cbc205d1c18d5d57f
 
 
 
