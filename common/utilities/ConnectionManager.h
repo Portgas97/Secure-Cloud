@@ -3,9 +3,9 @@ class ConnectionManager
     public:
         ConnectionManager();
 
-        //sendPacket();
+        void sendPacket(unsigned char*, uint32_t);
 
-        void receivePacket(int, char*);
+        void receivePacket(unsigned char*);
 
         //closeSocket();
 
@@ -15,6 +15,7 @@ class ConnectionManager
         int socket;
         const int SERVER_PORT = 3490;
         const char* SERVER_ADDRESS = "127.0.0.1";
+        unsigned char* nonce;
 
         
         virtual createConnection() = 0;

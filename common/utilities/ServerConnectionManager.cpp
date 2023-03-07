@@ -59,36 +59,26 @@ void ServerConnectionManager::accept()
         std::cout << "Error in accept\n";
         exit(1);
     }
-                                
+
+    // create the child who will serve the client                        
     pid_t child_pid = fork();
 
-    // error
     if(child_pid < 0) 
     {
         std::cout << "Error in fork\n";
         exit(1);
     }
 
-    // child
+    // the child will enter in the if block
     if(child_pid == 0)
-    {  
         serveClient(client_socket);
-
-        /* 
-        // test connection
-        if(send(client_socket, "Hello, world!\n", 14, 0) == -1)
-            error("send");
-        */ 
-
-        return 0;
-    } 
 
 }
 
 /*
     it receives and parses client hello packet and sends back server hello packet
 */
-void ServerConnectionManager::serveClient(int client_socket)
+void ServerConnectionManager::receiveHello(int client_socket)
 {
     // received_packet: username_size | username | nonce_size | nonce
     char* received_packet;
@@ -107,18 +97,25 @@ void ServerConnectionManager::serveClient(int client_socket)
     // retrieve the client username
     memcpy(username, received_packet + packet_offset, username_size);
 
+    std::cout << "Received hello packet from user " << username << "\n";
+
     packet_offset += username_size;
 
-    uint32_t nonce_size;
+    uint32_t client_nonce_size;
 
     // retrieve the nonce size
-    memcpy(&nonce_size, received_packet + packet_offset, sizeof(nonce_size));
+    memcpy(&client_nonce_size, received_packet + packet_offset, sizeof(client_nonce_size));
 
-    packet_offset += sizeof(nonce_size);
+    packet_offset += sizeof(client_nonce_size);
 
-    char* nonce;
+    char* client_nonce;
 
     // retrieve the nonce
-    memcpy(nonce, received_packet + packet_offset, nonce_size);
+    memcpy(client_nonce, received_packet + packet_offset, client_nonce_size);
+}
 
+
+void ServerConnectionManager::serveClient(int client_socket)
+{
+    receiveHello(client_socket);
 }

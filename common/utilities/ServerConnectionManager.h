@@ -10,5 +10,6 @@ class ServerConnectionManager: public ConnectionManager
         const int MAX_CONNECTIONS = 10;
         void createConnection();
         void serveClient(int);
+        void receiveHello(int);
         
 }
