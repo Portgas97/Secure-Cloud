@@ -2,7 +2,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <cstring>
-#include <stdio.h>
+#include <cstdlib>
+#include <stdio.h> // fgets, to delete? better cstdio
 #include <sys/socket.h>
 
 

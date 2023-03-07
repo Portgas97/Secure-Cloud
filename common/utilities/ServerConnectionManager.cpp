@@ -1,20 +1,12 @@
 #include "ServerConnectionManager.h"
 
-void ServerConnectionManager::ServerConnectionManager()
+ServerConnectionManager::ServerConnectionManager()
 {
     createConnection();
 }
 
 void ServerConnectionManager::createConnection()
 {
-    // declare and clear the client_address structure
-    struct sockaddr_in client_address;
-    std::memset((void*) &client_address, 0, sizeof(client_address));
-
-    // address length
-    socklen_t addr_size;
-    addr_size = sizeof(struct sockaddr_in);
-
     
     socket = -1;
     while(socket < 0)
@@ -28,8 +20,7 @@ void ServerConnectionManager::createConnection()
 
     // set the parameters for server_address
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = inet_addr();
-    
+    server_address.sin_addr.s_addr = INADDR_ANY;
     server_address.sin_port = htons(SERVER_PORT); 
 
     if((bind(socket, (struct sockaddr *) &server_address, sizeof(server_address))) < 0)
@@ -46,9 +37,24 @@ void ServerConnectionManager::createConnection()
 
 }
 
+
+void ServerConnectionManager::destroyConnection()
+{
+
+}
+
+
 void ServerConnectionManager::accept()
 {
     int client_socket;
+
+    // clear the client_address structure
+    struct sockaddr_in client_address;
+    std::memset((void*) &client_address, 0, sizeof(client_address));
+
+    // address length
+    socklen_t addr_size;
+    addr_size = sizeof(struct sockaddr_in);
 
     // create the new socket for the connection with a client
     if((client_socket = accept(socket, (struct sockaddr *) &client_address, &addr_size)) < 0)
@@ -78,8 +84,8 @@ void ServerConnectionManager::accept()
 void ServerConnectionManager::receiveHello(int client_socket)
 {
     // received_packet: username_size | username | nonce_size | nonce
-    char* received_packet;
-    receivePacket(client_socket, received_packet);
+    unsigned char* received_packet;
+    receivePacket(received_packet);
 
     uint32_t username_size;
     

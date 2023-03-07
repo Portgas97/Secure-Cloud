@@ -30,7 +30,7 @@ void ConnectionManager::receivePacket(unsigned char* packet)
     }
 
     // allocate needed memory space for the packet
-    packet = (unsigned char*) calloc(packet_length);
+    packet = (unsigned char*) calloc(1, packet_length);
 
     if(packet == NULL)
     {
