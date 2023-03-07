@@ -1,6 +1,6 @@
-#include "CryptoManager.h"
+#include "CryptographyManager.h"
 
-void CryptoManager::getNonce(unsigned char* nonce)
+void CryptographyManager::getNonce(unsigned char* nonce)
 {
     // seed the random generator
     if(RAND_poll() < 0)
@@ -17,7 +17,7 @@ void CryptoManager::getNonce(unsigned char* nonce)
     }
 }
 
-int CryptoManager::getNonceSize()
+int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
 }

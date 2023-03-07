@@ -9,7 +9,7 @@
 #include <openssl/rand.h>
 #include <iostream>
 
-class CryptoManager
+class CryptographyManager
 {
     public:
         static void getNonce(unsigned char*);

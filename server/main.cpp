@@ -11,7 +11,7 @@ int main()
 
     while(1)
     {
-        server_connection_manager.accept();
+        server_connection_manager.acceptRequest();
         
     }     
 

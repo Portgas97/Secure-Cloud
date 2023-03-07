@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <stdio.h> // fgets, to delete? better cstdio
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include "CryptographyManager.h"
 
 
 class ConnectionManager
@@ -21,7 +23,7 @@ class ConnectionManager
         ~ConnectionManager();
 
     protected:
-        int socket;
+        int socket_fd;
         const int SERVER_PORT = 3490;
         const char* SERVER_ADDRESS = "127.0.0.1";
         unsigned char* nonce;

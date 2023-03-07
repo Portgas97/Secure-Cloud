@@ -4,7 +4,7 @@ class ServerConnectionManager: public ConnectionManager
 {
     public:
         ServerConnectionManager();
-        void accept();
+        void acceptRequest();
 
     private:
         const int MAX_CONNECTIONS = 10;
