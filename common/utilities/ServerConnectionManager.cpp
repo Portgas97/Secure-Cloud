@@ -5,6 +5,11 @@ ServerConnectionManager::ServerConnectionManager()
     createConnection();
 }
 
+ServerConnectionManager::~ServerConnectionManager()
+{
+
+}
+
 void ServerConnectionManager::createConnection()
 {
     

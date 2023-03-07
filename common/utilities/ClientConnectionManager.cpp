@@ -9,6 +9,12 @@ ClientConnectionManager::ClientConnectionManager()
     obtainUsername();
 }
 
+ClientConnectionManager::~ClientConnectionManager()
+{
+
+}
+
+
 /*
     it initializes the connection socket and performs the actual connection
 */
@@ -42,6 +48,12 @@ void ClientConnectionManager::createConnection()
         exit(1);
     }
 
+}
+
+
+void ClientConnectionManager::destroyConnection()
+{
+    // TO DO
 }
 
 /*

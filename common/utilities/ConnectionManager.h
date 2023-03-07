@@ -1,3 +1,6 @@
+#ifndef CONNECTION_MANAGER_H
+#define CONNECTION_MANAGER_H
+
 #include <iostream>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -20,7 +23,7 @@ class ConnectionManager
 
         //closeSocket();
 
-        ~ConnectionManager();
+        virtual ~ConnectionManager();
 
     protected:
         int socket_fd;
@@ -36,3 +39,4 @@ class ConnectionManager
 
 };
         
+#endif 

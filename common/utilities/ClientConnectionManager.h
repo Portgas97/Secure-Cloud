@@ -1,9 +1,12 @@
+#ifndef CLIENT_CONNECTION_MANAGER_H
+#define CLIENT_CONNECTION_MANAGER_H
 #include "ConnectionManager.h"
 
 class ClientConnectionManager: public ConnectionManager
 {
     public:
         ClientConnectionManager();
+        ~ClientConnectionManager();
 
         void sendHello();
 
@@ -22,3 +25,5 @@ class ClientConnectionManager: public ConnectionManager
         int getHelloPacket(unsigned char*);
         void obtainUsername();
 };
+
+#endif

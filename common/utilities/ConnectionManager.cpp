@@ -5,6 +5,11 @@ ConnectionManager::ConnectionManager()
         
 }
 
+ConnectionManager::~ConnectionManager()
+{
+    
+}
+
 /*
     it receives packet from the sender by receiving first the packet size, then
     the data packet and it returns the received data packet

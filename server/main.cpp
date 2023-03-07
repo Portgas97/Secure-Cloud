@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../common/utilities/ServerConnectionManager.cpp"
+#include "../common/utilities/ServerConnectionManager.h"
 
 int main()
 {

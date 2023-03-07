@@ -1,5 +1,18 @@
 #include "CryptographyManager.h"
 
+
+CryptographyManager::CryptographyManager()
+{
+
+}
+
+
+CryptographyManager::~CryptographyManager()
+{
+
+}
+
+
 void CryptographyManager::getNonce(unsigned char* nonce)
 {
     // seed the random generator
