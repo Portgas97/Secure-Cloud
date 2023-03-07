@@ -1,9 +1,6 @@
-#include <iostream>
-#include <unistd.h>
-#include <arpa/inet.h>
 #include "ServerConnectionManager.h"
 
-ServerConnectionManager::ServerConnectionManager()
+void ServerConnectionManager::ServerConnectionManager()
 {
     createConnection();
 }
@@ -12,7 +9,7 @@ void ServerConnectionManager::createConnection()
 {
     // declare and clear the client_address structure
     struct sockaddr_in client_address;
-    memset((void*) &client_address, 0, sizeof(client_address));
+    std::memset((void*) &client_address, 0, sizeof(client_address));
 
     // address length
     socklen_t addr_size;
@@ -27,7 +24,7 @@ void ServerConnectionManager::createConnection()
     setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
     struct sockaddr_in server_address;
-    memset(&server_address, 0, sizeof(server_address));
+    std::memset(&server_address, 0, sizeof(server_address));
 
     // set the parameters for server_address
     server_address.sin_family = AF_INET;

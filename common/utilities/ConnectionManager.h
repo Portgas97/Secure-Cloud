@@ -1,3 +1,11 @@
+#include <iostream>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <cstring>
+#include <stdio.h>
+#include <sys/socket.h>
+
+
 class ConnectionManager
 {
     public:
@@ -18,9 +26,9 @@ class ConnectionManager
         unsigned char* nonce;
 
         
-        virtual createConnection() = 0;
+        virtual void createConnection() = 0;
 
-        virtual destroyConnection() = 0;
+        virtual void destroyConnection() = 0;
 
 
 };

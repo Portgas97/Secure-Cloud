@@ -12,4 +12,4 @@ class ServerConnectionManager: public ConnectionManager
         void serveClient(int);
         void receiveHello(int);
         
-}
+};

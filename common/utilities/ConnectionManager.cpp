@@ -1,7 +1,4 @@
 #include "ConnectionManager.h"
-#include <iostream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 
 ConnectionManager::ConnectionManager()
 {
@@ -33,11 +30,11 @@ void ConnectionManager::receivePacket(unsigned char* packet)
     }
 
     // allocate needed memory space for the packet
-    packet = (unsigned char*) malloc(packet_length);
+    packet = (unsigned char*) calloc(packet_length);
 
     if(packet == NULL)
     {
-        std::cout << "Error in packet malloc\n";
+        std::cout << "Error in packet calloc\n";
         exit(1);
     }
 

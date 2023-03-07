@@ -29,7 +29,7 @@ void ClientConnectionManager::createConnection()
 
     struct sockaddr_in server_address;
 
-    memset(&server_address, 0, sizeof(server_address));
+    std::memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_ADDRESS, &server_address.sin_addr);
@@ -75,9 +75,9 @@ void ClientConnectionManager::obtainUsername()
 void ClientConnectionManager::sendHello()
 {
     // allocate needed memory for nonce
-    if((nonce = (unsigned char*)malloc(CryptoManager.getNonceSize())) == NULL)
+    if((nonce = (unsigned char*)calloc(CryptoManager.getNonceSize())) == nullptr)
     {
-        std::cout << "Error in nonce malloc\n";
+        std::cout << "Error in nonce calloc\n";
         exit(1);
     }
 
@@ -100,11 +100,11 @@ unsigned char* getHelloPacket(unsigned char* hello_packet)
     uint16_t nonce_size = htons(sizeof(nonce));
 
     // hello_packet: username_size | nonce_size | username | nonce
-    hello_packet = (unsigned char *) malloc(MAX_CLIENT_HELLO_SIZE);
+    hello_packet = (unsigned char *) calloc(MAX_CLIENT_HELLO_SIZE);
     
-    if (hello_packet == NULL) 
+    if (hello_packet == nullptr) 
     {
-        std::cout << "Error in hello packet malloc\n";
+        std::cout << "Error in hello packet calloc\n";
         exit(1);
     }
 
