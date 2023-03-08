@@ -99,11 +99,13 @@ void ClientConnectionManager::sendHello()
     unsigned char* hello_packet;
     int hello_packet_size = getHelloPacket(hello_packet);
 
+	std::cout << "I'm sending " << hello_packet << " of size " << 
+							hello_packet_size << "\n";
     sendPacket(hello_packet, hello_packet_size);
 }
 
 /*
-    it creates the hello packet and sends it to the server.
+    it creates the hello packet and returns it.
     It returns the hello packet size
 */
 int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)

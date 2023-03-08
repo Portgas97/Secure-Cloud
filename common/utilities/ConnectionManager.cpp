@@ -50,6 +50,7 @@ void ConnectionManager::receivePacket(unsigned char* packet)
     {
         return_value = recv(socket_fd, (void*)packet, packet_length,  
                                                     MSG_WAITALL);
+		std::cout << "Received " << return_value << " bytes\n";
 
         if(return_value <= 0)
         {
@@ -69,7 +70,8 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 {
     packet_length = htonl(packet_length);
 
-    int return_value = send(socket_fd, &packet_length, sizeof(packet_length), 0);
+    int return_value = send(socket_fd, &packet_length, 
+									sizeof(packet_length), 0);
 
     if (return_value < 0) 
     {
@@ -80,11 +82,16 @@ void ConnectionManager::sendPacket(unsigned char* packet,
     packet_length = ntohl(packet_length);
     uint32_t bytes_sent = 0;
 
+	int error_code;
+
+	
+
     // handle fragmented send
     while (bytes_sent < packet_length)
     {
         return_value = send(socket_fd, packet + bytes_sent, 
                             packet_length - bytes_sent, 0);
+
         if (return_value < 0) 
         {
             std::cout << "Error in send\n";
