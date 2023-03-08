@@ -94,7 +94,16 @@ void ClientConnectionManager::sendHello()
     // get the actual nonce, which is used in the hello packet creation
     CryptographyManager::getNonce(nonce);
 
-    unsigned char* hello_packet = nullptr;
+    // hello_packet: username_size | nonce_size | username | nonce
+    unsigned char* hello_packet = (unsigned char *) calloc(1, 
+														MAX_CLIENT_HELLO_SIZE);
+
+    if (hello_packet == nullptr) 
+    {
+        std::cout << "Error in hello packet calloc\n";
+        exit(1);
+    }
+
     int hello_packet_size = getHelloPacket(hello_packet);
 
 	std::cout << "I'm sending " << hello_packet << " of size " << 
@@ -111,26 +120,22 @@ int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
     uint16_t username_size = htons(strlen(username) + 1);
     uint16_t nonce_size = htons(sizeof(nonce));
 
-    // hello_packet: username_size | nonce_size | username | nonce
-    hello_packet = (unsigned char *) calloc(1, MAX_CLIENT_HELLO_SIZE);
-    
-    if (hello_packet == nullptr) 
-    {
-        std::cout << "Error in hello packet calloc\n";
-        exit(1);
-    }
-
-	std::cout << "username_size " << username_size << ", nonce_size " << 
-				nonce_size << ", username " << username << "\nnonce " << nonce
-				<< "\n";
-
+	/*char *username_size_size_string = nullptr;
+	sprintf(username_size_size_string, "%d", username_size);
+	int username_size_size = strlen(username_size_size_string) + 1;*/
 	
+	char *username_size_string = (char*)calloc(1, sizeof(uint16_t));
+	sprintf(username_size_string, "%d", username_size);
+
+	std::cout << "sizeof(uint16_t):"<< sizeof(uint16_t) << 
+				", strlen(username_size_string):" << 
+					strlen(username_size_string)+1 << "\n";
 
     // packet creation
-    memcpy(hello_packet, &username_size, sizeof(uint16_t)); 
-    int offset = sizeof(uint16_t);
+    memcpy(hello_packet, username_size_string, strlen(username_size_string)); 
+    int offset = strlen(username_size_string);
 
-	std::cout << "hp1: " << hello_packet << "\n";
+	std::cout << hello_packet << "\n";
 
     memcpy(hello_packet + offset, &nonce_size, sizeof(uint16_t));
     offset += sizeof(uint16_t);

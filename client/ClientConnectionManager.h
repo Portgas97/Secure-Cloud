@@ -14,6 +14,7 @@ class ClientConnectionManager: public ConnectionManager
 
     private:
         static const int MAX_USERNAME_SIZE = 50;
+		
         char username[MAX_USERNAME_SIZE];
         
         //username_size_size + nonce_size_size + max_username_size + nonce_size
