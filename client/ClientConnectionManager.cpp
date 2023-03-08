@@ -1,6 +1,4 @@
-#include <iostream>
-#include <stdio.h>
-#include <unistd.h>
+
 #include "ClientConnectionManager.h"
 
 ClientConnectionManager::ClientConnectionManager()
@@ -96,7 +94,7 @@ void ClientConnectionManager::sendHello()
     // get the actual nonce, which is used in the hello packet creation
     CryptographyManager::getNonce(nonce);
 
-    unsigned char* hello_packet;
+    unsigned char* hello_packet = nullptr;
     int hello_packet_size = getHelloPacket(hello_packet);
 
 	std::cout << "I'm sending " << hello_packet << " of size " << 
@@ -122,18 +120,32 @@ int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
         exit(1);
     }
 
-    // packet creation
-    memcpy(hello_packet, &username_size, sizeof(uint8_t)); 
-    int offset = sizeof(uint8_t);
+	std::cout << "username_size " << username_size << ", nonce_size " << 
+				nonce_size << ", username " << username << "\nnonce " << nonce
+				<< "\n";
 
-    memcpy(hello_packet + offset, &nonce_size, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+	
+
+    // packet creation
+    memcpy(hello_packet, &username_size, sizeof(uint16_t)); 
+    int offset = sizeof(uint16_t);
+
+	std::cout << "hp1: " << hello_packet << "\n";
+
+    memcpy(hello_packet + offset, &nonce_size, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+
+	std::cout << "hp2: " << hello_packet << "\n";
 
     memcpy(hello_packet + offset, username, strlen(username) + 1);
     offset += strlen(username) + 1;
 
+	std::cout << "hp3: " << hello_packet << "\n";
+
     memcpy(hello_packet + offset, nonce, nonce_size);
     offset += nonce_size;
+
+	std::cout << "hp4: " << hello_packet << "\n";
 
     return offset;
 }

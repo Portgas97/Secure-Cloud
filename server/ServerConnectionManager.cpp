@@ -92,7 +92,7 @@ void ServerConnectionManager::acceptRequest()
 void ServerConnectionManager::receiveHello(int client_socket)
 {
     // received_packet: username_size | username | nonce_size | nonce
-    unsigned char* received_packet;
+    unsigned char* received_packet = nullptr;
     receivePacket(received_packet);
 
     uint32_t username_size;
@@ -104,7 +104,7 @@ void ServerConnectionManager::receiveHello(int client_socket)
     // it points to the right packet offset
     int packet_offset = sizeof(username_size);
 
-    char* username;
+    char* username = nullptr;
     // retrieve the client username
     memcpy(username, received_packet + packet_offset, username_size);
 
@@ -119,7 +119,7 @@ void ServerConnectionManager::receiveHello(int client_socket)
 
     packet_offset += sizeof(client_nonce_size);
 
-    char* client_nonce;
+    char* client_nonce = nullptr;
 
     // retrieve the nonce
     memcpy(client_nonce, received_packet + packet_offset, client_nonce_size);

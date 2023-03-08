@@ -1,6 +1,6 @@
 #ifndef CLIENT_CONNECTION_MANAGER_H
 #define CLIENT_CONNECTION_MANAGER_H
-#include "ConnectionManager.h"
+#include "../common/utilities/ConnectionManager.h"
 
 class ClientConnectionManager: public ConnectionManager
 {
@@ -17,7 +17,7 @@ class ClientConnectionManager: public ConnectionManager
         char username[MAX_USERNAME_SIZE];
         
         //username_size_size + nonce_size_size + max_username_size + nonce_size
-        int MAX_CLIENT_HELLO_SIZE = sizeof(uint8_t) + sizeof(uint8_t) 
+        int MAX_CLIENT_HELLO_SIZE = sizeof(uint16_t) + sizeof(uint16_t) 
 					+ MAX_USERNAME_SIZE + CryptographyManager::getNonceSize();
 
         void createConnection();

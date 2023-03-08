@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../common/utilities/ClientConnectionManager.h"
+#include "ClientConnectionManager.h"
 
 int main()
 {

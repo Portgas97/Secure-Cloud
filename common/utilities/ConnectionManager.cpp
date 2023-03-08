@@ -27,7 +27,7 @@ void ConnectionManager::receivePacket(unsigned char* packet)
 
     packet_length = ntohl(packet_length);
 
-    if(return_value < sizeof(uint32_t))
+    if(return_value - sizeof(uint32_t) < 0)
     {
         std::cout << "Received " << return_value << " bytes instead of " 
                     << sizeof(uint32_t) << "\n";
@@ -81,10 +81,6 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
     packet_length = ntohl(packet_length);
     uint32_t bytes_sent = 0;
-
-	int error_code;
-
-	
 
     // handle fragmented send
     while (bytes_sent < packet_length)
