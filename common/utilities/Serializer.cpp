@@ -1,5 +1,6 @@
 #include "Serializer.h"
 
+
 Serializer::Serializer(unsigned char* buffer)
 {
 	this->buffer = buffer;
@@ -8,12 +9,10 @@ Serializer::Serializer(unsigned char* buffer)
 
 void Serializer::serializeInt(int value)
 {
-	// write big-endian int value into buffer
-	// assumes 32-bit int and 8-bit char
-	buffer[offset++] = value >> 24;
-  	buffer[offset++] = value >> 16;
-  	buffer[offset++] = value >> 8;
-  	buffer[offset++] = value;
+	int *network_value_ptr = nullptr;
+	*network_value_ptr = htonl(value);
+	std::memcpy(buffer, network_value_ptr, sizeof(int));
+	offset += 4;	
 }
 
 void Serializer::serializeChar(char value)

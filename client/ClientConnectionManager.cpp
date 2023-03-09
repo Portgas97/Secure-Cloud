@@ -123,7 +123,6 @@ int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 	/*char *username_size_size_string = nullptr;
 	sprintf(username_size_size_string, "%d", username_size);
 	int username_size_size = strlen(username_size_size_string) + 1;*/
-	
 	char *username_size_string = (char*)calloc(1, sizeof(uint16_t));
 	sprintf(username_size_string, "%d", username_size);
 
