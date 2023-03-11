@@ -2,31 +2,41 @@
 
 Deserializer::Deserializer(unsigned char* buffer)
 {
+	std::cout << "Constructor begin\n";
 	this->buffer = buffer;
 	offset = 0;
+	std::cout << "Constructor end\n";
 }
 
-int Deserializer::serializeInt()
+int Deserializer::deserializeInt()
 {
-	// write big-endian int value into buffer
-	// assumes 32-bit int and 8-bit char
-	/*buffer[offset++] = value >> 24;
-  	buffer[offset++] = value >> 16;
-  	buffer[offset++] = value >> 8;
-  	buffer[offset++] = value;*/
+/*	std::cout << "deserializeInt begin\n";
+	int* network_value_pointer = (int*)(buffer+offset);
+	std::cout << "deserializeInt 2\n";
+	std::cout << "nvp: " << *network_value_pointer << '\n';
+	int tmp = ntohl(*(int*)(buffer+offset));
+	std::cout << "deserializeInt end\n";
+	offset += sizeof(int);
+*/
 
-	
+	char* int_buffer = (char*)calloc(1, sizeof(int));
+	for(int i=0; i<sizeof(int); i++)
+		int_buffer[i] = buffer[offset+i];
+
+	offset +=sizeof(int);
+
+	int tmp = atoi(int_buffer);
+	std::cout << tmp << '\n';
+	return tmp;
 }
 
-void Deserializer::serializeChar(char value)
+char Deserializer::deserializeChar()
 {
-	buffer[offset++] = value;
+	return buffer[offset++];
 }
 
-void Deserializer::serializeString(char* string, int string_size)
+void Deserializer::deserializeString(char* string, int string_size)
 {
 	for(int i=0; i<string_size; i++)
-		serializeChar(buffer+i,string[i]);	
-
-	offset += string_size;
+		string[i] = deserializeChar();	
 }

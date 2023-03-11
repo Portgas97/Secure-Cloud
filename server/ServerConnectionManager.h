@@ -6,8 +6,10 @@ class ServerConnectionManager: public ConnectionManager
 {
     public:
         ServerConnectionManager();
+		ServerConnectionManager(int);
         ~ServerConnectionManager();
 
+        void receiveHello();
         void acceptRequest();
 
     private:
@@ -15,7 +17,6 @@ class ServerConnectionManager: public ConnectionManager
         void createConnection();
         void destroyConnection();
         void serveClient(int);
-        void receiveHello(int);
         
 };
 

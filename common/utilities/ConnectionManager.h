@@ -10,7 +10,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "CryptographyManager.h"
-
+#include "Serializer.h"
+#include "Deserializer.h"
 
 class ConnectionManager
 {
@@ -27,10 +28,11 @@ class ConnectionManager
 
     protected:
         int socket_fd;
-        const int SERVER_PORT = 3490;
+        const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
-        unsigned char* nonce;
+        char* nonce;
 
+		void printBuffer(unsigned char*, int);
         
         virtual void createConnection() = 0;
 

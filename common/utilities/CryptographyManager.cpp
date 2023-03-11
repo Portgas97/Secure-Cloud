@@ -13,7 +13,7 @@ CryptographyManager::~CryptographyManager()
 }
 
 
-void CryptographyManager::getNonce(unsigned char* nonce)
+void CryptographyManager::getNonce(char* nonce)
 {
     // seed the random generator
     if(RAND_poll() < 0)
@@ -23,7 +23,7 @@ void CryptographyManager::getNonce(unsigned char* nonce)
     }
 
     // create the actual nonce
-    if(RAND_bytes(nonce, NONCE_SIZE) < 0)
+    if(RAND_bytes((unsigned char*)nonce, NONCE_SIZE) < 0)
     {
         std::cout << "Error in RAND_bytes\n";
         exit(1);

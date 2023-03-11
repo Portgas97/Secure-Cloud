@@ -83,9 +83,9 @@ void ClientConnectionManager::obtainUsername()
 */
 void ClientConnectionManager::sendHello()
 {
+	nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
     // allocate needed memory for nonce
-    if((nonce = (unsigned char*)calloc(1, 
-							CryptographyManager::getNonceSize())) == nullptr)
+    if(nonce == nullptr)
     {
         std::cout << "Error in nonce calloc\n";
         exit(1);
@@ -94,7 +94,7 @@ void ClientConnectionManager::sendHello()
     // get the actual nonce, which is used in the hello packet creation
     CryptographyManager::getNonce(nonce);
 
-    // hello_packet: username_size | nonce_size | username | nonce
+    // hello_packet: username_size | username | nonce_size | nonce
     unsigned char* hello_packet = (unsigned char *) calloc(1, 
 														MAX_CLIENT_HELLO_SIZE);
 
@@ -109,6 +109,7 @@ void ClientConnectionManager::sendHello()
 	std::cout << "I'm sending " << hello_packet << " of size " << 
 							hello_packet_size << "\n";
     sendPacket(hello_packet, hello_packet_size);
+	free(hello_packet);
 }
 
 /*
@@ -117,12 +118,22 @@ void ClientConnectionManager::sendHello()
 */
 int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
+	Serializer serializer = Serializer(hello_packet);
+
+    // hello_packet: username_size | username | nonce_size | nonce
+	serializer.serializeInt(strlen(username) + 1);
+	serializer.serializeString(username, strlen(username) + 1);
+	serializer.serializeInt(sizeof(nonce));
+	serializer.serializeString(nonce, sizeof(nonce));
+
+	return serializer.getOffset();	
+/*
     uint16_t username_size = htons(strlen(username) + 1);
     uint16_t nonce_size = htons(sizeof(nonce));
 
-	/*char *username_size_size_string = nullptr;
-	sprintf(username_size_size_string, "%d", username_size);
-	int username_size_size = strlen(username_size_size_string) + 1;*/
+	//char *username_size_size_string = nullptr;
+	//sprintf(username_size_size_string, "%d", username_size);
+	//int username_size_size = strlen(username_size_size_string) + 1;
 	char *username_size_string = (char*)calloc(1, sizeof(uint16_t));
 	sprintf(username_size_string, "%d", username_size);
 
@@ -152,4 +163,5 @@ int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 	std::cout << "hp4: " << hello_packet << "\n";
 
     return offset;
+*/
 }

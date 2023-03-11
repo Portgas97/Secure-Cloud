@@ -17,7 +17,7 @@ class CryptographyManager
     public:
         CryptographyManager();
         ~CryptographyManager();
-        static void getNonce(unsigned char*);
+        static void getNonce(char*);
         static int getNonceSize();
 
     private:

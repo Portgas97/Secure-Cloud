@@ -10,12 +10,20 @@ ServerConnectionManager::~ServerConnectionManager()
 
 }
 
+ServerConnectionManager::ServerConnectionManager(int socket_fd)
+{
+	this->socket_fd = socket_fd;
+}
+
 void ServerConnectionManager::createConnection()
 {
-    
-    socket_fd = -1;
-    while(socket_fd < 0)
-        socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+	if(socket_fd < 0)
+	{
+		std::cout << "Error in socket\n";
+		exit(1);
+	}
 
     const int yes = 1;
     setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
@@ -89,9 +97,47 @@ void ServerConnectionManager::acceptRequest()
     it receives and parses client hello packet and sends back server 
 	hello packet
 */
-void ServerConnectionManager::receiveHello(int client_socket)
+void ServerConnectionManager::receiveHello()
 {
-    // received_packet: username_size | username | nonce_size | nonce
+	unsigned char* hello_packet = nullptr;
+	receivePacket(hello_packet);
+
+	//std::cout << "hello_packet: " << hello_packet << "\n";
+	/*std::cout << "hello_packet: ";
+	std::cout << hello_packet[0];
+	std::cout << '\n';
+*/
+
+	Deserializer deserializer = Deserializer(hello_packet);
+
+	// received_packet: username_size | username | nonce_size | nonce
+	int username_size = deserializer.deserializeInt();
+	std::cout << "username_size " << username_size << "\n";
+
+	char* username = (char*)calloc(1, username_size);
+
+	if(username == nullptr)
+	{
+		std::cout << "Error in calloc\n";
+		exit(1);
+	}
+
+	deserializer.deserializeString(username, username_size);
+	std::cout << "username " << username << "\n";	
+
+	int nonce_size = deserializer.deserializeInt();
+	std::cout << "nonce_size " << nonce_size << "\n";
+	char* nonce = (char*)calloc(1, nonce_size);
+	std::cout << "nonce" << nonce << "\n";
+
+	if(nonce == nullptr)
+	{
+		std::cout << "Error in calloc\n";
+		exit(1);
+	}
+
+
+/*    // received_packet: username_size | username | nonce_size | nonce
     unsigned char* received_packet = nullptr;
     receivePacket(received_packet);
 
@@ -123,10 +169,13 @@ void ServerConnectionManager::receiveHello(int client_socket)
 
     // retrieve the nonce
     memcpy(client_nonce, received_packet + packet_offset, client_nonce_size);
+*/
 }
 
 
 void ServerConnectionManager::serveClient(int client_socket)
 {
-    receiveHello(client_socket);
+	ServerConnectionManager requestHandler =
+ 										ServerConnectionManager(client_socket);
+    requestHandler.receiveHello();
 }

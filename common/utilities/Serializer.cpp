@@ -9,10 +9,17 @@ Serializer::Serializer(unsigned char* buffer)
 
 void Serializer::serializeInt(int value)
 {
-	int *network_value_ptr = nullptr;
-	*network_value_ptr = htonl(value);
-	std::memcpy(buffer, network_value_ptr, sizeof(int));
-	offset += 4;	
+	int *network_value_pointer = (int*)calloc(1,sizeof(1));
+	
+	if(network_value_pointer == nullptr)
+	{
+		std::cout << "Error in calloc\n";
+		exit(1);
+	}
+
+	*network_value_pointer = htonl(value);
+	memcpy(buffer+offset, network_value_pointer, sizeof(int));
+	offset += sizeof(int);	
 }
 
 void Serializer::serializeChar(char value)
@@ -23,7 +30,10 @@ void Serializer::serializeChar(char value)
 void Serializer::serializeString(char* string, int string_size)
 {
 	for(int i=0; i<string_size; i++)
-		serializeChar(buffer+i,string[i]);	
+		serializeChar(string[i]);	
+}
 
-	offset += string_size;
+int Serializer::getOffset()
+{
+	return offset;
 }
