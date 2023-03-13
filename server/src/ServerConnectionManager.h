@@ -1,6 +1,6 @@
 #ifndef SERVER_CONNECTION_MANAGER_H
 #define SERVER_CONNECTION_MANAGER_H
-#include "../../common/utilities/ConnectionManager.h"
+#include "../common/utilities/ConnectionManager.h"
 
 class ServerConnectionManager: public ConnectionManager 
 {
@@ -17,7 +17,6 @@ class ServerConnectionManager: public ConnectionManager
     private:
 		const char* SERVER_CERTIFICATE_FILENAME = 
 											"../common/files/Server_cert.pem";
-		const char* PRIVATE_KEY_FILENAME = "../
         const int MAX_CONNECTIONS = 10;
         void createConnection();
         void destroyConnection();

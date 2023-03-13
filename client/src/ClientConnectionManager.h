@@ -1,6 +1,6 @@
 #ifndef CLIENT_CONNECTION_MANAGER_H
 #define CLIENT_CONNECTION_MANAGER_H
-#include "../common/utilities/ConnectionManager.h"
+#include "../../common/utilities/ConnectionManager.h"
 
 class ClientConnectionManager: public ConnectionManager
 {
