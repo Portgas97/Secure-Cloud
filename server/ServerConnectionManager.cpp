@@ -94,6 +94,15 @@ void ServerConnectionManager::acceptRequest()
 
 }
 
+
+void ServerConnectionManager::serveClient(int client_socket)
+{
+	ServerConnectionManager requestHandler =
+ 										ServerConnectionManager(client_socket);
+    requestHandler.receiveHello();
+}
+
+
 /*
     it receives and parses client hello packet and sends back server 
 	hello packet
@@ -102,16 +111,11 @@ void ServerConnectionManager::receiveHello()
 {
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
-    //std::cout << "new print, hello_packet address: " << reinterpret_cast<void *>(hello_packet) << std::endl;
-    //printBuffer(hello_packet, 5);
 
-    printf("hello_packet: %p\n", hello_packet);
 	Deserializer deserializer = Deserializer(hello_packet);
 
-    std::cout << "here" << std::endl; 
 	// received_packet: username_size | username | nonce_size | nonce
 	int username_size = deserializer.deserializeInt();
-	std::cout << "username_size " << username_size << "\n";
 
 	char* username = (char*)calloc(1, username_size);
 
@@ -122,12 +126,9 @@ void ServerConnectionManager::receiveHello()
 	}
 
 	deserializer.deserializeString(username, username_size);
-	std::cout << "username " << username << "\n";	
 
 	int nonce_size = deserializer.deserializeInt();
-	std::cout << "nonce_size " << nonce_size << "\n";
 	char* nonce = (char*)calloc(1, nonce_size);
-	std::cout << "nonce" << nonce << "\n";
 
 	if(nonce == nullptr)
 	{
@@ -135,46 +136,20 @@ void ServerConnectionManager::receiveHello()
 		exit(1);
 	}
 
+    // TO DO check username existance
 
-/*    // received_packet: username_size | username | nonce_size | nonce
-    unsigned char* received_packet = nullptr;
-    receivePacket(received_packet);
-
-    uint32_t username_size;
-    
-    // retrieve the client username size
-    memcpy(&username_size, received_packet, sizeof(username_size));
-    username_size = ntohl(username_size);
-
-    // it points to the right packet offset
-    int packet_offset = sizeof(username_size);
-
-    char* username = nullptr;
-    // retrieve the client username
-    memcpy(username, received_packet + packet_offset, username_size);
-
-    std::cout << "Received hello packet from user " << username << "\n";
-
-    packet_offset += username_size;
-
-    uint32_t client_nonce_size;
-
-    // retrieve the nonce size
-    memcpy(&client_nonce_size, received_packet + packet_offset, sizeof(client_nonce_size));
-
-    packet_offset += sizeof(client_nonce_size);
-
-    char* client_nonce = nullptr;
-
-    // retrieve the nonce
-    memcpy(client_nonce, received_packet + packet_offset, client_nonce_size);
-*/
 }
 
-
-void ServerConnectionManager::serveClient(int client_socket)
+void ServerConnectionManager::sendHello()
 {
-	ServerConnectionManager requestHandler =
- 										ServerConnectionManager(client_socket);
-    requestHandler.receiveHello();
+    // nonce_size | nonce | certificate_size | certificate | key_size | key
+    // signature_size | signature
+
+    nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
+    CryptographyManager::getNonce(nonce);
+
 }
+
+
+
+

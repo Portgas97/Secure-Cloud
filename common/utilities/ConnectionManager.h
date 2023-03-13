@@ -22,6 +22,9 @@ class ConnectionManager
 
         void receivePacket(unsigned char*&);
 
+        
+
+
         //closeSocket();
 
         virtual ~ConnectionManager();
@@ -31,12 +34,16 @@ class ConnectionManager
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
         char* nonce;
-
-		void printBuffer(unsigned char*, int);
         
         virtual void createConnection() = 0;
 
         virtual void destroyConnection() = 0;
+        
+        virtual void sendHello() = 0;
+
+        virtual void receiveHello() = 0;
+
+
 
 
 };

@@ -2,6 +2,7 @@
 #define DESERIALIZER_H
 #include <iostream>
 #include <arpa/inet.h>
+#include <cstring>
 
 
 class Deserializer

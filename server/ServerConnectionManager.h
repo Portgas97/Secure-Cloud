@@ -9,8 +9,10 @@ class ServerConnectionManager: public ConnectionManager
 		ServerConnectionManager(int);
         ~ServerConnectionManager();
 
-        void receiveHello();
         void acceptRequest();
+
+        void sendHello();
+        void receiveHello();
 
     private:
         const int MAX_CONNECTIONS = 10;

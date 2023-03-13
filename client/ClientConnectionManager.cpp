@@ -54,6 +54,7 @@ void ClientConnectionManager::destroyConnection()
     // TO DO
 }
 
+
 /*
     it asks the username to the user and assigns it to the relative 
     class attribute
@@ -75,6 +76,9 @@ void ClientConnectionManager::obtainUsername()
         std::cout << "Error: the username you inserted is too long\n";
         exit(1);
     }
+
+    username[strcspn(username, "\n")] = 0;
+
 }
 
 /*
@@ -84,14 +88,12 @@ void ClientConnectionManager::obtainUsername()
 void ClientConnectionManager::sendHello()
 {
 	nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
-    // allocate needed memory for nonce
     if(nonce == nullptr)
     {
-        std::cout << "Error in nonce calloc\n";
+        std::cout << "Error in calloc" << std::endl;
         exit(1);
     }
 
-    // get the actual nonce, which is used in the hello packet creation
     CryptographyManager::getNonce(nonce);
 
     // hello_packet: username_size | username | nonce_size | nonce
@@ -106,10 +108,14 @@ void ClientConnectionManager::sendHello()
 
     int hello_packet_size = getHelloPacket(hello_packet);
 
-	std::cout << "I'm sending " << hello_packet << " of size " << 
-							hello_packet_size << "\n";
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
+}
+
+
+void ClientConnectionManager::receiveHello()
+{
+
 }
 
 /*
@@ -127,41 +133,4 @@ int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 	serializer.serializeString(nonce, sizeof(nonce));
 
 	return serializer.getOffset();	
-/*
-    uint16_t username_size = htons(strlen(username) + 1);
-    uint16_t nonce_size = htons(sizeof(nonce));
-
-	//char *username_size_size_string = nullptr;
-	//sprintf(username_size_size_string, "%d", username_size);
-	//int username_size_size = strlen(username_size_size_string) + 1;
-	char *username_size_string = (char*)calloc(1, sizeof(uint16_t));
-	sprintf(username_size_string, "%d", username_size);
-
-	std::cout << "sizeof(uint16_t):"<< sizeof(uint16_t) << 
-				", strlen(username_size_string):" << 
-					strlen(username_size_string)+1 << "\n";
-
-    // packet creation
-    memcpy(hello_packet, username_size_string, strlen(username_size_string)); 
-    int offset = strlen(username_size_string);
-
-	std::cout << hello_packet << "\n";
-
-    memcpy(hello_packet + offset, &nonce_size, sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-
-	std::cout << "hp2: " << hello_packet << "\n";
-
-    memcpy(hello_packet + offset, username, strlen(username) + 1);
-    offset += strlen(username) + 1;
-
-	std::cout << "hp3: " << hello_packet << "\n";
-
-    memcpy(hello_packet + offset, nonce, nonce_size);
-    offset += nonce_size;
-
-	std::cout << "hp4: " << hello_packet << "\n";
-
-    return offset;
-*/
 }

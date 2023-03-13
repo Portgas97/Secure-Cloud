@@ -10,12 +10,6 @@ ConnectionManager::~ConnectionManager()
     
 }
 
-void ConnectionManager::printBuffer(unsigned char* buffer, int buffer_size)
-{
-	std::cout << "buffer: ";
-	for(int i=0; i<buffer_size; i++)
-		std::cout << buffer[i];
-}
 
 /*
     it receives packet from the sender by receiving first the packet size, then
@@ -85,8 +79,6 @@ void ConnectionManager::sendPacket(unsigned char* packet,
                                     uint32_t packet_length)
 {
     packet_length = htonl(packet_length);
-
-	std::cout << "socket: " << socket_fd << "\n";
 
     int return_value = send(socket_fd, (void*)&packet_length, 
 									sizeof(uint32_t), 0);
