@@ -21,7 +21,7 @@ void ConnectionManager::printBuffer(unsigned char* buffer, int buffer_size)
     it receives packet from the sender by receiving first the packet size, then
     the data packet and it returns the received data packet
 */
-void ConnectionManager::receivePacket(unsigned char* packet)
+void ConnectionManager::receivePacket(unsigned char* &packet)
 {
 	std::cout << "socket: " << socket_fd << "\n";
 
@@ -44,8 +44,8 @@ void ConnectionManager::receivePacket(unsigned char* packet)
                     << sizeof(uint32_t) << "\n";
         exit(1);
     }
-
-    // allocate needed memory space for the packet
+    
+    //allocate needed memory space for the packet
     packet = (unsigned char*) calloc(1, packet_length);
 
     if(packet == nullptr)
@@ -63,7 +63,7 @@ void ConnectionManager::receivePacket(unsigned char* packet)
         return_value = recv(socket_fd, (void*)packet, packet_length,  
                                                     MSG_WAITALL);
 		std::cout << "Received " << return_value << " bytes\n";
-		std::cout << "Packet: " << packet << '\n';
+		//std::cout << "Packet: " << reinterpret_cast<void*>(packet) << std::endl;;
 
         if(return_value <= 0)
         {
@@ -73,8 +73,8 @@ void ConnectionManager::receivePacket(unsigned char* packet)
 
         received_bytes += return_value;
     }
-	std::cout << "Receive\n";
-	printBuffer(packet, packet_length);
+	//std::cout << "Receive\n";
+	//printBuffer(packet, packet_length);
 
 }
 
@@ -101,8 +101,8 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
     uint32_t bytes_sent = 0;
 
-	std::cout << "Send\n";
-	printBuffer(packet, packet_length);
+	//std::cout << "Send\n";
+	//printBuffer(packet, packet_length);
 
     // handle fragmented send
     while (bytes_sent < packet_length)

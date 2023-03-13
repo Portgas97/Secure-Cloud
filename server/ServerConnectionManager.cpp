@@ -1,4 +1,5 @@
 #include "ServerConnectionManager.h"
+#include <stdio.h>
 
 ServerConnectionManager::ServerConnectionManager()
 {
@@ -101,15 +102,13 @@ void ServerConnectionManager::receiveHello()
 {
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
+    //std::cout << "new print, hello_packet address: " << reinterpret_cast<void *>(hello_packet) << std::endl;
+    //printBuffer(hello_packet, 5);
 
-	//std::cout << "hello_packet: " << hello_packet << "\n";
-	/*std::cout << "hello_packet: ";
-	std::cout << hello_packet[0];
-	std::cout << '\n';
-*/
-
+    printf("hello_packet: %p\n", hello_packet);
 	Deserializer deserializer = Deserializer(hello_packet);
 
+    std::cout << "here" << std::endl; 
 	// received_packet: username_size | username | nonce_size | nonce
 	int username_size = deserializer.deserializeInt();
 	std::cout << "username_size " << username_size << "\n";

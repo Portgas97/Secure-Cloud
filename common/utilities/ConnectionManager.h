@@ -20,7 +20,7 @@ class ConnectionManager
 
         void sendPacket(unsigned char*, uint32_t);
 
-        void receivePacket(unsigned char*);
+        void receivePacket(unsigned char*&);
 
         //closeSocket();
 
