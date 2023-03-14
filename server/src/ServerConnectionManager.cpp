@@ -163,34 +163,25 @@ void ServerConnectionManager::sendHello()
 	fseek(server_certificate_file, 0, SEEK_END);
 
 	// returns the file pointer position
-	unsigned long int server_certificate_file_size = 
-												ftell(server_certificate_file);
+	unsigned long int server_certificate_file_size = ftell(server_certificate_file);
 	
 	// move file pointer to the beginning of the file
 	fseek(server_certificate_file, 0, SEEK_SET);
 	
-	unsigned char* server_certificate = (unsigned char*)
+	unsigned char* server_certificate_pointer = (unsigned char*)
 										calloc(1, server_certificate_file_size);
 
-	if(server_certificate == nullptr) 
+	if(server_certificate_pointer == nullptr) 
 	{ 
 		std::cout << "Error in calloc" << std::endl; 
 		exit(1); 
 	}
 
-	int return_value = fread(server_certificate, 1, 
+	int return_value = fread(server_certificate_pointer, 1, 
 						server_certificate_file_size, server_certificate_file);
-	
-	if(return_value < server_certificate_file_size) 
-	{
-		std::cout << "Error in fread" << std::endl;
-		exit(1);
-	}
+	if(ret < clear_size) { cerr << "Error while reading file '" << clear_file_name << "'\n"; exit(1); }
+	fclose(clear_file);
 
-	fclose(server_certificate_file);
-
-	// get private key
-	EVP_PKEY* private_key = CryptographyManager::getPrivateKey();
 
 	
 }

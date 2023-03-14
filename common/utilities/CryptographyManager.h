@@ -15,10 +15,9 @@
 class CryptographyManager
 {
     public:
-        CryptographyManager();
-        ~CryptographyManager();
-        static void getNonce(unsigned char*);
+        static void getNonce(char*);
         static int getNonceSize();
+		static EVP_PKEY* getPrivateKey();
 
     private:
         const static int NONCE_SIZE = 8;

@@ -1,5 +1,6 @@
 #include "Serializer.h"
 
+
 Serializer::Serializer(unsigned char* buffer)
 {
 	this->buffer = buffer;
@@ -8,12 +9,17 @@ Serializer::Serializer(unsigned char* buffer)
 
 void Serializer::serializeInt(int value)
 {
-	// write big-endian int value into buffer
-	// assumes 32-bit int and 8-bit char
-	buffer[offset++] = value >> 24;
-  	buffer[offset++] = value >> 16;
-  	buffer[offset++] = value >> 8;
-  	buffer[offset++] = value;
+	int *network_value_pointer = (int*)calloc(1,sizeof(1));
+	
+	if(network_value_pointer == nullptr)
+	{
+		std::cout << "Error in calloc\n";
+		exit(1);
+	}
+
+	*network_value_pointer = htonl(value);
+	memcpy(buffer+offset, network_value_pointer, sizeof(int));
+	offset += sizeof(int);	
 }
 
 void Serializer::serializeChar(char value)
@@ -24,7 +30,10 @@ void Serializer::serializeChar(char value)
 void Serializer::serializeString(char* string, int string_size)
 {
 	for(int i=0; i<string_size; i++)
-		serializeChar(buffer+i,string[i]);	
+		serializeChar(string[i]);	
+}
 
-	offset += string_size;
+int Serializer::getOffset()
+{
+	return offset;
 }

@@ -1,6 +1,6 @@
 #ifndef CLIENT_CONNECTION_MANAGER_H
 #define CLIENT_CONNECTION_MANAGER_H
-#include "../common/utilities/ConnectionManager.h"
+#include "../../common/utilities/ConnectionManager.h"
 
 class ClientConnectionManager: public ConnectionManager
 {
@@ -8,9 +8,10 @@ class ClientConnectionManager: public ConnectionManager
         ClientConnectionManager();
         ~ClientConnectionManager();
 
-        void sendHello();
-
         // connect();
+
+        void sendHello();
+        void receiveHello();
 
     private:
         static const int MAX_USERNAME_SIZE = 50;

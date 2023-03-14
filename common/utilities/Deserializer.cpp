@@ -6,27 +6,30 @@ Deserializer::Deserializer(unsigned char* buffer)
 	offset = 0;
 }
 
-int Deserializer::serializeInt()
+int Deserializer::deserializeInt()
 {
-	// write big-endian int value into buffer
-	// assumes 32-bit int and 8-bit char
-	/*buffer[offset++] = value >> 24;
-  	buffer[offset++] = value >> 16;
-  	buffer[offset++] = value >> 8;
-  	buffer[offset++] = value;*/
+	int* network_value_pointer = (int*)calloc(1, sizeof(int));
+	if(network_value_pointer == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
 
-	
+	memcpy(network_value_pointer, buffer+offset, sizeof(int));
+	int host_int = ntohl(*network_value_pointer);
+	offset += sizeof(int);
+
+	return host_int;
+
 }
 
-void Deserializer::serializeChar(char value)
+char Deserializer::deserializeChar()
 {
-	buffer[offset++] = value;
+	return buffer[offset++];
 }
 
-void Deserializer::serializeString(char* string, int string_size)
+void Deserializer::deserializeString(char* string, int string_size)
 {
 	for(int i=0; i<string_size; i++)
-		serializeChar(buffer+i,string[i]);	
-
-	offset += string_size;
+		string[i] = deserializeChar();	
 }

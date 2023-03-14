@@ -1,4 +1,8 @@
+#ifndef DESERIALIZER_H
+#define DESERIALIZER_H
 #include <iostream>
+#include <arpa/inet.h>
+#include <cstring>
 
 
 class Deserializer
@@ -6,7 +10,7 @@ class Deserializer
 	public:
 		Deserializer(unsigned char*);
 		int deserializeInt();
-		unsigned char* deserializeString(int);
+		void deserializeString(char*, int);
 		
 	private:
 		unsigned char* buffer;
@@ -14,3 +18,4 @@ class Deserializer
 
 		char deserializeChar();
 };
+#endif
