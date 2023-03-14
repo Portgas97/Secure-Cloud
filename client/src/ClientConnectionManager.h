@@ -14,17 +14,19 @@ class ClientConnectionManager: public ConnectionManager
         void receiveHello();
 
     private:
-        static const int MAX_USERNAME_SIZE = 50;
+        static const unsigned int MAX_USERNAME_SIZE = 50;
 		
         char username[MAX_USERNAME_SIZE];
         
         //username_size_size + nonce_size_size + max_username_size + nonce_size
-        int MAX_CLIENT_HELLO_SIZE = sizeof(uint16_t) + sizeof(uint16_t) 
-					+ MAX_USERNAME_SIZE + CryptographyManager::getNonceSize();
+        const unsigned int MAX_HELLO_SIZE = 
+                    sizeof(CryptographyManager::getNonceSize()) +
+                    sizeof(MAX_USERNAME_SIZE) +
+					MAX_USERNAME_SIZE + CryptographyManager::getNonceSize();
 
         void createConnection();
         void destroyConnection();
-        int getHelloPacket(unsigned char*);
+        unsigned int getHelloPacket(unsigned char*);
         void obtainUsername();
 };
 

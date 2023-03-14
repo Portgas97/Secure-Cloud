@@ -27,11 +27,18 @@ void Serializer::serializeChar(char value)
 	buffer[offset++] = value;
 }
 
-void Serializer::serializeString(char* string, int string_size)
+void Serializer::serializeString(char* string, unsigned int string_size)
 {
 	for(int i=0; i<string_size; i++)
 		serializeChar(string[i]);	
 }
+
+void Serializer::serializeByteStream(unsigned char* byte_stream, 
+									unsigned int byte_stream_size)
+{
+	memcpy(buffer+offset, byte_stream, byte_stream_size);
+	offset += byte_stream_size;
+}									
 
 int Serializer::getOffset()
 {
