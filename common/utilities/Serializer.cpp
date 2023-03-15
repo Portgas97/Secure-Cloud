@@ -13,7 +13,7 @@ void Serializer::serializeInt(int value)
 	
 	if(network_value_pointer == nullptr)
 	{
-		std::cout << "Error in calloc\n";
+		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 

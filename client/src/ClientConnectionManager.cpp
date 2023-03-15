@@ -22,7 +22,7 @@ void ClientConnectionManager::createConnection()
 
     if(socket_fd < 0)
     {
-        std::cout << "Error in socket\n";
+        std::cout << "Error in socket" << std::endl;
         exit(1);
     }
 
@@ -42,7 +42,7 @@ void ClientConnectionManager::createConnection()
 
     if(return_value < 0)
     {
-        std::cout << "Error in connect\n";
+        std::cout << "Error in connect" << std::endl;
         exit(1);
     }
 
@@ -66,14 +66,14 @@ void ClientConnectionManager::obtainUsername()
     // get the input username from the client
     if(fgets(username, MAX_USERNAME_SIZE, stdin) == nullptr)
     {
-        std::cout << "Error in fgets\n";
+        std::cout << "Error in fgets" << std::endl;
         exit(1);
     }
 
     // check if username is too long
     if(!strchr(username, '\n'))
     {
-        std::cout << "Error: the username you inserted is too long\n";
+        std::cout << "Error: the username you inserted is too long" << std::endl;
         exit(1);
     }
 
@@ -101,7 +101,7 @@ void ClientConnectionManager::sendHello()
 
     if (hello_packet == nullptr) 
     {
-        std::cout << "Error in hello packet calloc\n";
+        std::cout << "Error in hello packet calloc" << std::endl;
         exit(1);
     }
 
