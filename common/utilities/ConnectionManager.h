@@ -36,12 +36,10 @@ class ConnectionManager
         char* nonce;
         
         virtual void createConnection() = 0;
-
         virtual void destroyConnection() = 0;
-        
         virtual void sendHello() = 0;
-
         virtual void receiveHello() = 0;
+        virtual unsigned int getHelloPacket(unsigned char*) = 0;
 
 
 

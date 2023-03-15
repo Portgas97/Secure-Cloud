@@ -29,16 +29,16 @@ void ServerConnectionManager::createConnection()
     const int yes = 1;
     setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
-    struct sockaddr_in server_address;
-    std::memset(&server_address, 0, sizeof(server_address));
+    struct sockaddr_in address;
+    std::memset(&address, 0, sizeof(address));
 
-    // set the parameters for server_address
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(SERVER_PORT); 
+    // set the parameters for address
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(SERVER_PORT); 
 
-    if((bind(socket_fd, (struct sockaddr *) &server_address, 
-						sizeof(server_address))) < 0)
+    if((bind(socket_fd, (struct sockaddr *) &address, 
+						sizeof(address))) < 0)
     {
         std::cout << "Error in bind" << std::endl;
         exit(1);
@@ -99,7 +99,8 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager requestHandler =
  										ServerConnectionManager(client_socket);
-    requestHandler.receiveHello();
+    char* client_nonce = requestHandler.receiveHello();
+	sendHello(client_nonce);
 }
 
 
@@ -107,7 +108,7 @@ void ServerConnectionManager::serveClient(int client_socket)
     it receives and parses client hello packet and sends back server 
 	hello packet
 */
-void ServerConnectionManager::receiveHello()
+char* ServerConnectionManager::receiveHello()
 {
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
@@ -138,20 +139,24 @@ void ServerConnectionManager::receiveHello()
 
     // TO DO check username existance
 
+	return nonce;
 }
 
-void ServerConnectionManager::sendHello()
+/* hello packet:
+	nonce_size | nonce | certificate_size | certificate | key_size | key
+  	signature_size | signature
+
+*/
+void ServerConnectionManager::sendHello(char* client_nonce)
 {
-    // nonce_size | nonce | certificate_size | certificate | key_size | key
-    // signature_size | signature
 
 	// get nonce
     nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
     CryptographyManager::getNonce(nonce);
 
 	// get certificate
-	FILE* server_certificate_file = fopen(SERVER_CERTIFICATE_FILENAME, "rb");
-	if(server_certificate_file == nullptr)
+	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "rb");
+	if(certificate_file == nullptr)
 	{
 		std::cout << "Error in fopen" << std::endl;
 		exit(1);
@@ -160,32 +165,95 @@ void ServerConnectionManager::sendHello()
 	// get file size
 
 	// move the file pointer to the end of the file
-	fseek(server_certificate_file, 0, SEEK_END);
+	fseek(certificate_file, 0, SEEK_END);
 
 	// returns the file pointer position
-	unsigned long int server_certificate_file_size = ftell(server_certificate_file);
+	unsigned long int certificate_file_size = ftell(certificate_file);
 	
 	// move file pointer to the beginning of the file
-	fseek(server_certificate_file, 0, SEEK_SET);
+	fseek(certificate_file, 0, SEEK_SET);
 	
-	unsigned char* server_certificate_pointer = (unsigned char*)
-										calloc(1, server_certificate_file_size);
+	certificate = (unsigned char*) calloc(1, certificate_file_size);
 
-	if(server_certificate_pointer == nullptr) 
+	if(certificate == nullptr) 
 	{ 
 		std::cout << "Error in calloc" << std::endl; 
 		exit(1); 
 	}
 
-	int return_value = fread(server_certificate_pointer, 1, 
-						server_certificate_file_size, server_certificate_file);
-	if(ret < clear_size) { cerr << "Error while reading file '" << clear_file_name << std::endl; exit(1); }
-	fclose(clear_file);
+	int return_value = fread(certificate, 1, 
+									certificate_file_size, certificate_file);
 
+	if(return_value < certificate_file_size) 
+	{ 
+		std::cout << "Error in fread" << std::endl;
+		exit(1); 
+	}
 
-	
+	fclose(certificate_file_size);
+
+	// TO DO: handle free 
+
+	ephemeral_private_key = CryptographyManager::getPrivateKey();
+
+	ephemeral_public_key = CryptographyManager::getPublicKey(ephemeral_private_key, ephemeral_public_key_size);
+
+	// message: server_public_key | client_nonce
+	int message_size = ephemeral_public_key_size + sizeof(client_nonce);
+
+	unsigned char* message = (unsigned char*) calloc(1, message_size);
+	if(message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	// message creation
+	memcpy(message, ephemeral_private_key, ephemeral_public_key_size);
+
+	uint16_t client_nonce_size = sizeof(client_nonce);
+	memcpy(message + ephemeral_public_key_size, client_nonce, client_nonce_size);
+
+	unsigned int signed_message_size;
+	// message signature
+	unsigned char* signed_message = CryptographyManager::signMessage(message, 
+				message_size, PRIVATE_KEY_FILENAME, signed_message_size);
+
+	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
+
+	if(hello_packet == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	unsigned int hello_packet_size = getHelloPacket(hello_packet);
+
+    sendPacket(hello_packet, hello_packet_size);
+	free(hello_packet);
+	free(signed_message);
+	free(message);
 }
 
+/*
+    it creates the hello packet and returns it.
+    It returns the hello packet size
+*/
+int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
+{
+	Serializer serializer = Serializer(hello_packet);
 
+    // nonce_size | nonce | certificate_size | certificate | key_size | key
+    // signature_size | signature
+	serializer.serializeInt(sizeof(nonce));
+	serializer.serializeString(nonce, sizeof(nonce));
+	serializer.serializeInt(sizeof(certificate));
+	serializer.serializeByteStream(certificate, sizeof(certificate));
+	serializer.serializeInt(ephemeral_public_key_size);
+	serializer.serializeByteStream(ephemeral_public_key, 
+													ephemeral_public_key_size);
+	serializer.serializeInt(signed_message_size);
+	serializer.serializeByteStream(signed_message, signed_message_size);														
 
-
+	return serializer.getOffset();	
+}

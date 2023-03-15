@@ -28,8 +28,16 @@ char Deserializer::deserializeChar()
 	return buffer[offset++];
 }
 
-void Deserializer::deserializeString(char* string, int string_size)
+void Deserializer::deserializeString(char* string, unsigned int string_size)
 {
 	for(int i=0; i<string_size; i++)
 		string[i] = deserializeChar();	
 }
+
+void Deserializer::deserializeByteStream(unsigned char* byte_stream,
+												unsigned int byte_stream_size)
+{
+	memcpy(byte_stream, buffer, byte_stream_size);
+	offset += byte_stream_size;
+}
+									
