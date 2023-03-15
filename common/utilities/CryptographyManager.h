@@ -16,11 +16,23 @@ class CryptographyManager
 {
     public:
         static void getNonce(char*);
-        static int getNonceSize();
+        static const int getNonceSize();
 		static EVP_PKEY* getPrivateKey();
+        static unsigned char* getPublicKey(EVP_PKEY*, int&);
+        static unsigned char* signMessage(unsigned char*, int, const char*, 
+                                            unsigned int&);
+        static void loadCertificationAuthorityCertificate();
 
     private:
-        const static int NONCE_SIZE = 8;
+        const static int NONCE_SIZE = 16;
+        
+        // TO DO, cannot initialize types other than int in static declarations, must be done in .cpp
+        const static char* CERTIFICATION_AUTHORITY_CERTIFICATE_FILENAME =
+                            "../files/FoundationsOfCybersecurity_cert.pem"; 
+        const static char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
+                            "../files/FoundationsOfCybersecurity_crl.pem";
+        static X509_STORE* certification_authority_store;
+                                    
 };
 
 #endif

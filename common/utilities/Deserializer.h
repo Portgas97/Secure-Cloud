@@ -10,7 +10,8 @@ class Deserializer
 	public:
 		Deserializer(unsigned char*);
 		int deserializeInt();
-		void deserializeString(char*, int);
+		void deserializeString(char*, unsigned int);
+		void deserializeByteStream(unsigned char*, unsigned int);
 		
 	private:
 		unsigned char* buffer;
