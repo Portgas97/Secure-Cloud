@@ -1,5 +1,6 @@
 #include "CryptographyManager.h"
 
+
 void CryptographyManager::getNonce(char *nonce)
 {
     // seed the random generator
@@ -18,7 +19,7 @@ void CryptographyManager::getNonce(char *nonce)
 
 }
 
-int CryptographyManager::getNonceSize()
+const int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
 }
