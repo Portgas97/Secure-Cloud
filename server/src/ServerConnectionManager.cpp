@@ -238,6 +238,7 @@ void ServerConnectionManager::sendHello()
 		exit(1);
 	}
 
+	// TO DO why the signature is only on key and nonce, and not certificate?
 	// message creation
 	memcpy(message, ephemeral_private_key, ephemeral_public_key_size);
 

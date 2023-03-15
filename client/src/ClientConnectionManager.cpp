@@ -172,9 +172,6 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(server_signature, 
                                                     server_signature_size);
 
-
-
-
     // load the CA's certificate
     char* certification_authority_filename = 
                     "../../common/files/FoundationsOfCybersecurity_cert.pem";
@@ -232,114 +229,156 @@ void ClientConnectionManager::receiveHello()
     }
 
     return_value = X509_STORE_add_cert(store, CA_certificate);
-    if(ret != 1) { cerr << "Error: X509_STORE_add_cert returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_add_crl(store, crl);
-    if(ret != 1) { cerr << "Error: X509_STORE_add_crl returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
-    if(ret != 1) { cerr << "Error: X509_STORE_set_flags returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
+    if(return_value != 1) 
+    {
+        std::cout << "Error in X509_STORE_add_cert" << std::endl; 
+        exit(1);
+    }
+
+    return_value = X509_STORE_add_crl(store, certificate_revocation_list);
+    if(return_value != 1) 
+    { 
+        std::cout << "Error in X509_STORE_add_crl" << std::endl;
+        exit(1);
+    }
+
+    return_value = X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
+    if(return_value != 1) 
+    {
+        std::cout << "Error in X509_STORE_set_flags" << std::endl; 
+        exit(1);
+    }
 
     // load the peer's certificate
-    string cert_file_name;
-    cout << "Please, type the PEM file containing peer's certificate: ";
-    getline(cin, cert_file_name);
-    if(!cin) { cerr << "Error during input\n"; exit(1); }
-    FILE* cert_file = fopen(cert_file_name.c_str(), "r");
-    if(!cert_file){ cerr << "Error: cannot open file '" << cert_file_name << "' (missing?)\n"; exit(1); }
-    X509* cert = PEM_read_X509(cert_file, NULL, NULL, NULL);
-    fclose(cert_file);
-    if(!cert){ cerr << "Error: PEM_read_X509 returned NULL\n"; exit(1); }
+    char *certificate_filename[MAX_USERNAME_SIZE + strlen("_cert.pem") + 1];
+    memcpy(certificate_filename, username, strlen(username) + 1);
+    strncat(certificate_filename, "_cert.pem", strlen("_cert.pem"));
+
+    FILE* certificate_file = fopen(certificate_filename, "r");
+    if(!certificate_file)
+    {
+        std::cout << "Errorin open" << std::endl;
+        exit(1); 
+    
+    }
+
+    X509* certificate = PEM_read_X509(cert_file, nullptr, nullptr, nullptr);
+    fclose(certificate_file);
+
+    if(certificate == nullptr)
+    {
+        std::cout << "PEM_read_X509 returned nullptr" << std::endl;
+        exit(1);
+    }
 
     // verify the certificate:
-    X509_STORE_CTX* certvfy_ctx = X509_STORE_CTX_new();
-    if(!certvfy_ctx) { cerr << "Error: X509_STORE_CTX_new returned NULL\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_CTX_init(certvfy_ctx, store, cert, NULL);
-    if(ret != 1) { cerr << "Error: X509_STORE_CTX_init returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_verify_cert(certvfy_ctx);
-    if(ret != 1) { cerr << "Error: X509_verify_cert returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
+    X509_STORE_CTX* certificate_verify_context = X509_STORE_CTX_new();
+    if(certificate_verify_context == nullptr) 
+    { 
+        std::cout << "X509_STORE_CTX_new returned nullptr" << std::endl;
+        exit(1);
+    }
 
+    return_value = X509_STORE_CTX_init(certificate_verify_context,
+                                        store, certificate, nullptr);
+    if(return_value != 1)
+    { 
+        std::cout << "Error inX509_STORE_CTX_init" << std::endl;
+        exit(1);
+    }
+
+    return_value = X509_verify_cert(certificate_verify_context);
+    if(return_value != 1) 
+    { 
+        std::cout << "Error in X509_verify_cert" << std::endl;
+        exit(1);
+    }
+
+    // TO DO, delete after successful executioin
     // print the successful verification to screen:
-    char* tmp = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
-    char* tmp2 = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);
-    cout << "Certificate of \"" << tmp << "\" (released by \"" << tmp2 << "\") verified successfully\n";
+    char* tmp = X509_NAME_oneline(X509_get_subject_name(certificate), nullptr, 0);
+    char* tmp2 = X509_NAME_oneline(X509_get_issuer_name(certificate), nullptr, 0);
+    std::cout << "Certificate of \"" << tmp << "\" (released by \"" << tmp2 << "\") verified successfully\n";
     free(tmp);
     free(tmp2);
 
-    // load the signature file:
-    string sgnt_file_name;
-    cout << "Please, type the signature file: ";
-    getline(cin, sgnt_file_name);
-    if(!cin) { cerr << "Error during input\n"; exit(1); }
-    FILE* sgnt_file = fopen(sgnt_file_name.c_str(), "rb");
-    if(!sgnt_file) { cerr << "Error: cannot open file '" << sgnt_file_name << "' (file does not exist?)\n"; exit(1); }
-
-    // get the file size: 
-    // (assuming no failures in fseek() and ftell())
-    fseek(sgnt_file, 0, SEEK_END);
-    long int sgnt_size = ftell(sgnt_file);
-    fseek(sgnt_file, 0, SEEK_SET);
-
-    // read the signature from file:
-    unsigned char* sgnt_buf = (unsigned char*)malloc(sgnt_size);
-    if(!sgnt_buf) { cerr << "Error: malloc returned NULL (file too big?)\n"; exit(1); }
-    ret = fread(sgnt_buf, 1, sgnt_size, sgnt_file);
-    if(ret < sgnt_size) { cerr << "Error while reading file '" << sgnt_file_name << "'\n"; exit(1); }
-    fclose(sgnt_file);
 
     // declare some useful variables:
-    const EVP_MD* md = EVP_sha256();
-    // read the file to verify from keyboard:
-    string clear_file_name;
-    cout << "Please, type the file to verify: ";
-    getline(cin, clear_file_name);
-    if(!cin) { cerr << "Error during input\n"; exit(1); }
-
-    // open the file to verify:
-    FILE* clear_file = fopen(clear_file_name.c_str(), "rb");
-    if(!clear_file) { cerr << "Error: cannot open file '" << clear_file_name << "' (file does not exist?)\n"; exit(1); }
-
-    // get the file size: 
-    // (assuming no failures in fseek() and ftell())
-    fseek(clear_file, 0, SEEK_END);
-    long int clear_size = ftell(clear_file);
-    fseek(clear_file, 0, SEEK_SET);
+    const EVP_MD* digest_algorithm = EVP_sha256();
+    
+	// TO DO why the signature is only on key and nonce, and not certificate?
 
     // read the plaintext from file:
-    unsigned char* clear_buf = (unsigned char*)malloc(clear_size);
-    if(!clear_buf) { cerr << "Error: malloc returned NULL (file too big?)\n"; exit(1); }
-    ret = fread(clear_buf, 1, clear_size, clear_file);
-    if(ret < clear_size) { cerr << "Error while reading file '" << clear_file_name << "'\n"; exit(1); }
-    fclose(clear_file);
+    unsigned char* message = (unsigned char*)calloc(1, 
+                                        CryptographyManager::getNonceSize() 
+                                        + ephemeral_server_key_size);
+    if(message == nullptr)
+    {
+        std::cout << "Error in malloc" << std::endl;
+        exit(1);
+    }
+
+    memcpy(message, ephemeral_server_key, ephemeral_server_key_size);
+
+	memcpy(message + ephemeral_server_key_size, 
+			received_nonce, 
+			CryptographyManager::getNonceSize());
 
     // create the signature context:
-    EVP_MD_CTX* md_ctx = EVP_MD_CTX_new();
-    if(!md_ctx){ cerr << "Error: EVP_MD_CTX_new returned NULL\n"; exit(1); }
+    EVP_MD_CTX* signature_context = EVP_MD_CTX_new();
+    if(signature_context == nullptr)
+    { 
+        std::cout << "EVP_MD_CTX_new returned nullptr" << std::endl; 
+        exit(1);
+    }
 
     // verify the plaintext:
     // (perform a single update on the whole plaintext, 
     // assuming that the plaintext is not huge)
-    ret = EVP_VerifyInit(md_ctx, md);
-    if(ret == 0){ cerr << "Error: EVP_VerifyInit returned " << ret << "\n"; exit(1); }
-    ret = EVP_VerifyUpdate(md_ctx, clear_buf, clear_size);  
-    if(ret == 0){ cerr << "Error: EVP_VerifyUpdate returned " << ret << "\n"; exit(1); }
-    ret = EVP_VerifyFinal(md_ctx, sgnt_buf, sgnt_size, X509_get_pubkey(cert));
-    if(ret == -1){ // it is 0 if invalid signature, -1 if some other error, 1 if success.
-        cerr << "Error: EVP_VerifyFinal returned " << ret << " (invalid signature?)\n";
+    return_value = EVP_VerifyInit(signature_context, digest_algorithm);
+    if(return_value == 0)
+    { 
+        std::cout << "Error in EVP_VerifyInit" << std::endl;
         exit(1);
-    }else if(ret == 0){
-        cerr << "Error: Invalid signature!\n";
+    }
+
+    return_value = EVP_VerifyUpdate(signature_context, message,
+                                        ephemeral_server_key_size 
+                                        + CryptographyManager::getNonceSize()); 
+
+    if(return_value == 0)
+    {
+        std::cout << "Error in EVP_VerifyUpdate" std::endl;
+        exit(1);
+    }
+
+    return_value = EVP_VerifyFinal( signature_context, 
+                                    server_signature, 
+                                    server_signature_size, 
+                                    X509_get_pubkey(certificate));
+
+    // it is 0 if invalid signature, -1 if some other error, 1 if success.
+    if(return_value == -1)
+    { 
+        std::cout << "Error in EVP_VerifyFinal" << std::endl;
+        exit(1);
+    }
+    else if(return_value == 0)
+    {
+        std::cout << "Invalid signature!" << std::endl;
         exit(1);
     }
 
     // print the successful signature verification to screen:
-    cout << "The Signature has been correctly verified! The message is authentic!\n";
+    std::cout << "The Signature has been correctly verified!" << std::endl;
 
     // deallocate data:
-    EVP_MD_CTX_free(md_ctx);
-    X509_free(cert);
+    EVP_MD_CTX_free(signature_context);
+    X509_free(certificate);
     X509_STORE_free(store);
     //X509_free(cacert); // already deallocated by X509_STORE_free()
     //X509_CRL_free(crl); // already deallocated by X509_STORE_free()
-    X509_STORE_CTX_free(certvfy_ctx);
+    X509_STORE_CTX_free(certificate_verify_context);
 
 }
 
