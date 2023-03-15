@@ -17,25 +17,26 @@ ConnectionManager::~ConnectionManager()
 */
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
-	std::cout << "socket: " << socket_fd << "\n";
+	std::cout << "socket: " << socket_fd << std::endl;
 
     uint32_t packet_length;
     int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
 
-    /*if(return_value <= 0)
+    if(return_value <= 0)
     {
-        std::cout << "Error in recv\n";
+        std::cout << "Error in recv" << std::endl;
         exit(1);
-    }*/
+    }
+    
 
     packet_length = ntohl(packet_length);
 
-	std::cout << "Packet length: " << packet_length << "\n";
+	std::cout << "Packet length: " << packet_length << std::endl;
 
     if(return_value - sizeof(uint32_t) < 0)
     {
         std::cout << "Received " << return_value << " bytes instead of " 
-                    << sizeof(uint32_t) << "\n";
+                    << sizeof(uint32_t) << std::endl;
         exit(1);
     }
     
@@ -44,7 +45,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
     if(packet == nullptr)
     {
-        std::cout << "Error in packet calloc\n";
+        std::cout << "Error in packet calloc" << std::endl;
         exit(1);
     }
 
@@ -56,18 +57,18 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     {
         return_value = recv(socket_fd, (void*)packet, packet_length,  
                                                     MSG_WAITALL);
-		std::cout << "Received " << return_value << " bytes\n";
+		std::cout << "Received " << return_value << " bytes" << std::endl;
 		//std::cout << "Packet: " << reinterpret_cast<void*>(packet) << std::endl;;
 
         if(return_value <= 0)
         {
-            std::cout << "Error in recv\n";
+            std::cout << "Error in recv" << std::endl;
             exit(1);
         }
 
         received_bytes += return_value;
     }
-	//std::cout << "Receive\n";
+	//std::cout << "Receive" << std::endl;
 	//printBuffer(packet, packet_length);
 
 }
@@ -85,7 +86,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
     if (return_value < 0) 
     {
-        std::cout << "Error in send\n";
+        std::cout << "Error in send" << std::endl;
         exit(1);
     }
 
@@ -93,7 +94,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
     uint32_t bytes_sent = 0;
 
-	//std::cout << "Send\n";
+	//std::cout << "Send" << std::endl;
 	//printBuffer(packet, packet_length);
 
     // handle fragmented send
@@ -104,7 +105,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
         if (return_value < 0) 
         {
-            std::cout << "Error in send\n";
+            std::cout << "Error in send" << std::endl;
             exit(1);
         }
 

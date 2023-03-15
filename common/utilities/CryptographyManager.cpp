@@ -5,14 +5,14 @@ void CryptographyManager::getNonce(char *nonce)
     // seed the random generator
     if(RAND_poll() < 0)
     {
-        std::cout << "Error in RAND_poll\n";
+        std::cout << "Error in RAND_poll" << std::endl;
         exit(1);
     }
 
     // create the actual nonce
     if(RAND_bytes((unsigned char*)nonce, NONCE_SIZE) < 0)
     {
-        std::cout << "Error in RAND_bytes\n";
+        std::cout << "Error in RAND_bytes" << std::endl;
         exit(1);
     }
 

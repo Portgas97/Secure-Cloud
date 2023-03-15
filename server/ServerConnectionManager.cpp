@@ -22,7 +22,7 @@ void ServerConnectionManager::createConnection()
 
 	if(socket_fd < 0)
 	{
-		std::cout << "Error in socket\n";
+		std::cout << "Error in socket" << std::endl;
 		exit(1);
 	}
 
@@ -40,13 +40,13 @@ void ServerConnectionManager::createConnection()
     if((bind(socket_fd, (struct sockaddr *) &server_address, 
 						sizeof(server_address))) < 0)
     {
-        std::cout << "Error in bind\n";
+        std::cout << "Error in bind" << std::endl;
         exit(1);
     }
 
     if((listen(socket_fd, MAX_CONNECTIONS)) < 0)
     {
-        std::cout << "Error in listen\n";
+        std::cout << "Error in listen" << std::endl;
         exit(1);
     }
 
@@ -75,7 +75,7 @@ void ServerConnectionManager::acceptRequest()
     if((client_socket = accept(socket_fd, (struct sockaddr *) &client_address, 
 							&addr_size)) < 0)
     {
-        std::cout << "Error in accept\n";
+        std::cout << "Error in accept" << std::endl;
         exit(1);
     }
 
@@ -84,7 +84,7 @@ void ServerConnectionManager::acceptRequest()
 
     if(child_pid < 0) 
     {
-        std::cout << "Error in fork\n";
+        std::cout << "Error in fork"; << std::endl
         exit(1);
     }
 
@@ -121,7 +121,7 @@ void ServerConnectionManager::receiveHello()
 
 	if(username == nullptr)
 	{
-		std::cout << "Error in calloc\n";
+		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
@@ -132,7 +132,7 @@ void ServerConnectionManager::receiveHello()
 
 	if(nonce == nullptr)
 	{
-		std::cout << "Error in calloc\n";
+		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
@@ -153,7 +153,7 @@ void ServerConnectionManager::sendHello()
 	FILE* server_certificate_file = fopen(SERVER_CERTIFICATE_FILENAME, "rb");
 	if(server_certificate_file == nullptr)
 	{
-		std::cout << "Error in fopen\n";
+		std::cout << "Error in fopen" << std::endl;
 		exit(1);
 	}
 
