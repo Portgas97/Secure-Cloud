@@ -19,10 +19,12 @@ void CryptographyManager::getNonce(char *nonce)
 
 }
 
+
 const int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
 }
+
 
 EVP_PKEY* CryptographyManager::getPrivateKey()
 {
@@ -87,6 +89,7 @@ EVP_PKEY* CryptographyManager::getPrivateKey()
     return private_key;
 }
 
+
 unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, int& public_key_size)
 {
 	// create new memory bio
@@ -121,6 +124,7 @@ unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, int& pub
     BIO_free(bio);
     return public_key;
 }
+
 
 unsigned char* CryptographyManager::signMessage(unsigned char* message, 
                             int message_size, const char* private_key_filename,
@@ -192,6 +196,7 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
 
     return signed_message;
 }     
+
 
 void CryptographyManager::loadCertificationAuthorityCertificate()
 {
