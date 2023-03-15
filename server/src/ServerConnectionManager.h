@@ -16,25 +16,37 @@ class ServerConnectionManager: public ConnectionManager
 		const char* CERTIFICATE_FILENAME = "../files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "../files/Server_key.pem";
 
+        // TO DO remove this comment, client_nonce is needed to not have e.g. receiveHello(client_nonce)
+        // it is not possible to have different signatures in overridden functions
+        char* client_nonce; 
         unsigned char* certificate;
+        unsigned long int certificate_size;
         EVP_PKEY* ephemeral_private_key;
         unsigned char* ephemeral_public_key;
         unsigned int ephemeral_public_key_size;
-        unsigned char* signed_message;
-        unsigned int signed_message_size;
+        unsigned char* signature;
+        unsigned int signature_size;
 
-        //username_size_size + nonce_size_size + max_username_size + nonce_size
-        const unsigned int MAX_HELLO_SIZE = 
-                    sizeof(CryptographyManager::getNonceSize()) +
-                    sizeof(MAX_USERNAME_SIZE) +
-					MAX_USERNAME_SIZE + CryptographyManager::getNonceSize();
 
+        //  nonce_size   | nonce | certificate_size  | certificate   | 
+        //  key_size     | key   | signature_size    | signature     |
+        
         const unsigned int MAX_CONNECTIONS = 10;
+        const unsigned int MAX_HELLO_SIZE = 
+                                sizeof(CryptographyManager::getNonceSize())
+                                + CryptographyManager::getNonceSize()
+                                + sizeof(certificate_size)
+                                + certificate_size
+                                + sizeof(ephemeral_public_key_size)
+                                + ephemeral_public_key_size
+                                + sizeof(signature)
+                                + signature_size;
+
         void createConnection();
         void destroyConnection();
         void serveClient(int);
         void sendHello();
-        char* receiveHello();
+        void receiveHello();
         unsigned int getHelloPacket(unsigned char*);        
         
 };

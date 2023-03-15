@@ -90,7 +90,8 @@ EVP_PKEY* CryptographyManager::getPrivateKey()
 }
 
 
-unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, int& public_key_size)
+unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, 
+                                                unsigned int& public_key_size)
 {
 	// create new memory bio
     BIO *bio = BIO_new(BIO_s_mem());
@@ -127,8 +128,9 @@ unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, int& pub
 
 
 unsigned char* CryptographyManager::signMessage(unsigned char* message, 
-                            int message_size, const char* private_key_filename,
-                            unsigned int& signed_message_size)
+                                            int message_size, 
+                                            const char* private_key_filename,
+                                            unsigned int& signature_size)
 {
     // load private key
     FILE* private_key_file = fopen(private_key_filename, "r");
@@ -159,9 +161,9 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
     }
 
     // allocate buffer for signature
-    unsigned char* signed_message = (unsigned char*)
+    unsigned char* signature = (unsigned char*)
                                         calloc(1, EVP_PKEY_size(private_key));
-    if(signed_message == nullptr)
+    if(signature == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
         exit(1); 
@@ -183,7 +185,7 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         exit(1); 
     }
     
-    return_value = EVP_SignFinal(signature_context, signed_message, &signed_message_size, private_key);
+    return_value = EVP_SignFinal(signature_context, signature, &signature_size, private_key);
     if(return_value == 0)
     {
         std::cout << "Error in signature" << std::endl;
@@ -194,7 +196,7 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
     EVP_MD_CTX_free(signature_context);
     EVP_PKEY_free(private_key);
 
-    return signed_message;
+    return signature;
 }     
 
 

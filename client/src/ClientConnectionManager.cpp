@@ -1,11 +1,13 @@
 
 #include "ClientConnectionManager.h"
 
+
 ClientConnectionManager::ClientConnectionManager()
 {
     createConnection();
     obtainUsername();
 }
+
 
 ClientConnectionManager::~ClientConnectionManager()
 {
@@ -81,6 +83,25 @@ void ClientConnectionManager::obtainUsername()
 
 }
 
+
+/*
+    it creates the hello packet and returns it.
+    It returns the hello packet size
+*/
+unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
+{
+	Serializer serializer = Serializer(hello_packet);
+
+    // hello_packet: username_size | username | nonce_size | nonce
+	serializer.serializeInt(strlen(username) + 1);
+	serializer.serializeString(username, strlen(username) + 1);
+	serializer.serializeInt(sizeof(nonce));
+	serializer.serializeString(nonce, sizeof(nonce));
+
+	return serializer.getOffset();	
+}
+
+
 /*
     it creates the client nonce, the client hello and sends the client
     hello to the server
@@ -110,6 +131,7 @@ void ClientConnectionManager::sendHello()
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
 }
+
 
 
 void ClientConnectionManager::receiveHello()
@@ -154,25 +176,62 @@ void ClientConnectionManager::receiveHello()
 
 
     // load the CA's certificate
-    string cacert_file_name="../../common/files/FoundationsOfCybersecurity_cert.pem";
-    FILE* cacert_file = fopen(cacert_file_name.c_str(), "r");
-    if(!cacert_file){ cerr << "Error: cannot open file '" << cacert_file_name << "' (missing?)\n"; exit(1); }
-    X509* cacert = PEM_read_X509(cacert_file, NULL, NULL, NULL);
-    fclose(cacert_file);
-    if(!cacert){ cerr << "Error: PEM_read_X509 returned NULL\n"; exit(1); }
+    char* certification_authority_filename = 
+                    "../../common/files/FoundationsOfCybersecurity_cert.pem";
+    FILE* certification_authority_file = 
+                    fopen(certification_authority_filename, "r");
+
+    if(!certification_authority_file)
+    {
+        std::cout << "Error in open" << std::endl;
+        exit(1);
+    
+    }
+
+    X509* CA_certificate = 
+                    PEM_read_X509(certification_authority_file, 
+                                    nullptr, nullptr, nullptr);
+    
+    fclose(certification_authority_file);
+
+    if(CA_certificate == nullptr)
+    {
+        std::cout << "PEM_read_X509 returned nullptr"; 
+        exit(1);
+    }
 
     // load the CRL
-    string crl_file_name="FoundationsOfCybersecurity_crl.pem";
-    FILE* crl_file = fopen(crl_file_name.c_str(), "r");
-    if(!crl_file){ cerr << "Error: cannot open file '" << crl_file_name << "' (missing?)\n"; exit(1); }
-    X509_CRL* crl = PEM_read_X509_CRL(crl_file, NULL, NULL, NULL);
+    char* crl_filename = 
+                "../../common/files/FoundationsOfCybersecurity_crl.pem";
+    FILE* crl_file = fopen(crl_filename, "r");
+
+    if(crl_file == nullptr)
+    {
+        std::cout << "Error in open" << std::endl;
+        exit(1);
+    }
+
+    X509_CRL* certificate_revocation_list =
+                     PEM_read_X509_CRL(crl_file, nullptr, nullptr, nullptr);
+    
     fclose(crl_file);
-    if(!crl){ cerr << "Error: PEM_read_X509_CRL returned NULL\n"; exit(1); }
+
+    if(certificate_revocation_list == nullptr)
+    {
+        std::cout << "PEM_read_X509_CRL returned nullptr";
+        exit(1);
+    }
+
 
     // build a store with the CA's certificate and the CRL
     X509_STORE* store = X509_STORE_new();
-    if(!store) { cerr << "Error: X509_STORE_new returned NULL\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_add_cert(store, cacert);
+    if(store == nullptr)
+    { 
+        std::cout << "X509_STORE_new returned nullptr" << std::endl;
+        exit(1); 
+    }
+
+    return_value = X509_STORE_add_cert(store, CA_certificate);
     if(ret != 1) { cerr << "Error: X509_STORE_add_cert returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
     ret = X509_STORE_add_crl(store, crl);
     if(ret != 1) { cerr << "Error: X509_STORE_add_crl returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
@@ -284,19 +343,5 @@ void ClientConnectionManager::receiveHello()
 
 }
 
-/*
-    it creates the hello packet and returns it.
-    It returns the hello packet size
-*/
-unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
-{
-	Serializer serializer = Serializer(hello_packet);
 
-    // hello_packet: username_size | username | nonce_size | nonce
-	serializer.serializeInt(strlen(username) + 1);
-	serializer.serializeString(username, strlen(username) + 1);
-	serializer.serializeInt(sizeof(nonce));
-	serializer.serializeString(nonce, sizeof(nonce));
 
-	return serializer.getOffset();	
-}

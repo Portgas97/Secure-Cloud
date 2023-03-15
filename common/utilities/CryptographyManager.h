@@ -18,7 +18,7 @@ class CryptographyManager
         static void getNonce(char*);
         static const int getNonceSize();
 		static EVP_PKEY* getPrivateKey();
-        static unsigned char* getPublicKey(EVP_PKEY*, int&);
+        static unsigned char* getPublicKey(EVP_PKEY*, unsigned int&);
         static unsigned char* signMessage(unsigned char*, int, const char*, 
                                             unsigned int&);
         static void loadCertificationAuthorityCertificate();
