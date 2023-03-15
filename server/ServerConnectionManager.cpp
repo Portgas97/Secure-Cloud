@@ -84,7 +84,7 @@ void ServerConnectionManager::acceptRequest()
 
     if(child_pid < 0) 
     {
-        std::cout << "Error in fork"; << std::endl
+        std::cout << "Error in fork" << std::endl;
         exit(1);
     }
 
