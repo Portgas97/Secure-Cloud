@@ -22,7 +22,8 @@ class CryptographyManager
         static unsigned char* getPublicKey(EVP_PKEY*);
         static unsigned char* signMessage(unsigned char*, int, const char*);
         static X509* deserializeData(unsigned char*, unsigned int);
-        static int verifyCertificate(X509*);
+        static void verifyCertificate(X509*);
+        
 
     private:
         const static int NONCE_SIZE = 16;

@@ -218,13 +218,77 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
         cerr << "PEM_read_bio_X509 error";
         exit(1);
     }
+    BIO_free(bio);
     return data;
 }
 
-int CryptographyManager::verifyCertificate(X509* certificate)
+void CryptographyManager::verifyCertificate(X509* certificate)
 {
-    
+    X509_STORE_CTX *context = X509_STORE_CTX_new();
+    if (!context) 
+    {
+        std::cout << "Error in certificate verification" << std::endl;
+        exit(1);
+    }
+    return_value = X509_STORE_CTX_init(context, certification_authority_store, 
+                                                        certificate, nullptr);
+    if (return_value != 1) 
+    {
+        std::cout << "Error in certificate verification" << std::endl;
+        exit(1);
+    }
+    return_value = X509_verify_cert(context);
+
+    if(return_value != 1)
+    {
+        std::cout << "Error: the certificate is not valid" << std::endl;
+        exit(1);
+    }
+
+    X509_STORE_CTX_free(context);
 }
+
+static void CryptographyManager::verifySignature
+                                            (unsigned char* signature, 
+                                            unsigned int signature_size,
+                                            unsigned char* message,
+                                            unsigned int message_size,
+                                            EVP_PKEY* public_key)
+{
+    const EVP_MD *message_digest = EVP_sha256();
+    EVP_MD_CTX *context = EVP_MD_CTX_new();
+    if (context == nullptr) 
+    {
+        std::cout << "Error in signature verification" << std::endl;
+        exit(1);
+    }
+
+    int return_value = EVP_VerifyInit(context, message_digest);
+    if (return_value == 0)
+    {
+        std::cout << "Error in signature verification" << std::endl;
+        exit(1);
+    }
+
+
+    return_value = EVP_VerifyUpdate(context, message, message_size);
+    if (return_value == 0) 
+    {
+        std::cout << "Error in signature verification" << std::endl;
+        exit(1);
+    }
+
+    return_value = EVP_VerifyFinal(context, signature, signature_size, 
+                                                                    public_key);
+
+    if(return_value == -1 || return_value == 0)
+    {
+        std::cout << "Error: signature not valid" << std::endl;
+        exit(1);
+    }
+
+    EVP_MD_CTX_free(context);
+}                                            
 
 void CryptographyManager::loadCertificationAuthorityCertificate()
 {
@@ -302,5 +366,9 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
         std::cout << "Error in storing certification authority" << std::endl;
         exit(1); 
     }
+
+    // TO DO: change location?
+    X509_free(certification_authority_certificate);
+    X509_CRL_free(certification_authority_crl);
 }
                                 
