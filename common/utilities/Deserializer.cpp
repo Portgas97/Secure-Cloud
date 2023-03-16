@@ -30,7 +30,7 @@ char Deserializer::deserializeChar()
 
 void Deserializer::deserializeString(char* string, unsigned int string_size)
 {
-	for(int i=0; i<string_size; i++)
+	for(unsigned int i=0; i<string_size; i++)
 		string[i] = deserializeChar();	
 }
 

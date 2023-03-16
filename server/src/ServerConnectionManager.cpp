@@ -99,8 +99,9 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager requestHandler =
  										ServerConnectionManager(client_socket);
-    char* client_nonce = requestHandler.receiveHello();
-	sendHello(client_nonce);
+
+    requestHandler.receiveHello();
+	requestHandler.sendHello();
 }
 
 
@@ -108,7 +109,7 @@ void ServerConnectionManager::serveClient(int client_socket)
     it receives and parses client hello packet and sends back server 
 	hello packet
 */
-char* ServerConnectionManager::receiveHello()
+void ServerConnectionManager::receiveHello()
 {
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
@@ -138,42 +139,70 @@ char* ServerConnectionManager::receiveHello()
 	}
 
     // TO DO check username existance
+	deserializer.deserializeString(nonce, nonce_size);
+	client_nonce = nonce;
 
-	return nonce;
 }
 
+
+/*
+    it creates the hello packet and returns it.
+    It returns the hello packet size
+*/
+unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
+{
+	Serializer serializer = Serializer(hello_packet);
+
+    // nonce_size | nonce | certificate_size | certificate | key_size | key
+    // signature_size | signature
+	serializer.serializeInt(sizeof(CryptographyManager::getNonceSize()));
+	serializer.serializeString(nonce, CryptographyManager::getNonceSize());
+	serializer.serializeInt(sizeof(certificate_size));
+	serializer.serializeByteStream(certificate, certificate_size);
+	serializer.serializeInt(sizeof(ephemeral_public_key_size));
+	serializer.serializeByteStream(ephemeral_public_key, 
+													ephemeral_public_key_size);
+	serializer.serializeInt(sizeof(signature_size));
+	serializer.serializeByteStream(signature, signature_size);														
+
+	return serializer.getOffset();	
+}
+
+
 /* hello packet:
-	nonce_size | nonce | certificate_size | certificate | key_size | key
-  	signature_size | signature
+	//  nonce_size   | nonce | certificate_size  | certificate   | 
+    //  key_size     | key   | signature_size    | signature     |
 
 */
-void ServerConnectionManager::sendHello(char* client_nonce)
+void ServerConnectionManager::sendHello()
 {
+
+	std::cout << "Starting server sendHello()" << std::endl;
 
 	// get nonce
     nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
     CryptographyManager::getNonce(nonce);
 
 	// get certificate
-	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "rb");
+	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "r");
+	std::cout << CERTIFICATE_FILENAME << std::endl;
+
 	if(certificate_file == nullptr)
 	{
-		std::cout << "Error in fopen" << std::endl;
+		perror("Error in fopen\n");
 		exit(1);
 	}
 
 	// get file size
-
 	// move the file pointer to the end of the file
 	fseek(certificate_file, 0, SEEK_END);
-
 	// returns the file pointer position
-	unsigned long int certificate_file_size = ftell(certificate_file);
-	
+	certificate_size = ftell(certificate_file);
 	// move file pointer to the beginning of the file
 	fseek(certificate_file, 0, SEEK_SET);
 	
-	certificate = (unsigned char*) calloc(1, certificate_file_size);
+	
+	certificate = (unsigned char*) calloc(1, certificate_size);
 
 	if(certificate == nullptr) 
 	{ 
@@ -181,25 +210,32 @@ void ServerConnectionManager::sendHello(char* client_nonce)
 		exit(1); 
 	}
 
+	std::cout << "reading the certificate" << std::endl;
 	int return_value = fread(certificate, 1, 
-									certificate_file_size, certificate_file);
+									certificate_size, certificate_file);
 
-	if(return_value < certificate_file_size) 
+	if(return_value - certificate_size < 0) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
 		exit(1); 
 	}
 
-	fclose(certificate_file_size);
+	fclose(certificate_file);
 
 	// TO DO: handle free 
 
+	// std::cout << "Creating the ephemeral private key" << std::endl;
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
 
-	ephemeral_public_key = CryptographyManager::getPublicKey(ephemeral_private_key, ephemeral_public_key_size);
+	// std::cout << "Creating the ephemeral public key" << std::endl;
+	ephemeral_public_key = CryptographyManager::getPublicKey(
+							ephemeral_private_key, 
+							ephemeral_public_key_size);
+
 
 	// message: server_public_key | client_nonce
-	int message_size = ephemeral_public_key_size + sizeof(client_nonce);
+	int message_size =  ephemeral_public_key_size 
+						+ CryptographyManager::getNonceSize();
 
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
 	if(message == nullptr)
@@ -208,16 +244,19 @@ void ServerConnectionManager::sendHello(char* client_nonce)
 		exit(1);
 	}
 
+	// TO DO why the signature is only on key and nonce, and not certificate?
 	// message creation
-	memcpy(message, ephemeral_private_key, ephemeral_public_key_size);
+	// TO DO, is the private key that must be sent? Need of the size
+	memcpy(message, 
+				ephemeral_public_key, 
+				ephemeral_public_key_size);
+	memcpy( message + ephemeral_public_key_size, 
+				&client_nonce, // c++ interprets char* as a pointer to C-string
+				CryptographyManager::getNonceSize());
 
-	uint16_t client_nonce_size = sizeof(client_nonce);
-	memcpy(message + ephemeral_public_key_size, client_nonce, client_nonce_size);
-
-	unsigned int signed_message_size;
-	// message signature
-	unsigned char* signed_message = CryptographyManager::signMessage(message, 
-				message_size, PRIVATE_KEY_FILENAME, signed_message_size);
+	std::cout << "building the signature" << std::endl;
+	signature = CryptographyManager::signMessage(message, 
+				message_size, PRIVATE_KEY_FILENAME, signature_size);
 
 	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
 
@@ -231,29 +270,7 @@ void ServerConnectionManager::sendHello(char* client_nonce)
 
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
-	free(signed_message);
+	free(signature);
 	free(message);
 }
 
-/*
-    it creates the hello packet and returns it.
-    It returns the hello packet size
-*/
-int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
-{
-	Serializer serializer = Serializer(hello_packet);
-
-    // nonce_size | nonce | certificate_size | certificate | key_size | key
-    // signature_size | signature
-	serializer.serializeInt(sizeof(nonce));
-	serializer.serializeString(nonce, sizeof(nonce));
-	serializer.serializeInt(sizeof(certificate));
-	serializer.serializeByteStream(certificate, sizeof(certificate));
-	serializer.serializeInt(ephemeral_public_key_size);
-	serializer.serializeByteStream(ephemeral_public_key, 
-													ephemeral_public_key_size);
-	serializer.serializeInt(signed_message_size);
-	serializer.serializeByteStream(signed_message, signed_message_size);														
-
-	return serializer.getOffset();	
-}

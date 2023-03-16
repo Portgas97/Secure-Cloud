@@ -1,11 +1,13 @@
 
 #include "ClientConnectionManager.h"
 
+
 ClientConnectionManager::ClientConnectionManager()
 {
     createConnection();
     obtainUsername();
 }
+
 
 ClientConnectionManager::~ClientConnectionManager()
 {
@@ -81,6 +83,25 @@ void ClientConnectionManager::obtainUsername()
 
 }
 
+
+/*
+    it creates the hello packet and returns it.
+    It returns the hello packet size
+*/
+unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
+{
+	Serializer serializer = Serializer(hello_packet);
+
+    // hello_packet: username_size | username | nonce_size | nonce
+	serializer.serializeInt(strlen(username) + 1);
+	serializer.serializeString(username, strlen(username) + 1);
+	serializer.serializeInt(sizeof(nonce));
+	serializer.serializeString(nonce, sizeof(nonce));
+
+	return serializer.getOffset();	
+}
+
+
 /*
     it creates the client nonce, the client hello and sends the client
     hello to the server
@@ -112,11 +133,13 @@ void ClientConnectionManager::sendHello()
 }
 
 
+
 void ClientConnectionManager::receiveHello()
 {
     unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
+    std::cout << "serverHello received. Starting client receiveHello()" << std::endl;
     Deserializer deserializer = Deserializer(hello_packet);
 
     // hello packet:
@@ -161,23 +184,10 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(server_signature, 
                                                     server_signature_size);
 
+
     //CryptographyManager::verifySignature(server_signature, server)
 
 }
 
-/*
-    it creates the hello packet and returns it.
-    It returns the hello packet size
-*/
-unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
-{
-	Serializer serializer = Serializer(hello_packet);
 
-    // hello_packet: username_size | username | nonce_size | nonce
-	serializer.serializeInt(strlen(username) + 1);
-	serializer.serializeString(username, strlen(username) + 1);
-	serializer.serializeInt(sizeof(nonce));
-	serializer.serializeString(nonce, sizeof(nonce));
 
-	return serializer.getOffset();	
-}
