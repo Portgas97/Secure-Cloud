@@ -25,14 +25,16 @@
 class CryptographyManager
 {
     public:
+        CryptographyManager();
         static void getNonce(char*);
         static const unsigned int getNonceSize();
-		static EVP_PKEY* getPrivateKey();
+		    static EVP_PKEY* getPrivateKey();
         static unsigned char* getPublicKey(EVP_PKEY*, unsigned int&);
-        static unsigned char* signMessage(unsigned char*, int, const char*, 
-                                            unsigned int&);
-        void loadCertificationAuthorityCertificate();
-
+        static unsigned char* signMessage(unsigned char*, int, const char*
+                                                     unsigned int&);
+        static X509* deserializeData(unsigned char*, unsigned int);
+        static void verifyCertificate(X509*);
+     
     private:
         const static int NONCE_SIZE = 16;
         
@@ -42,6 +44,9 @@ class CryptographyManager
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
                             "../files/FoundationsOfCybersecurity_crl.pem";
         X509_STORE* certification_authority_store = nullptr;
+        
+        static void loadCertificationAuthorityCertificate();
+
                                     
 };
 
