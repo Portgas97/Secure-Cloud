@@ -20,7 +20,7 @@ void CryptographyManager::getNonce(char *nonce)
 }
 
 
-const int CryptographyManager::getNonceSize()
+const unsigned int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
 }

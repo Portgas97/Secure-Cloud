@@ -139,6 +139,7 @@ void ClientConnectionManager::receiveHello()
     unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
+    std::cout << "serverHello received. Starting client receiveHello()" << std::endl;
     Deserializer deserializer = Deserializer(hello_packet);
 
     // hello packet:
@@ -173,7 +174,7 @@ void ClientConnectionManager::receiveHello()
                                                     server_signature_size);
 
     // load the CA's certificate
-    char* certification_authority_filename = 
+    const char* certification_authority_filename = 
                     "../../common/files/FoundationsOfCybersecurity_cert.pem";
     FILE* certification_authority_file = 
                     fopen(certification_authority_filename, "r");
@@ -198,7 +199,7 @@ void ClientConnectionManager::receiveHello()
     }
 
     // load the CRL
-    char* crl_filename = 
+    const char* crl_filename = 
                 "../../common/files/FoundationsOfCybersecurity_crl.pem";
     FILE* crl_file = fopen(crl_filename, "r");
 
@@ -250,9 +251,9 @@ void ClientConnectionManager::receiveHello()
     }
 
     // load the peer's certificate
-    char *certificate_filename[MAX_USERNAME_SIZE + strlen("_cert.pem") + 1];
+    char certificate_filename[MAX_USERNAME_SIZE + strlen("_cert.pem") + 1];
     memcpy(certificate_filename, username, strlen(username) + 1);
-    strncat(certificate_filename, "_cert.pem", strlen("_cert.pem"));
+    strncat(certificate_filename, "_cert.pem", strlen("_cert.pem") + 1);
 
     FILE* certificate_file = fopen(certificate_filename, "r");
     if(!certificate_file)
@@ -262,7 +263,7 @@ void ClientConnectionManager::receiveHello()
     
     }
 
-    X509* certificate = PEM_read_X509(cert_file, nullptr, nullptr, nullptr);
+    X509* certificate = PEM_read_X509(certificate_file, nullptr, nullptr, nullptr);
     fclose(certificate_file);
 
     if(certificate == nullptr)
@@ -348,7 +349,7 @@ void ClientConnectionManager::receiveHello()
 
     if(return_value == 0)
     {
-        std::cout << "Error in EVP_VerifyUpdate" std::endl;
+        std::cout << "Error in EVP_VerifyUpdate" << std::endl;
         exit(1);
     }
 

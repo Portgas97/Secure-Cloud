@@ -17,8 +17,6 @@ ConnectionManager::~ConnectionManager()
 */
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
-	std::cout << "socket: " << socket_fd << std::endl;
-
     uint32_t packet_length;
     int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
 
@@ -81,6 +79,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 {
     packet_length = htonl(packet_length);
 
+    std::cout << socket_fd << std::endl;
     int return_value = send(socket_fd, (void*)&packet_length, 
 									sizeof(uint32_t), 0);
 

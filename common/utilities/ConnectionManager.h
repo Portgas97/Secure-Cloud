@@ -41,9 +41,6 @@ class ConnectionManager
         virtual void receiveHello() = 0;
         virtual unsigned int getHelloPacket(unsigned char*) = 0;
 
-
-
-
 };
         
 #endif 

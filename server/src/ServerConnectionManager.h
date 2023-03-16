@@ -1,6 +1,6 @@
 #ifndef SERVER_CONNECTION_MANAGER_H
 #define SERVER_CONNECTION_MANAGER_H
-#include "../common/utilities/ConnectionManager.h"
+#include "../../common/utilities/ConnectionManager.h"
 
 class ServerConnectionManager: public ConnectionManager 
 {
@@ -13,8 +13,9 @@ class ServerConnectionManager: public ConnectionManager
 
 
     private:
-		const char* CERTIFICATE_FILENAME = "../files/Server_cert.pem";
-        const char* PRIVATE_KEY_FILENAME = "../files/Server_key.pem";
+        // TO DO, changed, probably wants relative paths with respect to the executable (?)
+		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
+        const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
 
         // TO DO remove this comment, client_nonce is needed to not have e.g. receiveHello(client_nonce)
         // it is not possible to have different signatures in overridden functions

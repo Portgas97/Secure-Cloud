@@ -101,7 +101,7 @@ void ServerConnectionManager::serveClient(int client_socket)
  										ServerConnectionManager(client_socket);
 
     requestHandler.receiveHello();
-	sendHello();
+	requestHandler.sendHello();
 }
 
 
@@ -177,28 +177,30 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 void ServerConnectionManager::sendHello()
 {
 
+	std::cout << "Starting server sendHello()" << std::endl;
+
 	// get nonce
     nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
     CryptographyManager::getNonce(nonce);
 
 	// get certificate
-	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "rb");
+	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "r");
+	std::cout << CERTIFICATE_FILENAME << std::endl;
+
 	if(certificate_file == nullptr)
 	{
-		std::cout << "Error in fopen" << std::endl;
+		perror("Error in fopen\n");
 		exit(1);
 	}
 
 	// get file size
-
 	// move the file pointer to the end of the file
 	fseek(certificate_file, 0, SEEK_END);
-
 	// returns the file pointer position
 	certificate_size = ftell(certificate_file);
-	
 	// move file pointer to the beginning of the file
 	fseek(certificate_file, 0, SEEK_SET);
+	
 	
 	certificate = (unsigned char*) calloc(1, certificate_size);
 
@@ -208,10 +210,11 @@ void ServerConnectionManager::sendHello()
 		exit(1); 
 	}
 
+	std::cout << "reading the certificate" << std::endl;
 	int return_value = fread(certificate, 1, 
 									certificate_size, certificate_file);
 
-	if(return_value < certificate_size) 
+	if(return_value - certificate_size < 0) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
 		exit(1); 
@@ -221,11 +224,14 @@ void ServerConnectionManager::sendHello()
 
 	// TO DO: handle free 
 
+	// std::cout << "Creating the ephemeral private key" << std::endl;
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
 
+	// std::cout << "Creating the ephemeral public key" << std::endl;
 	ephemeral_public_key = CryptographyManager::getPublicKey(
 							ephemeral_private_key, 
 							ephemeral_public_key_size);
+
 
 	// message: server_public_key | client_nonce
 	int message_size =  ephemeral_public_key_size 
@@ -240,13 +246,15 @@ void ServerConnectionManager::sendHello()
 
 	// TO DO why the signature is only on key and nonce, and not certificate?
 	// message creation
-	memcpy(message, ephemeral_private_key, ephemeral_public_key_size);
-
+	// TO DO, is the private key that must be sent? Need of the size
+	memcpy(message, 
+				ephemeral_public_key, 
+				ephemeral_public_key_size);
 	memcpy( message + ephemeral_public_key_size, 
-			client_nonce, 
-			CryptographyManager::getNonceSize());
+				&client_nonce, // c++ interprets char* as a pointer to C-string
+				CryptographyManager::getNonceSize());
 
-	// message signature
+	std::cout << "building the signature" << std::endl;
 	signature = CryptographyManager::signMessage(message, 
 				message_size, PRIVATE_KEY_FILENAME, signature_size);
 
