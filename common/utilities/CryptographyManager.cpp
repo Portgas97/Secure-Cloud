@@ -1,5 +1,9 @@
 #include "CryptographyManager.h"
 
+CryptographyManager::CryptographyManager()
+{
+    loadCertificationAuthorityCertificate();
+}
 
 void CryptographyManager::getNonce(char *nonce)
 {
@@ -197,6 +201,30 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
     return signed_message;
 }     
 
+// TO DO: change name and location?
+X509* CryptographyManager::deserializeData(unsigned char* data_buffer, 
+                                                unsigned int data_buffer_size)
+{
+    BIO *bio = BIO_new(BIO_s_mem());
+    return_value = BIO_write(bio, data_buffer, data_buffer_size);
+    if (return_value == 0) 
+    {
+        std::cout << "Error in data deserialization" << std::endl;
+        exit(1);
+    }
+    X509 *data = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    if (data == nullptr) 
+    {
+        cerr << "PEM_read_bio_X509 error";
+        exit(1);
+    }
+    return data;
+}
+
+int CryptographyManager::verifyCertificate(X509* certificate)
+{
+    
+}
 
 void CryptographyManager::loadCertificationAuthorityCertificate()
 {

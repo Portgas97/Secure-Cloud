@@ -22,7 +22,7 @@ void ClientConnectionManager::createConnection()
 
     if(socket_fd < 0)
     {
-        std::cout << "Error in socket" << std::endl;
+        std::cout << "Error in socket\n";
         exit(1);
     }
 
@@ -42,7 +42,7 @@ void ClientConnectionManager::createConnection()
 
     if(return_value < 0)
     {
-        std::cout << "Error in connect" << std::endl;
+        std::cout << "Error in connect\n";
         exit(1);
     }
 
@@ -66,14 +66,14 @@ void ClientConnectionManager::obtainUsername()
     // get the input username from the client
     if(fgets(username, MAX_USERNAME_SIZE, stdin) == nullptr)
     {
-        std::cout << "Error in fgets" << std::endl;
+        std::cout << "Error in fgets\n";
         exit(1);
     }
 
     // check if username is too long
     if(!strchr(username, '\n'))
     {
-        std::cout << "Error: the username you inserted is too long" << std::endl;
+        std::cout << "Error: the username you inserted is too long\n";
         exit(1);
     }
 
@@ -101,7 +101,7 @@ void ClientConnectionManager::sendHello()
 
     if (hello_packet == nullptr) 
     {
-        std::cout << "Error in hello packet calloc" << std::endl;
+        std::cout << "Error in hello packet calloc\n";
         exit(1);
     }
 
@@ -140,6 +140,12 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(server_certificate, 
                                                     server_certificate_size);
 
+    X509* certificate = CryptographyManager::deserializeData(server_certificate, 
+                                                    server_certificate_size);
+
+                                                        
+
+
     unsigned int ephemeral_server_key_size = deserializer.deserializeInt();
     unsigned char* ephemeral_server_key = nullptr;
     deserializer.deserializeByteStream(ephemeral_server_key, 
@@ -152,32 +158,6 @@ void ClientConnectionManager::receiveHello()
 
 
 
-
-    // load the CA's certificate
-    string cacert_file_name="../../common/files/FoundationsOfCybersecurity_cert.pem";
-    FILE* cacert_file = fopen(cacert_file_name.c_str(), "r");
-    if(!cacert_file){ cerr << "Error: cannot open file '" << cacert_file_name << "' (missing?)\n"; exit(1); }
-    X509* cacert = PEM_read_X509(cacert_file, NULL, NULL, NULL);
-    fclose(cacert_file);
-    if(!cacert){ cerr << "Error: PEM_read_X509 returned NULL\n"; exit(1); }
-
-    // load the CRL
-    string crl_file_name="FoundationsOfCybersecurity_crl.pem";
-    FILE* crl_file = fopen(crl_file_name.c_str(), "r");
-    if(!crl_file){ cerr << "Error: cannot open file '" << crl_file_name << "' (missing?)\n"; exit(1); }
-    X509_CRL* crl = PEM_read_X509_CRL(crl_file, NULL, NULL, NULL);
-    fclose(crl_file);
-    if(!crl){ cerr << "Error: PEM_read_X509_CRL returned NULL\n"; exit(1); }
-
-    // build a store with the CA's certificate and the CRL
-    X509_STORE* store = X509_STORE_new();
-    if(!store) { cerr << "Error: X509_STORE_new returned NULL\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_add_cert(store, cacert);
-    if(ret != 1) { cerr << "Error: X509_STORE_add_cert returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_add_crl(store, crl);
-    if(ret != 1) { cerr << "Error: X509_STORE_add_crl returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
-    ret = X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
-    if(ret != 1) { cerr << "Error: X509_STORE_set_flags returned " << ret << "\n" << ERR_error_string(ERR_get_error(), NULL) << "\n"; exit(1); }
 
     // load the peer's certificate
     string cert_file_name;
