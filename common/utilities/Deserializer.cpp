@@ -37,7 +37,7 @@ void Deserializer::deserializeString(char* string, unsigned int string_size)
 void Deserializer::deserializeByteStream(unsigned char* byte_stream,
 												unsigned int byte_stream_size)
 {
-	memcpy(byte_stream, buffer, byte_stream_size);
+	memcpy(byte_stream, buffer + offset, byte_stream_size);
 	offset += byte_stream_size;
 }
 									

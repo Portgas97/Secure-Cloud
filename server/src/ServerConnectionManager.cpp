@@ -234,30 +234,26 @@ void ServerConnectionManager::sendHello()
 
 
 	// message: server_public_key | client_nonce
-	int message_size =  ephemeral_public_key_size 
+	unsigned int clear_message_size =  ephemeral_public_key_size 
 						+ CryptographyManager::getNonceSize();
 
-	unsigned char* message = (unsigned char*) calloc(1, message_size);
-	if(message == nullptr)
+	unsigned char* clear_message = (unsigned char*) calloc(1, clear_message_size);
+	if(clear_message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-	// TO DO why the signature is only on key and nonce, and not certificate?
-	// message creation
-	// TO DO, is the private key that must be sent? Need of the size
-	memcpy(message, 
-				ephemeral_public_key, 
-				ephemeral_public_key_size);
-	memcpy( message + ephemeral_public_key_size, 
-				&client_nonce, // c++ interprets char* as a pointer to C-string
+	// building the message to be signed 
+	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
+	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
 				CryptographyManager::getNonceSize());
 
 	std::cout << "building the signature" << std::endl;
-	signature = CryptographyManager::signMessage(message, 
-				message_size, PRIVATE_KEY_FILENAME, signature_size);
+	signature = CryptographyManager::signMessage(clear_message, 
+				signature_size, PRIVATE_KEY_FILENAME, clear_message_size);
 
+	
 	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
 
 	if(hello_packet == nullptr)
@@ -271,6 +267,6 @@ void ServerConnectionManager::sendHello()
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
 	free(signature);
-	free(message);
+	free(clear_message);
 }
 

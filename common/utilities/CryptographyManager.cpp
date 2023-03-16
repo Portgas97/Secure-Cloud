@@ -228,7 +228,7 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
 void CryptographyManager::verifyCertificate(X509* certificate)
 {
     X509_STORE_CTX *context = X509_STORE_CTX_new();
-    if (!context) 
+    if (context == nullptr) 
     {
         std::cout << "Error in certificate verification" << std::endl;
         exit(1);

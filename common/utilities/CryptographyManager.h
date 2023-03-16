@@ -25,9 +25,8 @@ class CryptographyManager
                                                      unsigned int&);
         static X509* deserializeData(unsigned char*, unsigned int);
         void verifyCertificate(X509*);
-        void verifySignature(unsigned char*, unsigned int,
-                                                unsigned char*, unsigned int, 
-                                                EVP_PKEY*);
+        void verifySignature(unsigned char*, unsigned int, unsigned char*,
+                                 unsigned int, EVP_PKEY*);
      
     private:
         const static int NONCE_SIZE = 16;

@@ -79,7 +79,6 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 {
     packet_length = htonl(packet_length);
 
-    std::cout << socket_fd << std::endl;
     int return_value = send(socket_fd, (void*)&packet_length, 
 									sizeof(uint32_t), 0);
 
