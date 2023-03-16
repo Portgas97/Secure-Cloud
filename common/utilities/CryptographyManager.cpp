@@ -1,3 +1,4 @@
+
 #include "CryptographyManager.h"
 
 CryptographyManager::CryptographyManager()
@@ -208,7 +209,7 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
                                                 unsigned int data_buffer_size)
 {
     BIO *bio = BIO_new(BIO_s_mem());
-    return_value = BIO_write(bio, data_buffer, data_buffer_size);
+    int return_value = BIO_write(bio, data_buffer, data_buffer_size);
     if (return_value == 0) 
     {
         std::cout << "Error in data deserialization" << std::endl;
@@ -217,7 +218,7 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
     X509 *data = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     if (data == nullptr) 
     {
-        cerr << "PEM_read_bio_X509 error";
+        std::cout << "PEM_read_bio_X509 error";
         exit(1);
     }
     BIO_free(bio);
@@ -232,15 +233,16 @@ void CryptographyManager::verifyCertificate(X509* certificate)
         std::cout << "Error in certificate verification" << std::endl;
         exit(1);
     }
-    return_value = X509_STORE_CTX_init(context, certification_authority_store, 
-                                                        certificate, nullptr);
+    
+    int return_value = X509_STORE_CTX_init(context, certification_authority_store,
+                                            certificate, nullptr);
     if (return_value != 1) 
     {
         std::cout << "Error in certificate verification" << std::endl;
         exit(1);
     }
+    
     return_value = X509_verify_cert(context);
-
     if(return_value != 1)
     {
         std::cout << "Error: the certificate is not valid" << std::endl;
@@ -250,8 +252,7 @@ void CryptographyManager::verifyCertificate(X509* certificate)
     X509_STORE_CTX_free(context);
 }
 
-static void CryptographyManager::verifySignature
-                                            (unsigned char* signature, 
+void CryptographyManager::verifySignature   (unsigned char* signature, 
                                             unsigned int signature_size,
                                             unsigned char* message,
                                             unsigned int message_size,
@@ -340,7 +341,8 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
 
     if(certification_authority_store == nullptr)
     {
-        std::cout << "Error in storing certification authority" << std::endl;
+        std::cout << "Error in storing certification authority certificate" 
+        << std::endl;
         exit(1); 
     }
 
@@ -349,7 +351,7 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
     
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority" << std::endl;
+        std::cout << "Error in storing certification authority certificate" << std::endl;
         exit(1); 
     }
 
@@ -357,7 +359,7 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
                                                 certification_authority_crl);
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority" << std::endl;
+        std::cout << "Error in storing certification authority certificate" << std::endl;
         exit(1); 
     }
 
@@ -365,7 +367,7 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
                                                         X509_V_FLAG_CRL_CHECK);
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority" << std::endl;
+        std::cout << "Error in storing certification authority certificate" << std::endl;
         exit(1); 
     }
 

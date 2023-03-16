@@ -1,4 +1,3 @@
-
 #include "ClientConnectionManager.h"
 
 
@@ -167,7 +166,8 @@ void ClientConnectionManager::receiveHello()
                         CryptographyManager::deserializeData(server_certificate, 
                                                         server_certificate_size);
 
-    CryptographyManager::verifyCertificate(deserialized_server_certificate);                                                        
+    CryptographyManager cryptography_manager = CryptographyManager();
+    cryptography_manager.verifyCertificate(deserialized_server_certificate);                                                        
 
 
     unsigned int ephemeral_server_key_size = deserializer.deserializeInt();
