@@ -17,9 +17,8 @@ class ServerConnectionManager: public ConnectionManager
 		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
 
-        // TO DO remove this comment, client_nonce is needed to not have e.g. receiveHello(client_nonce)
-        // it is not possible to have different signatures in overridden functions
         char* client_nonce; 
+        unsigned int client_nonce_size;
         unsigned char* certificate;
         unsigned long int certificate_size;
         EVP_PKEY* ephemeral_private_key;

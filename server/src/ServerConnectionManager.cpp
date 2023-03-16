@@ -117,7 +117,7 @@ void ServerConnectionManager::receiveHello()
 	Deserializer deserializer = Deserializer(hello_packet);
 
 	// received_packet: username_size | username | nonce_size | nonce
-	int username_size = deserializer.deserializeInt();
+	unsigned int username_size = deserializer.deserializeInt();
 
 	char* username = (char*)calloc(1, username_size);
 
@@ -129,8 +129,8 @@ void ServerConnectionManager::receiveHello()
 
 	deserializer.deserializeString(username, username_size);
 
-	int nonce_size = deserializer.deserializeInt();
-	char* nonce = (char*)calloc(1, nonce_size);
+	client_nonce_size = deserializer.deserializeInt();
+	char* nonce = (char*)calloc(1, client_nonce_size);
 
 	if(nonce == nullptr)
 	{
@@ -139,7 +139,7 @@ void ServerConnectionManager::receiveHello()
 	}
 
     // TO DO check username existance
-	deserializer.deserializeString(nonce, nonce_size);
+	deserializer.deserializeString(nonce, client_nonce_size);
 	client_nonce = nonce;
 
 }
@@ -155,8 +155,8 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
-	serializer.serializeInt(sizeof(CryptographyManager::getNonceSize()));
-	serializer.serializeString(nonce, CryptographyManager::getNonceSize());
+	serializer.serializeInt(sizeof(client_nonce_size));
+	serializer.serializeString(nonce, client_nonce_size);
 	serializer.serializeInt(sizeof(certificate_size));
 	serializer.serializeByteStream(certificate, certificate_size);
 	serializer.serializeInt(sizeof(ephemeral_public_key_size));

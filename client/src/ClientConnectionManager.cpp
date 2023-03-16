@@ -94,8 +94,8 @@ unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet
     // hello_packet: username_size | username | nonce_size | nonce
 	serializer.serializeInt(strlen(username) + 1);
 	serializer.serializeString(username, strlen(username) + 1);
-	serializer.serializeInt(sizeof(nonce));
-	serializer.serializeString(nonce, sizeof(nonce));
+	serializer.serializeInt(sizeof(nonce_size));
+	serializer.serializeString(nonce, nonce_size);
 
 	return serializer.getOffset();	
 }
@@ -117,7 +117,7 @@ void ClientConnectionManager::sendHello()
     CryptographyManager::getNonce(nonce);
 
     // hello_packet: username_size | username | nonce_size | nonce
-    unsigned char* hello_packet = (unsigned char *) calloc(1, MAX_HELLO_SIZE);
+    unsigned char* hello_packet = (unsigned char *)calloc(1, MAX_HELLO_SIZE);
 
     if (hello_packet == nullptr) 
     {
@@ -144,20 +144,25 @@ void ClientConnectionManager::receiveHello()
 	// nonce_size | nonce | certificate_size | certificate | key_size | key
   	// signature_size | signature
     unsigned int received_nonce_size = deserializer.deserializeInt();
-    unsigned char* received_nonce = (unsigned char*)calloc(1, received_nonce_size);
+    char* received_nonce = (char*)calloc(1, received_nonce_size);
     if(received_nonce == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
         exit(1);
     }
-    deserializer.deserializeByteStream(received_nonce, received_nonce_size);
+    deserializer.deserializeString(received_nonce, received_nonce_size);
 
     // check if received nonce is different with regard to the send nonce
     int return_value = memcmp(received_nonce, nonce, received_nonce_size);
+    std::cout << "received_nonce: " << received_nonce << std::endl;
+    std::cout << "nonce: " << nonce << std::endl; 
+    std::cout << "received_nonce_size: " << received_nonce_size << std::endl;
+    std::cout << "getNonceSize(): " << sizeof(CryptographyManager::getNonceSize()); 
     if(return_value != 0 || 
-                    received_nonce_size != CryptographyManager::getNonceSize())
+                    received_nonce_size != sizeof(CryptographyManager::getNonceSize()))
     {
         std::cout << "Error in hello reception" << std::endl;
+        std::cout << "return_value: " << return_value << std::endl;
         exit(1);
     }                
 

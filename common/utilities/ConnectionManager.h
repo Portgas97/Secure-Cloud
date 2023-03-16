@@ -34,6 +34,7 @@ class ConnectionManager
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
         char* nonce;
+        unsigned int nonce_size;
         
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;
