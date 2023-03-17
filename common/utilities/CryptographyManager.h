@@ -18,7 +18,7 @@ class CryptographyManager
     public:
         CryptographyManager();
         static void getNonce(char*);
-        static const unsigned int getNonceSize();
+        static unsigned int getNonceSize();
 		    static EVP_PKEY* getPrivateKey();
         static unsigned char* getPublicKey(EVP_PKEY*, unsigned int&);
         static unsigned char* signMessage(unsigned char*, int, const char*,

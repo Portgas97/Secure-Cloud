@@ -17,6 +17,7 @@ ConnectionManager::~ConnectionManager()
 */
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
+    std::cout << "receivePacket() init" << std::endl;
     uint32_t packet_length;
     int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
 
@@ -29,9 +30,9 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
     packet_length = ntohl(packet_length);
 
-	std::cout << "Packet length: " << packet_length << std::endl;
+	std::cout << "Received packet length: " << packet_length << std::endl;
 
-    if(return_value - sizeof(uint32_t) < 0)
+    if(return_value < (int)sizeof(uint32_t))
     {
         std::cout << "Received " << return_value << " bytes instead of " 
                     << sizeof(uint32_t) << std::endl;
@@ -39,9 +40,8 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
     
     //allocate needed memory space for the packet
-    packet = (unsigned char*) calloc(1, packet_length);
-
-    if(packet == nullptr)
+    unsigned char* received_packet = (unsigned char*) calloc(1, packet_length);
+    if(received_packet == nullptr)
     {
         std::cout << "Error in packet calloc" << std::endl;
         exit(1);
@@ -53,10 +53,8 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     // hendle fragmented reception
     while(received_bytes < packet_length)
     {
-        return_value = recv(socket_fd, (void*)packet, packet_length,  
+        return_value = recv(socket_fd, (void*)received_packet, packet_length,  
                                                     MSG_WAITALL);
-		std::cout << "Received " << return_value << " bytes" << std::endl;
-		//std::cout << "Packet: " << reinterpret_cast<void*>(packet) << std::endl;;
 
         if(return_value <= 0)
         {
@@ -66,9 +64,9 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
         received_bytes += return_value;
     }
-	//std::cout << "Receive" << std::endl;
-	//printBuffer(packet, packet_length);
 
+    packet = received_packet;
+    std::cout << "receivePacket() end." << std::endl;
 }
 
 /*
@@ -77,6 +75,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 void ConnectionManager::sendPacket(unsigned char* packet, 
                                     uint32_t packet_length)
 {
+    std::cout << "sendPacket() init, sending " << packet_length << " bytes" << std::endl;
     packet_length = htonl(packet_length);
 
     int return_value = send(socket_fd, (void*)&packet_length, 
@@ -92,9 +91,6 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
     uint32_t bytes_sent = 0;
 
-	//std::cout << "Send" << std::endl;
-	//printBuffer(packet, packet_length);
-
     // handle fragmented send
     while (bytes_sent < packet_length)
     {
@@ -109,4 +105,6 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
         bytes_sent += return_value;
     }
+
+    std::cout << "sendPacket() end" << std::endl;
 }

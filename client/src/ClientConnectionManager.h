@@ -20,9 +20,9 @@ class ClientConnectionManager: public ConnectionManager
         
         // username_size_size + nonce_size_size + max_username_size + nonce_size
         const unsigned int MAX_HELLO_SIZE = 
-                      sizeof(CryptographyManager::getNonceSize()) 
-                    + sizeof(MAX_USERNAME_SIZE) 
+                    sizeof(MAX_USERNAME_SIZE) 
                     + MAX_USERNAME_SIZE 
+                    + sizeof(CryptographyManager::getNonceSize()) 
                     + CryptographyManager::getNonceSize();
 
         void createConnection();

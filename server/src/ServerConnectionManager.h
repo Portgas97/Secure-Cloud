@@ -17,8 +17,6 @@ class ServerConnectionManager: public ConnectionManager
 		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
 
-        char* client_nonce; 
-        unsigned int client_nonce_size;
         unsigned char* certificate;
         unsigned long int certificate_size;
         EVP_PKEY* ephemeral_private_key;

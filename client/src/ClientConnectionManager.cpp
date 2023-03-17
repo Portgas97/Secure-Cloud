@@ -79,6 +79,7 @@ void ClientConnectionManager::obtainUsername()
     }
 
     username[strcspn(username, "\n")] = 0;
+    std::cout << "username check: " << username << std::endl;
 
 }
 
@@ -93,9 +94,11 @@ unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet
 
     // hello_packet: username_size | username | nonce_size | nonce
 	serializer.serializeInt(strlen(username) + 1);
-	serializer.serializeString(username, strlen(username) + 1);
-	serializer.serializeInt(sizeof(nonce_size));
-	serializer.serializeString(nonce, nonce_size);
+ 	serializer.serializeString(username, strlen(username) + 1);
+    std::cout << "int to serialize: " << CryptographyManager::getNonceSize() << std::endl;
+    std::cout << "string to serialize: " << nonce << std::endl;
+	serializer.serializeInt(CryptographyManager::getNonceSize());
+	serializer.serializeString(nonce, CryptographyManager::getNonceSize());
 
 	return serializer.getOffset();	
 }
@@ -107,17 +110,20 @@ unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet
 */
 void ClientConnectionManager::sendHello()
 {
-	nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
-    if(nonce == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
+	std::cout << "sendHello() init" << std::endl;
+
+	// nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
+    // if(nonce == nullptr)
+    // {
+    //     std::cout << "Error in calloc" << std::endl;
+    //     exit(1);
+    // }
 
     CryptographyManager::getNonce(nonce);
+    // nonce_size = CryptographyManager::getNonceSize();
 
     // hello_packet: username_size | username | nonce_size | nonce
-    unsigned char* hello_packet = (unsigned char *)calloc(1, MAX_HELLO_SIZE);
+    unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
 
     if (hello_packet == nullptr) 
     {
@@ -128,17 +134,23 @@ void ClientConnectionManager::sendHello()
     unsigned int hello_packet_size = getHelloPacket(hello_packet);
 
     sendPacket(hello_packet, hello_packet_size);
+
 	free(hello_packet);
+	std::cout << "sendHello() end" << std::endl;
 }
 
 
 
 void ClientConnectionManager::receiveHello()
 {
+    std::cout << "receiveHello() init" << std::endl;
+
     unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
+    std::cout << "serverHello received, parsing..." << std::endl;
     Deserializer deserializer = Deserializer(hello_packet);
+    free(hello_packet);
 
     // hello packet:
 	// nonce_size | nonce | certificate_size | certificate | key_size | key
@@ -215,6 +227,9 @@ void ClientConnectionManager::receiveHello()
     cryptography_manager.verifySignature(server_signature, server_signature_size, 
                                         clear_message, clear_message_size, 
                                         server_public_key);
+
+	std::cout << "receiveHello() end" << std::endl;
+
 
 }
 

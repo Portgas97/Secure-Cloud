@@ -11,9 +11,9 @@ ServerConnectionManager::~ServerConnectionManager()
 
 }
 
-ServerConnectionManager::ServerConnectionManager(int socket_fd)
+ServerConnectionManager::ServerConnectionManager(int socket)
 {
-	this->socket_fd = socket_fd;
+	socket_fd = socket;
 }
 
 void ServerConnectionManager::createConnection()
@@ -89,8 +89,11 @@ void ServerConnectionManager::acceptRequest()
     }
 
     // the child will enter in the if block
-    if(child_pid == 0)
+    if(child_pid == 0){
+		std::cout << "Connection accepted, serving client..." << std::endl;
         serveClient(client_socket);
+		std::cout << "Client served" << std::endl;
+	}
 
 }
 
@@ -111,11 +114,12 @@ void ServerConnectionManager::serveClient(int client_socket)
 */
 void ServerConnectionManager::receiveHello()
 {
+	std::cout << "receiveHello() init" << std::endl;
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
 	Deserializer deserializer = Deserializer(hello_packet);
-
+		
 	// received_packet: username_size | username | nonce_size | nonce
 	unsigned int username_size = deserializer.deserializeInt();
 
@@ -128,19 +132,29 @@ void ServerConnectionManager::receiveHello()
 	}
 
 	deserializer.deserializeString(username, username_size);
+	std::cout << "received username: " << username << std::endl;
 
-	client_nonce_size = deserializer.deserializeInt();
-	char* nonce = (char*)calloc(1, client_nonce_size);
+	unsigned int client_nonce_size = deserializer.deserializeInt();
 
-	if(nonce == nullptr)
+	if(client_nonce_size != NONCE_SIZE)
 	{
-		std::cout << "Error in calloc" << std::endl;
+		std::cout << "client_nonce_size: " << client_nonce_size << ", NONCE_SIZE: " << NONCE_SIZE << std::endl;
+		std::cout << "Error in nonce size reception" << std::endl;
 		exit(1);
 	}
+	// char* received_nonce = (char*)calloc(1, client_nonce_size);
+
+	// if(received_nonce == nullptr)
+	// {
+	// 	std::cout << "Error in calloc" << std::endl;
+	// 	exit(1);
+	// }
 
     // TO DO check username existance
 	deserializer.deserializeString(nonce, client_nonce_size);
-	client_nonce = nonce;
+
+	free(hello_packet);
+	std::cout << "receiveHello() end" << std::endl;
 
 }
 
@@ -155,14 +169,14 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
-	serializer.serializeInt(sizeof(client_nonce_size));
-	serializer.serializeString(nonce, client_nonce_size);
+	serializer.serializeInt(NONCE_SIZE);
+	serializer.serializeString(nonce, NONCE_SIZE);
 	serializer.serializeInt(sizeof(certificate_size));
 	serializer.serializeByteStream(certificate, certificate_size);
 	serializer.serializeInt(sizeof(ephemeral_public_key_size));
 	serializer.serializeByteStream(ephemeral_public_key, 
 													ephemeral_public_key_size);
-	serializer.serializeInt(sizeof(signature_size));
+	serializer.serializeInt(signature_size);
 	serializer.serializeByteStream(signature, signature_size);														
 
 	return serializer.getOffset();	
@@ -177,15 +191,12 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 void ServerConnectionManager::sendHello()
 {
 
-	std::cout << "Starting server sendHello()" << std::endl;
-
+	std::cout << "sendHello() init" << std::endl;
 	// get nonce
-    nonce = (char*)calloc(1, CryptographyManager::getNonceSize());
     CryptographyManager::getNonce(nonce);
 
 	// get certificate
 	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "r");
-	std::cout << CERTIFICATE_FILENAME << std::endl;
 
 	if(certificate_file == nullptr)
 	{
@@ -210,11 +221,10 @@ void ServerConnectionManager::sendHello()
 		exit(1); 
 	}
 
-	std::cout << "reading the certificate" << std::endl;
-	int return_value = fread(certificate, 1, 
+	unsigned int return_value = fread(certificate, 1, 
 									certificate_size, certificate_file);
 
-	if(return_value - certificate_size < 0) 
+	if(return_value < certificate_size) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
 		exit(1); 
@@ -245,14 +255,15 @@ void ServerConnectionManager::sendHello()
 	}
 
 	// building the message to be signed 
+	// std::cout << "building the message to sign" << std::endl;
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, &nonce, 
 				CryptographyManager::getNonceSize());
 
-	std::cout << "building the signature" << std::endl;
+	// std::cout << "signing message" << std::endl;
 	signature = CryptographyManager::signMessage(clear_message, 
-				signature_size, PRIVATE_KEY_FILENAME, clear_message_size);
-
+				clear_message_size, PRIVATE_KEY_FILENAME, signature_size);
+	// std::cout << "message signed" << std::endl;
 	
 	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
 
@@ -262,11 +273,14 @@ void ServerConnectionManager::sendHello()
 		exit(1);
 	}
 
+	std::cout << "call to getHelloPacket()" << std::endl;
 	unsigned int hello_packet_size = getHelloPacket(hello_packet);
 
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
 	free(signature);
 	free(clear_message);
+	std::cout << "sendHello() end" << std::endl;
+
 }
 

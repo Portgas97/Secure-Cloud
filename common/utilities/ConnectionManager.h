@@ -22,9 +22,6 @@ class ConnectionManager
 
         void receivePacket(unsigned char*&);
 
-        
-
-
         //closeSocket();
 
         virtual ~ConnectionManager();
@@ -33,8 +30,8 @@ class ConnectionManager
         int socket_fd;
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
-        char* nonce;
-        unsigned int nonce_size;
+        const static int NONCE_SIZE = 16;
+        char nonce[NONCE_SIZE];
         
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

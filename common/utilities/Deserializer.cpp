@@ -1,8 +1,8 @@
 #include "Deserializer.h"
 
-Deserializer::Deserializer(unsigned char* buffer)
+Deserializer::Deserializer(unsigned char* buffer_to_deserialize)
 {
-	this->buffer = buffer;
+	buffer = buffer_to_deserialize;
 	offset = 0;
 }
 

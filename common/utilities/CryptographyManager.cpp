@@ -25,7 +25,7 @@ void CryptographyManager::getNonce(char *nonce)
 }
 
 
-const unsigned int CryptographyManager::getNonceSize()
+unsigned int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
 }
@@ -137,6 +137,11 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
                                             const char* private_key_filename,
                                             unsigned int& signature_size)
 {
+
+    // std::cout << "message: " << reinterpret_cast<void*>(message) << std::endl;
+    // std::cout << "message_size: " << message_size << std::endl;
+    // std::cout << "private_key_filename: " << private_key_filename << std::endl;
+    
     // load private key
     FILE* private_key_file = fopen(private_key_filename, "r");
     if(private_key_file == nullptr)
