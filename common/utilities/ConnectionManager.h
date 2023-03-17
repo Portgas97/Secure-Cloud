@@ -26,12 +26,16 @@ class ConnectionManager
 
         virtual ~ConnectionManager();
 
+        static void printBuffer(unsigned char*, unsigned int);
+
+
     protected:
         int socket_fd;
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
         const static int NONCE_SIZE = 16;
-        char nonce[NONCE_SIZE];
+        char client_nonce[NONCE_SIZE];
+        char server_nonce[NONCE_SIZE];
         
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

@@ -6,12 +6,10 @@ Serializer::Serializer(unsigned char* buffer_to_serialize)
 	
 	buffer = buffer_to_serialize;
 	offset = 0;
-	std::cout << "offset constructor: " << offset << std::endl;
 }
 
 void Serializer::serializeInt(int value)
 {
-	std::cout << "offset int: " << offset << std::endl;
 	int *network_value_pointer = (int*)calloc(1,sizeof(int));
 	
 	if(network_value_pointer == nullptr)
@@ -28,17 +26,15 @@ void Serializer::serializeInt(int value)
 
 void Serializer::serializeChar(char value)
 {
-	std::cout << "offset char: " << offset << std::endl;
 	buffer[offset++] = value;
 }
 
 void Serializer::serializeString(char* string, unsigned int string_size)
 {
-	std::cout << "Starting serializing string " << string << " for " << string_size << std::endl;
+	// std::cout << "Starting serializing string " << string << " for " << string_size << std::endl;
 	for(unsigned int i = 0; i < string_size; i++)
 		serializeChar(string[i]);	
 	
-	std::cout << "offset string end: " << offset << std::endl;
 }
 
 void Serializer::serializeByteStream(unsigned char* byte_stream, 

@@ -10,6 +10,15 @@ ConnectionManager::~ConnectionManager()
     
 }
 
+void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_size)
+{
+    for(unsigned int i = 0; i < buffer_size; i++)
+        std::cout << buffer[i];
+
+    std::cout << std::endl;
+}
+
+
 
 /*
     it receives packet from the sender by receiving first the packet size, then
@@ -66,6 +75,9 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
 
     packet = received_packet;
+    // std::cout << "hello_packet received: ";
+    // printBuffer(packet, packet_length);
+
     std::cout << "receivePacket() end." << std::endl;
 }
 

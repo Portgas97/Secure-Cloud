@@ -220,7 +220,9 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
         std::cout << "Error in data deserialization" << std::endl;
         exit(1);
     }
-    X509 *data = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    X509 *data = nullptr;
+    PEM_read_bio_X509(bio, &data, 0, nullptr);
+    
     if (data == nullptr) 
     {
         std::cout << "PEM_read_bio_X509 error";
@@ -228,6 +230,19 @@ X509* CryptographyManager::deserializeData(unsigned char* data_buffer,
     }
     BIO_free(bio);
     return data;
+}
+
+ unsigned char* CryptographyManager::serializeData(X509* certificate, 
+                                                unsigned int &certificate_size)
+{
+    BIO *bio = BIO_new(BIO_s_mem());
+    PEM_write_bio_X509(bio, certificate);
+
+    unsigned char* bio_data;
+    certificate_size = BIO_get_mem_data(bio, &bio_data);
+
+    BIO_free(bio);
+    return bio_data;
 }
 
 void CryptographyManager::verifyCertificate(X509* certificate)

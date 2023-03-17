@@ -24,6 +24,7 @@ class CryptographyManager
         static unsigned char* signMessage(unsigned char*, int, const char*,
                                                      unsigned int&);
         static X509* deserializeData(unsigned char*, unsigned int);
+        static unsigned char* serializeData(X509*, unsigned int &);
         void verifyCertificate(X509*);
         void verifySignature(unsigned char*, unsigned int, unsigned char*,
                                  unsigned int, EVP_PKEY*);
@@ -32,9 +33,9 @@ class CryptographyManager
         const static int NONCE_SIZE = 16;
         
         const char* CERTIFICATION_AUTHORITY_CERTIFICATE_FILENAME =
-                            "../files/FoundationsOfCybersecurity_cert.pem"; 
+                            "common/files/FoundationsOfCybersecurity_cert.pem"; 
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
-                            "../files/FoundationsOfCybersecurity_crl.pem";
+                            "common/files/FoundationsOfCybersecurity_crl.pem";
         X509_STORE* certification_authority_store = nullptr;
         
         void loadCertificationAuthorityCertificate();

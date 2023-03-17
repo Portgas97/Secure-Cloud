@@ -1,4 +1,5 @@
 #include "Deserializer.h"
+#include "ConnectionManager.h"
 
 Deserializer::Deserializer(unsigned char* buffer_to_deserialize)
 {

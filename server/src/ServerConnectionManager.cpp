@@ -151,7 +151,7 @@ void ServerConnectionManager::receiveHello()
 	// }
 
     // TO DO check username existance
-	deserializer.deserializeString(nonce, client_nonce_size);
+	deserializer.deserializeString(client_nonce, client_nonce_size);
 
 	free(hello_packet);
 	std::cout << "receiveHello() end" << std::endl;
@@ -170,10 +170,10 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
 	serializer.serializeInt(NONCE_SIZE);
-	serializer.serializeString(nonce, NONCE_SIZE);
-	serializer.serializeInt(sizeof(certificate_size));
-	serializer.serializeByteStream(certificate, certificate_size);
-	serializer.serializeInt(sizeof(ephemeral_public_key_size));
+	serializer.serializeString(server_nonce, NONCE_SIZE);
+	serializer.serializeInt(serialized_certificate_size);
+	serializer.serializeByteStream(serialized_certificate, serialized_certificate_size);
+	serializer.serializeInt(ephemeral_public_key_size);
 	serializer.serializeByteStream(ephemeral_public_key, 
 													ephemeral_public_key_size);
 	serializer.serializeInt(signature_size);
@@ -193,7 +193,7 @@ void ServerConnectionManager::sendHello()
 
 	std::cout << "sendHello() init" << std::endl;
 	// get nonce
-    CryptographyManager::getNonce(nonce);
+    CryptographyManager::getNonce(server_nonce);
 
 	// get certificate
 	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "r");
@@ -208,12 +208,12 @@ void ServerConnectionManager::sendHello()
 	// move the file pointer to the end of the file
 	fseek(certificate_file, 0, SEEK_END);
 	// returns the file pointer position
-	certificate_size = ftell(certificate_file);
+	unsigned long int certificate_size = ftell(certificate_file);
 	// move file pointer to the beginning of the file
 	fseek(certificate_file, 0, SEEK_SET);
 	
 	
-	certificate = (unsigned char*) calloc(1, certificate_size);
+	X509* certificate = (unsigned char*) calloc(1, certificate_size);
 
 	if(certificate == nullptr) 
 	{ 
@@ -233,6 +233,10 @@ void ServerConnectionManager::sendHello()
 	fclose(certificate_file);
 
 	// TO DO: handle free 
+
+	
+	serialized_certificate = 
+			CryptographyManager::serializeData(certificate, serialized_certificate_size);
 
 	// std::cout << "Creating the ephemeral private key" << std::endl;
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
@@ -257,7 +261,7 @@ void ServerConnectionManager::sendHello()
 	// building the message to be signed 
 	// std::cout << "building the message to sign" << std::endl;
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
 				CryptographyManager::getNonceSize());
 
 	// std::cout << "signing message" << std::endl;
