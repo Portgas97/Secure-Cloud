@@ -234,15 +234,9 @@ void ServerConnectionManager::sendHello()
 
 	// TO DO: handle free 
 
-	
-	//serialized_certificate = 
-	//		CryptographyManager::serializeData(certificate, serialized_certificate_size);
-
-	// std::cout << "Creating the ephemeral private key" << std::endl;
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
 
-	// std::cout << "Creating the ephemeral public key" << std::endl;
-	ephemeral_public_key = CryptographyManager::getPublicKey(
+	ephemeral_public_key = CryptographyManager::serializeKey(
 							ephemeral_private_key, 
 							ephemeral_public_key_size);
 
@@ -259,15 +253,12 @@ void ServerConnectionManager::sendHello()
 	}
 
 	// building the message to be signed 
-	// std::cout << "building the message to sign" << std::endl;
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
 	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
 				CryptographyManager::getNonceSize());
 
-	// std::cout << "signing message" << std::endl;
 	signature = CryptographyManager::signMessage(clear_message, 
 				clear_message_size, PRIVATE_KEY_FILENAME, signature_size);
-	// std::cout << "message signed" << std::endl;
 	
 	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
 

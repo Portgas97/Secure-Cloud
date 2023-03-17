@@ -94,7 +94,7 @@ EVP_PKEY* CryptographyManager::getPrivateKey()
 }
 
 
-unsigned char* CryptographyManager::getPublicKey(EVP_PKEY* private_key, 
+unsigned char* CryptographyManager::serializeKey(EVP_PKEY* private_key, 
                                                 unsigned int& public_key_size)
 {
 	// create new memory bio
@@ -250,19 +250,6 @@ EVP_PKEY* CryptographyManager::deserializeKey(unsigned char* key,
     }
     BIO_free(bio);
     return deserialized_key;
-}
-
- unsigned char* CryptographyManager::serializeData(X509* certificate, 
-                                                unsigned int &certificate_size)
-{
-    BIO *bio = BIO_new(BIO_s_mem());
-    PEM_write_bio_X509(bio, certificate);
-
-    unsigned char* bio_data;
-    certificate_size = BIO_get_mem_data(bio, &bio_data);
-
-    BIO_free(bio);
-    return bio_data;
 }
 
 void CryptographyManager::verifyCertificate(X509* certificate)

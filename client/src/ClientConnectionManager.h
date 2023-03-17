@@ -8,10 +8,9 @@ class ClientConnectionManager: public ConnectionManager
         ClientConnectionManager();
         ~ClientConnectionManager();
 
-        // connect();
-
         void sendHello();
         void receiveHello();
+		void sendFinalHandshakeMessage();		
 
     private:
         static const unsigned int MAX_USERNAME_SIZE = 50;
