@@ -100,11 +100,13 @@ void ServerConnectionManager::acceptRequest()
 
 void ServerConnectionManager::serveClient(int client_socket)
 {
-	ServerConnectionManager requestHandler =
+	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
 
-    requestHandler.receiveHello();
-	requestHandler.sendHello();
+    request_handler.receiveHello();
+	request_handler.sendHello();
+	request_handler.receiveFinalHandshakeMessage();
+	
 }
 
 
@@ -114,47 +116,37 @@ void ServerConnectionManager::serveClient(int client_socket)
 */
 void ServerConnectionManager::receiveHello()
 {
-	std::cout << "receiveHello() init" << std::endl;
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
 	Deserializer deserializer = Deserializer(hello_packet);
 		
 	// received_packet: username_size | username | nonce_size | nonce
-	unsigned int username_size = deserializer.deserializeInt();
+	unsigned int logged_user_username_size = deserializer.deserializeInt();
 
-	char* username = (char*)calloc(1, username_size);
+	logged_user_username = (char*)calloc(1, logged_user_username_size);
 
-	if(username == nullptr)
+	if(logged_user_username == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-	deserializer.deserializeString(username, username_size);
-	std::cout << "received username: " << username << std::endl;
+	deserializer.deserializeString(logged_user_username, 
+									logged_user_username_size);
 
 	unsigned int client_nonce_size = deserializer.deserializeInt();
 
 	if(client_nonce_size != NONCE_SIZE)
 	{
-		std::cout << "client_nonce_size: " << client_nonce_size << ", NONCE_SIZE: " << NONCE_SIZE << std::endl;
 		std::cout << "Error in nonce size reception" << std::endl;
 		exit(1);
 	}
-	// char* received_nonce = (char*)calloc(1, client_nonce_size);
-
-	// if(received_nonce == nullptr)
-	// {
-	// 	std::cout << "Error in calloc" << std::endl;
-	// 	exit(1);
-	// }
 
     // TO DO check username existance
 	deserializer.deserializeString(client_nonce, client_nonce_size);
 
 	free(hello_packet);
-	std::cout << "receiveHello() end" << std::endl;
 
 }
 
@@ -190,8 +182,6 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 */
 void ServerConnectionManager::sendHello()
 {
-
-	std::cout << "sendHello() init" << std::endl;
 	// get nonce
     CryptographyManager::getNonce(server_nonce);
 
@@ -245,7 +235,8 @@ void ServerConnectionManager::sendHello()
 	unsigned int clear_message_size =  ephemeral_public_key_size 
 						+ CryptographyManager::getNonceSize();
 
-	unsigned char* clear_message = (unsigned char*) calloc(1, clear_message_size);
+	unsigned char* clear_message = (unsigned char*) calloc(1, 
+														clear_message_size);
 	if(clear_message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
@@ -268,14 +259,90 @@ void ServerConnectionManager::sendHello()
 		exit(1);
 	}
 
-	std::cout << "call to getHelloPacket()" << std::endl;
 	unsigned int hello_packet_size = getHelloPacket(hello_packet);
 
     sendPacket(hello_packet, hello_packet_size);
 	free(hello_packet);
 	free(signature);
 	free(clear_message);
-	std::cout << "sendHello() end" << std::endl;
 
 }
 
+void ServerConnectionManager::receiveFinalHandshakeMessage()
+{
+	unsigned char* final_handshake_message = nullptr;
+	receivePacket(final_handshake_message);
+
+	Deserializer deserializer = Deserializer(final_handshake_message);
+
+	unsigned int ephemeral_client_key_size = deserializer.deserializeInt();
+    unsigned char* ephemeral_client_key = (unsigned char*)calloc(1, 
+                                                    ephemeral_client_key_size);
+    if(ephemeral_client_key == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+    deserializer.deserializeByteStream(ephemeral_client_key, 
+                                                    ephemeral_client_key_size);
+	EVP_PKEY* deserialized_ephemeral_client_key =
+                    CryptographyManager::deserializeKey(ephemeral_client_key,
+                                                    ephemeral_client_key_size);
+
+    unsigned int client_signature_size = deserializer.deserializeInt();
+    unsigned char* client_signature = (unsigned char*)calloc(1, 
+                                                    client_signature_size);
+    if(client_signature == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+    deserializer.deserializeByteStream(client_signature, 
+                                                    client_signature_size);
+
+
+	// build the message to check: key | server_nonce
+    unsigned int clear_message_size = ephemeral_client_key_size 
+                                    + CryptographyManager::getNonceSize();
+    unsigned char *clear_message = (unsigned char*)calloc(1, 
+                                                    clear_message_size);
+    if(clear_message == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+    memcpy(clear_message, ephemeral_client_key, ephemeral_client_key_size);
+    memcpy(clear_message + ephemeral_client_key_size, server_nonce, 
+                            CryptographyManager::getNonceSize());
+
+	// read the client public key from file
+
+    // build the client public key filename concatenating the prefix, 
+	// the client username and the suffix
+    char client_public_key_filename[MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE];
+    strcpy(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_PREFIX);
+    strcat(client_public_key_filename, logged_user_username);
+    strcat(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_SUFFIX);
+
+	EVP_PKEY* client_public_key = PEM_read_PUBKEY(client_public_key_filename,
+													nullptr,
+													nullptr,
+													nullptr);
+
+    cryptography_manager.verifySignature(client_signature, client_signature_size, 
+                                        clear_message, clear_message_size, 
+                                        client_public_key);
+
+	free(client_public_key);
+
+	// TO DO: evaluate if it's better shared_secret as variable name
+	unsigned int shared_key_size;
+	unsigned char* shared_key = CryptographyManager::getSharedKey
+											(ephemeral_private_key,
+											deserialized_ephemeral_client_key,
+											shared_key_size);
+	// key derivation
+	
+	
+}

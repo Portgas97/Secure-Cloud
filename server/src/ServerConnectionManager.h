@@ -13,15 +13,20 @@ class ServerConnectionManager: public ConnectionManager
 
 
     private:
+		char* logged_user_username;
+
 		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
+		const char* CLIENT_PUBLIC_KEY_FILENAME_PREFIX = "server/files/";
+		const char* CLIENT_PUBLIC_KEY_FILENAME_SUFFIX = "_key.pem";
+
+		// TO DO: change this constant
+		const unsigned int MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE = 2048;
 
         unsigned char* certificate;
         unsigned long int certificate_size;
-        EVP_PKEY* ephemeral_private_key;
-        unsigned char* ephemeral_public_key;
-        unsigned int ephemeral_public_key_size;
 
+		EVP_PKEY* ephemeral_private_key;
 
         //  nonce_size   | nonce | certificate_size  | certificate   | 
         //  key_size     | key   | signature_size    | signature     |
@@ -42,7 +47,8 @@ class ServerConnectionManager: public ConnectionManager
         void serveClient(int);
         void sendHello();
         void receiveHello();
-        unsigned int getHelloPacket(unsigned char*);        
+		void receiveFinalHandshakeMessage();
+        unsigned int getHelloPacket(unsigned char*);       
         
 };
 

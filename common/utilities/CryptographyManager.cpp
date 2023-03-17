@@ -402,4 +402,54 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
     X509_free(certification_authority_certificate);
     X509_CRL_free(certification_authority_crl);
 }
-                                
+ 
+unsigned char* CryptographyManager::getSharedKey(EVP_PKEY* private_key,
+												EVP_PKEY* public_key,
+												unsigned int& shared_key_size)
+{
+    EVP_PKEY_CTX *context = EVP_PKEY_CTX_new(private_key, nullptr);
+
+	int return_value = EVP_PKEY_derive_init(context);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in key derivation" << std::endl;
+		exit(1);
+    }
+
+	return_value = EVP_PKEY_derive_set_peer(context, public_key);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in key derivation" << std::endl;
+		exit(1);
+    }
+
+    unsigned char *shared_key;
+
+	return_value = EVP_PKEY_derive(context, nullptr, &shared_key_size);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in key derivation" << std::endl;
+		exit(1);
+    }
+
+    shared_key = (unsigned char *) calloc(1, shared_key_size);
+    if (shared_key == nullptr) 
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+    }
+
+	return_value = EVP_PKEY_derive(context, shared_key, &shared_key_size)
+    if (return_value != 1) 
+	{
+		std::cout << "Error in key derivation" << std::endl;
+		exit(1);
+    }
+
+    EVP_PKEY_CTX_free(context);
+    EVP_PKEY_free(private_key);
+
+    return shared_key;
+
+}
+                               

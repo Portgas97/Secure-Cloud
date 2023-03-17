@@ -24,10 +24,6 @@ class ClientConnectionManager: public ConnectionManager
         // TO DO: change this constant
         const unsigned int MAX_FINAL_HANDSHAKE_MESSAGE_SIZE = 2048;
 
-
-        unsigned char* serialized_private_key;
-        unsigned int serialized_private_key_size;
-		
         char username[MAX_USERNAME_SIZE];
         
         // username_size_size + nonce_size_size + max_username_size + nonce_size

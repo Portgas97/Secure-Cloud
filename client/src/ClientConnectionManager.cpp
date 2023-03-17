@@ -159,7 +159,6 @@ void ClientConnectionManager::receiveHello()
 
     deserializer.deserializeByteStream(server_certificate, 
                                                     server_certificate_size);
-    std::cout << std::endl;
 
     X509* deserialized_server_certificate = 
                         CryptographyManager::deserializeCertificate(server_certificate, 
@@ -220,15 +219,14 @@ void ClientConnectionManager::receiveHello()
 
 void ClientConnectionManager::sendFinalHandshakeMessage()
 {
-	EVP_PKEY* private_key = CryptographyManager::getPrivateKey();
+    EVP_PKEY* ephemeral_private_key = CryptographyManager::getPrivateKey();
 
-    int serialized_private_key_size;
-    unsigned char* serialized_private_key = 
-                                CryptographyManager::serializeKey(private_key,
-                                                serialized_private_key_size);
+	ephemeral_public_key = CryptographyManager::serializeKey
+												(ephemeral_private_key,
+                                                ephemeral_private_key_size);
 
     // message to sign: client_private_key | server_nonce                                                
-    unsigned int clear_message_size =  serialized_private_key_size 
+    unsigned int clear_message_size =  ephemeral_private_key_size 
 						                + CryptographyManager::getNonceSize();
 
 	unsigned char* clear_message = (unsigned char*) 
@@ -240,8 +238,8 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 	}
 
 	// building the message to be signed 
-	memcpy(clear_message, serialized_private_key, serialized_private_key_size);
-	memcpy(clear_message + serialized_private_key_size, &server_nonce, 
+	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
+	memcpy(clear_message + ephemeral_public_key_size, &server_nonce, 
                                 CryptographyManager::getNonceSize());
 
     signature_size;
@@ -280,9 +278,8 @@ unsigned int ClientConnectionManager::getFinalHandshakeMessage
 
     // final_handshake_message: 
     // key_size | key | signature_size | signature
-	serializer.serializeInt(serialized_private_key_size);
-	serializer.serializeString(serialized_private_key, 
-                                serialized_private_key_size);
+	serializer.serializeInt(ephemeral_private_key_size);
+	serializer.serializeString(ephemeral_public_key, ephemeral_public_key_size);
     serializer.serializeInt(signature_size);
     serializer.serializeString(signature, signature_size);
                         

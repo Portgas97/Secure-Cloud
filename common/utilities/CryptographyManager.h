@@ -19,6 +19,7 @@ class CryptographyManager
         CryptographyManager();
         static void getNonce(char*);
         static unsigned int getNonceSize();
+		static unsigned char* getSharedKey(EVP_PKEY*, EVP_PKEY*, unsigned int&);
 	    static EVP_PKEY* getPrivateKey();
         static unsigned char* serializeKey(EVP_PKEY*, unsigned int&);
         static X509* deserializeCertificate(unsigned char*, unsigned int);

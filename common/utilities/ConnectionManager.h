@@ -36,8 +36,12 @@ class ConnectionManager
         const static int NONCE_SIZE = 16;
         char client_nonce[NONCE_SIZE];
         char server_nonce[NONCE_SIZE];
+        const unsigned int MAX_USERNAME_SIZE = 50;
+        char username[MAX_USERNAME_SIZE];
         unsigned char* signature;
         unsigned int signature_size;
+        unsigned char* ephemeral_public_key;
+        unsigned int ephemeral_public_key_size;
 
         
         virtual void createConnection() = 0;
