@@ -36,6 +36,9 @@ class ConnectionManager
         const static int NONCE_SIZE = 16;
         char client_nonce[NONCE_SIZE];
         char server_nonce[NONCE_SIZE];
+        unsigned char* signature;
+        unsigned int signature_size;
+
         
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

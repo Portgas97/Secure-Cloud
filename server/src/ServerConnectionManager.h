@@ -13,7 +13,6 @@ class ServerConnectionManager: public ConnectionManager
 
 
     private:
-        // TO DO, changed, probably wants relative paths with respect to the executable (?)
 		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
 
@@ -22,8 +21,6 @@ class ServerConnectionManager: public ConnectionManager
         EVP_PKEY* ephemeral_private_key;
         unsigned char* ephemeral_public_key;
         unsigned int ephemeral_public_key_size;
-        unsigned char* signature;
-        unsigned int signature_size;
 
 
         //  nonce_size   | nonce | certificate_size  | certificate   | 

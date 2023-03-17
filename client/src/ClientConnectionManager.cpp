@@ -95,10 +95,12 @@ unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet
     // hello_packet: username_size | username | nonce_size | nonce
 	serializer.serializeInt(strlen(username) + 1);
  	serializer.serializeString(username, strlen(username) + 1);
-    std::cout << "int to serialize: " << CryptographyManager::getNonceSize() << std::endl;
+    std::cout << "int to serialize: " << CryptographyManager::getNonceSize() 
+                                                                << std::endl;
     std::cout << "string to serialize: " << client_nonce << std::endl;
 	serializer.serializeInt(CryptographyManager::getNonceSize());
-	serializer.serializeString(client_nonce, CryptographyManager::getNonceSize());
+	serializer.serializeString(client_nonce, 
+                                        CryptographyManager::getNonceSize());
 
 	return serializer.getOffset();	
 }
@@ -218,5 +220,71 @@ void ClientConnectionManager::receiveHello()
 
 void ClientConnectionManager::sendFinalHandshakeMessage()
 {
+	EVP_PKEY* private_key = CryptographyManager::getPrivateKey();
+
+    int serialized_private_key_size;
+    unsigned char* serialized_private_key = 
+                                CryptographyManager::serializeKey(private_key,
+                                                serialized_private_key_size);
+
+    // message to sign: client_private_key | server_nonce                                                
+    unsigned int clear_message_size =  serialized_private_key_size 
+						                + CryptographyManager::getNonceSize();
+
+	unsigned char* clear_message = (unsigned char*) 
+									calloc(1, clear_message_size);
+	if(clear_message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	// building the message to be signed 
+	memcpy(clear_message, serialized_private_key, serialized_private_key_size);
+	memcpy(clear_message + serialized_private_key_size, &server_nonce, 
+                                CryptographyManager::getNonceSize());
+
+    signature_size;
+
+    // build the private key filename concatenating the prefix, the username
+    // and the suffix
+    char private_key_filename[MAX_PRIVATE_KEY_FILENAME_SIZE];
+    strcpy(private_key_filename, PRIVATE_KEY_FILENAME_PREFIX);
+    strcat(private_key_filename, username);
+    strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
+
+	signature = CryptographyManager::signMessage(clear_message, 
+				clear_message_size, private_key_filename, signature_size);
 	
+    unsigned char* final_handshake_message = 
+                    (unsigned char*)calloc(1, MAX_FINAL_HANDSHAKE_MESSAGE_SIZE);
+
+    if (final_handshake_message == nullptr) 
+    {
+        std::cout << "Error in hello packet calloc\n";
+        exit(1);
+    }
+
+    unsigned int final_handshake_message_size = 
+                            getFinalHandshakeMessage(final_handshake_message);
+
+    sendPacket(final_handshake_message, final_handshake_message_size);
+
+	free(final_handshake_message);
+}
+
+unsigned int ClientConnectionManager::getFinalHandshakeMessage
+                                    (unsigned char* final_handshake_message)
+{
+	Serializer serializer = Serializer(final_handshake_message);
+
+    // final_handshake_message: 
+    // key_size | key | signature_size | signature
+	serializer.serializeInt(serialized_private_key_size);
+	serializer.serializeString(serialized_private_key, 
+                                serialized_private_key_size);
+    serializer.serializeInt(signature_size);
+    serializer.serializeString(signature, signature_size);
+                        
+	return serializer.getOffset();	
 }
