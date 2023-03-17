@@ -23,7 +23,8 @@ class CryptographyManager
         static unsigned char* getPublicKey(EVP_PKEY*, unsigned int&);
         static unsigned char* signMessage(unsigned char*, int, const char*,
                                                      unsigned int&);
-        static X509* deserializeData(unsigned char*, unsigned int);
+        static X509* deserializeCertificate(unsigned char*, unsigned int);
+        static EVP_PKEY* deserializeKey(unsigned char*, unsigned int);
         static unsigned char* serializeData(X509*, unsigned int &);
         void verifyCertificate(X509*);
         void verifySignature(unsigned char*, unsigned int, unsigned char*,

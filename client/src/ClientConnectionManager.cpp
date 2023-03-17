@@ -188,10 +188,9 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(server_certificate, 
                                                     server_certificate_size);
     std::cout << std::endl;
-    printBuffer(server_certificate, server_certificate_size);
 
     X509* deserialized_server_certificate = 
-                        CryptographyManager::deserializeData(server_certificate, 
+                        CryptographyManager::deserializeCertificate(server_certificate, 
                                                         server_certificate_size);
 
     CryptographyManager cryptography_manager = CryptographyManager();
@@ -210,9 +209,9 @@ void ClientConnectionManager::receiveHello()
     }
     deserializer.deserializeByteStream(ephemeral_server_key, 
                                                     ephemeral_server_key_size);
-
-    X509* deserialized_ephemeral_server_key =
-                    CryptographyManager::deserializeData(ephemeral_server_key,
+    
+	EVP_PKEY* deserialized_ephemeral_server_key =
+                    CryptographyManager::deserializeKey(ephemeral_server_key,
                                                     ephemeral_server_key_size);
 
     unsigned int server_signature_size = deserializer.deserializeInt();

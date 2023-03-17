@@ -1,4 +1,3 @@
-
 #include "CryptographyManager.h"
 
 CryptographyManager::CryptographyManager()
@@ -210,26 +209,47 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
 }     
 
 // TO DO: change name and location?
-X509* CryptographyManager::deserializeData(unsigned char* data_buffer, 
-                                                unsigned int data_buffer_size)
+X509* CryptographyManager::deserializeCertificate(unsigned char* certificate, 
+                                                unsigned int certificate_size)
 {
     BIO *bio = BIO_new(BIO_s_mem());
-    int return_value = BIO_write(bio, data_buffer, data_buffer_size);
+    int return_value = BIO_write(bio, certificate, certificate_size);
     if (return_value == 0) 
     {
         std::cout << "Error in data deserialization" << std::endl;
         exit(1);
     }
-    X509 *data = nullptr;
-    PEM_read_bio_X509(bio, &data, 0, nullptr);
-    
-    if (data == nullptr) 
+	X509* deserialized_certificate = PEM_read_bio_X509(bio, nullptr, nullptr, 
+																	nullptr);
+    if (deserialized_certificate == nullptr) 
     {
-        std::cout << "PEM_read_bio_X509 error";
+		std::cout << "Error in data deserialization" << std::endl;
         exit(1);
     }
     BIO_free(bio);
-    return data;
+    return deserialized_certificate;
+}
+
+EVP_PKEY* CryptographyManager::deserializeKey(unsigned char* key, 
+                                                unsigned int key_size)
+{
+    BIO *bio = BIO_new(BIO_s_mem());
+    int return_value = BIO_write(bio, key, key_size);
+    if (return_value == 0) 
+    {
+        std::cout << "Error in data deserialization" << std::endl;
+        exit(1);
+    }
+
+	EVP_PKEY* deserialized_key = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, 
+																	nullptr);
+    if (deserialized_key == nullptr) 
+    {
+		std::cout << "Error in data deserialization" << std::endl;
+        exit(1);
+    }
+    BIO_free(bio);
+    return deserialized_key;
 }
 
  unsigned char* CryptographyManager::serializeData(X509* certificate, 

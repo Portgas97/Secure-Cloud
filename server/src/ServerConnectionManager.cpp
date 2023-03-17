@@ -171,8 +171,8 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
     // signature_size | signature
 	serializer.serializeInt(NONCE_SIZE);
 	serializer.serializeString(server_nonce, NONCE_SIZE);
-	serializer.serializeInt(serialized_certificate_size);
-	serializer.serializeByteStream(serialized_certificate, serialized_certificate_size);
+	serializer.serializeInt(certificate_size);
+	serializer.serializeByteStream(certificate, certificate_size);
 	serializer.serializeInt(ephemeral_public_key_size);
 	serializer.serializeByteStream(ephemeral_public_key, 
 													ephemeral_public_key_size);
@@ -208,12 +208,12 @@ void ServerConnectionManager::sendHello()
 	// move the file pointer to the end of the file
 	fseek(certificate_file, 0, SEEK_END);
 	// returns the file pointer position
-	unsigned long int certificate_size = ftell(certificate_file);
+	certificate_size = ftell(certificate_file);
 	// move file pointer to the beginning of the file
 	fseek(certificate_file, 0, SEEK_SET);
 	
 	
-	X509* certificate = (unsigned char*) calloc(1, certificate_size);
+	certificate = (unsigned char*) calloc(1, certificate_size);
 
 	if(certificate == nullptr) 
 	{ 
@@ -235,8 +235,8 @@ void ServerConnectionManager::sendHello()
 	// TO DO: handle free 
 
 	
-	serialized_certificate = 
-			CryptographyManager::serializeData(certificate, serialized_certificate_size);
+	//serialized_certificate = 
+	//		CryptographyManager::serializeData(certificate, serialized_certificate_size);
 
 	// std::cout << "Creating the ephemeral private key" << std::endl;
 	ephemeral_private_key = CryptographyManager::getPrivateKey();

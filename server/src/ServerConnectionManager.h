@@ -17,8 +17,8 @@ class ServerConnectionManager: public ConnectionManager
 		const char* CERTIFICATE_FILENAME = "server/files/Server_cert.pem";
         const char* PRIVATE_KEY_FILENAME = "server/files/Server_key.pem";
 
-        unsigned char* serialized_certificate;
-        unsigned long int serialized_certificate_size;
+        unsigned char* certificate;
+        unsigned long int certificate_size;
         EVP_PKEY* ephemeral_private_key;
         unsigned char* ephemeral_public_key;
         unsigned int ephemeral_public_key_size;
@@ -33,8 +33,8 @@ class ServerConnectionManager: public ConnectionManager
         const unsigned int MAX_HELLO_SIZE = 
                                 sizeof(CryptographyManager::getNonceSize())
                                 + CryptographyManager::getNonceSize()
-                                + sizeof(serialized_certificate_size)
-                                + serialized_certificate_size
+                                + sizeof(certificate_size)
+                                + certificate_size
                                 + sizeof(ephemeral_public_key_size)
                                 + ephemeral_public_key_size
                                 + sizeof(signature)
