@@ -19,16 +19,18 @@ class CryptographyManager
         CryptographyManager();
         static void getNonce(char*);
         static unsigned int getNonceSize();
-		static unsigned char* getSharedKey(EVP_PKEY*, EVP_PKEY*, unsigned int&);
+		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
+											size_t*);
+		static unsigned char* getSharedKey(unsigned char*, unsigned int);
 	    static EVP_PKEY* getPrivateKey();
         static unsigned char* serializeKey(EVP_PKEY*, unsigned int&);
         static X509* deserializeCertificate(unsigned char*, unsigned int);
         static EVP_PKEY* deserializeKey(unsigned char*, unsigned int);
         static unsigned char* signMessage(unsigned char*, int, const char*,
-                                                     unsigned int&);
+                                         unsigned int&);
         void verifyCertificate(X509*);
-        void verifySignature(unsigned char*, unsigned int, unsigned char*,
-                                 unsigned int, EVP_PKEY*);
+        static void verifySignature(unsigned char*, unsigned int, 
+									unsigned char*, unsigned int, EVP_PKEY*);
      
     private:
         const static int NONCE_SIZE = 16;
@@ -37,9 +39,12 @@ class CryptographyManager
                             "common/files/FoundationsOfCybersecurity_cert.pem"; 
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
                             "common/files/FoundationsOfCybersecurity_crl.pem";
+		static const unsigned int SHARED_KEY_SIZE = 128;
+
         X509_STORE* certification_authority_store = nullptr;
         
         void loadCertificationAuthorityCertificate();
+		static void unoptimizedMemset(unsigned char*, size_t);
 
                                     
 };

@@ -102,11 +102,16 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
+	request_handler.handleHandshake();
+    
+}
 
-    request_handler.receiveHello();
-	request_handler.sendHello();
-	request_handler.receiveFinalHandshakeMessage();
-	
+void ServerConnectionManager::handleHandshake()
+{
+	receiveHello();
+	sendHello();
+	receiveFinalMessage();
+	setSharedKey();
 }
 
 
@@ -222,10 +227,7 @@ void ServerConnectionManager::sendHello()
 
 	fclose(certificate_file);
 
-	// TO DO: handle free 
-
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
-
 	ephemeral_public_key = CryptographyManager::serializeKey(
 							ephemeral_private_key, 
 							ephemeral_public_key_size);
@@ -268,8 +270,9 @@ void ServerConnectionManager::sendHello()
 
 }
 
-void ServerConnectionManager::receiveFinalHandshakeMessage()
+void ServerConnectionManager::receiveFinalMessage()
 {
+	std::cout << "start receivaFinalMessage" << std::endl;
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
 
@@ -285,7 +288,7 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
     }
     deserializer.deserializeByteStream(ephemeral_client_key, 
                                                     ephemeral_client_key_size);
-	EVP_PKEY* deserialized_ephemeral_client_key =
+	deserialized_ephemeral_client_key =
                     CryptographyManager::deserializeKey(ephemeral_client_key,
                                                     ephemeral_client_key_size);
 
@@ -300,12 +303,15 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
     deserializer.deserializeByteStream(client_signature, 
                                                     client_signature_size);
 
+	std::cout << "client_signature: " << std::endl;
+	printBuffer(client_signature, client_signature_size);
 
 	// build the message to check: key | server_nonce
     unsigned int clear_message_size = ephemeral_client_key_size 
                                     + CryptographyManager::getNonceSize();
     unsigned char *clear_message = (unsigned char*)calloc(1, 
                                                     clear_message_size);
+	
     if(clear_message == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
@@ -316,33 +322,58 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
     memcpy(clear_message + ephemeral_client_key_size, server_nonce, 
                             CryptographyManager::getNonceSize());
 
+	std::cout << "message that should be signed: " << std::endl;
+	printBuffer(clear_message, clear_message_size);
+
 	// read the client public key from file
 
     // build the client public key filename concatenating the prefix, 
 	// the client username and the suffix
-    char client_public_key_filename[MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE];
+    char* client_public_key_filename = (char*)
+								calloc(1, MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE);
+	if(client_public_key_filename == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
     strcpy(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_PREFIX);
     strcat(client_public_key_filename, logged_user_username);
     strcat(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_SUFFIX);
 
-	EVP_PKEY* client_public_key = PEM_read_PUBKEY(client_public_key_filename,
+	std::cout << "filename: " << client_public_key_filename << std::endl;
+
+	FILE* client_public_key_file = fopen(client_public_key_filename, "r");
+	if(client_public_key_file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}
+	EVP_PKEY* client_public_key = PEM_read_PUBKEY(client_public_key_file,
 													nullptr,
 													nullptr,
 													nullptr);
 
-    cryptography_manager.verifySignature(client_signature, client_signature_size, 
+	fclose(client_public_key_file);
+
+    CryptographyManager::verifySignature(client_signature,client_signature_size, 
                                         clear_message, clear_message_size, 
                                         client_public_key);
 
-	free(client_public_key);
+	free(client_public_key);	
+	std::cout << "end receiveFinalMessage" << std::endl;
+}
 
-	// TO DO: evaluate if it's better shared_secret as variable name
-	unsigned int shared_key_size;
-	unsigned char* shared_key = CryptographyManager::getSharedKey
+void ServerConnectionManager::setSharedKey()
+{
+	// derive shared secret that will be used to derive the session key
+	size_t shared_secret_size;
+	unsigned char* shared_secret = CryptographyManager::getSharedSecret
 											(ephemeral_private_key,
 											deserialized_ephemeral_client_key,
-											shared_key_size);
-	// key derivation
-	
-	
+											&shared_secret_size);
+	// derive session key
+	shared_key = CryptographyManager::getSharedKey(shared_secret, 
+													shared_secret_size);
+
 }

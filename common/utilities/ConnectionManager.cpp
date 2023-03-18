@@ -18,8 +18,6 @@ void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_s
     std::cout << std::endl;
 }
 
-
-
 /*
     it receives packet from the sender by receiving first the packet size, then
     the data packet and it returns the received data packet

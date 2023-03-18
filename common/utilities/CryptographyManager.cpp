@@ -1,4 +1,5 @@
 #include "CryptographyManager.h"
+#include "ConnectionManager.h"
 
 CryptographyManager::CryptographyManager()
 {
@@ -136,11 +137,6 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
                                             const char* private_key_filename,
                                             unsigned int& signature_size)
 {
-
-    // std::cout << "message: " << reinterpret_cast<void*>(message) << std::endl;
-    // std::cout << "message_size: " << message_size << std::endl;
-    // std::cout << "private_key_filename: " << private_key_filename << std::endl;
-    
     // load private key
     FILE* private_key_file = fopen(private_key_filename, "r");
     if(private_key_file == nullptr)
@@ -158,6 +154,11 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         std::cout << "Error in reading private key" << std::endl;
         exit(1); 
     }
+
+	unsigned char* tmp = (unsigned char*)calloc(1,EVP_PKEY_size(private_key));
+	memcpy(tmp, private_key, EVP_PKEY_size(private_key));
+	std::cout << "Private key: " << std::endl;
+	ConnectionManager::printBuffer(tmp, EVP_PKEY_size(private_key)); // TO DO: delete include
 
     // declare some useful variables
     const EVP_MD* message_digest = EVP_sha256();
@@ -201,7 +202,7 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         exit(1);
     }
 
-    // delete the digest and the private key from memory
+    // delete the message_digest_buffer and the private key from memory
     EVP_MD_CTX_free(signature_context);
     EVP_PKEY_free(private_key);
 
@@ -261,7 +262,8 @@ void CryptographyManager::verifyCertificate(X509* certificate)
         exit(1);
     }
     
-    int return_value = X509_STORE_CTX_init(context, certification_authority_store,
+    int return_value = X509_STORE_CTX_init(context, 
+											certification_authority_store,
                                             certificate, nullptr);
     if (return_value != 1) 
     {
@@ -403,53 +405,126 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
     X509_CRL_free(certification_authority_crl);
 }
  
-unsigned char* CryptographyManager::getSharedKey(EVP_PKEY* private_key,
+unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 												EVP_PKEY* public_key,
-												unsigned int& shared_key_size)
+												size_t* shared_secret_size)
 {
     EVP_PKEY_CTX *context = EVP_PKEY_CTX_new(private_key, nullptr);
 
 	int return_value = EVP_PKEY_derive_init(context);
     if (return_value != 1) 
 	{
-		std::cout << "Error in key derivation" << std::endl;
+		std::cout << "Error in shared secret derivation" << std::endl;
 		exit(1);
     }
 
 	return_value = EVP_PKEY_derive_set_peer(context, public_key);
     if (return_value != 1) 
 	{
-		std::cout << "Error in key derivation" << std::endl;
+		std::cout << "Error in shared secret derivation" << std::endl;
 		exit(1);
     }
 
-    unsigned char *shared_key;
+    unsigned char *shared_secret = nullptr;
+	size_t local_shared_secret_size;
 
-	return_value = EVP_PKEY_derive(context, nullptr, &shared_key_size);
+	return_value = EVP_PKEY_derive(context, nullptr, &local_shared_secret_size);
     if (return_value != 1) 
 	{
-		std::cout << "Error in key derivation" << std::endl;
+		std::cout << "Error in shared secret derivation" << std::endl;
 		exit(1);
     }
 
-    shared_key = (unsigned char *) calloc(1, shared_key_size);
-    if (shared_key == nullptr) 
+    shared_secret = (unsigned char *) calloc(1, local_shared_secret_size);
+    if (shared_secret == nullptr) 
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
     }
 
-	return_value = EVP_PKEY_derive(context, shared_key, &shared_key_size)
+	return_value = EVP_PKEY_derive(context, shared_secret, 
+													&local_shared_secret_size);
     if (return_value != 1) 
 	{
-		std::cout << "Error in key derivation" << std::endl;
+		std::cout << "Error in shared secret derivation" << std::endl;
 		exit(1);
     }
 
     EVP_PKEY_CTX_free(context);
     EVP_PKEY_free(private_key);
 
-    return shared_key;
+	*shared_secret_size = local_shared_secret_size;
 
+    return shared_secret;
 }
-                               
+
+unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret, 
+												unsigned int shared_secret_size) 
+{
+    const EVP_MD *message_digest = EVP_sha256();
+
+    unsigned char* message_digest_buffer = (unsigned char *) calloc(1, 
+												EVP_MD_size(message_digest));
+    if (message_digest_buffer == nullptr) 
+	{
+		std :: cout << "Error in calloc" << std::endl;
+		exit(1);
+    }
+
+    EVP_MD_CTX *context = EVP_MD_CTX_new();
+	int return_value = EVP_DigestInit(context, message_digest);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in shared key derivation" << std::endl;
+		exit(1);
+    }
+
+	return_value = EVP_DigestUpdate(context, (unsigned char *)shared_secret, 
+									shared_secret_size);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in shared key derivation" << std::endl;
+		exit(1);
+    }
+
+    unsigned int message_digest_buffer_size;
+	return_value = EVP_DigestFinal(context, 
+									(unsigned char *)message_digest_buffer, 
+									&message_digest_buffer_size);
+    if (return_value != 1) 
+	{
+		std::cout << "Error in shared key derivation" << std::endl;
+		exit(1);
+    }
+
+    EVP_MD_CTX_free(context);
+
+    // clean up the shared secret
+	unoptimizedMemset(shared_secret, shared_secret_size);
+    free(shared_secret);
+
+    unsigned char* shared_key = (unsigned char *) calloc(1, SHARED_KEY_SIZE);
+    if (shared_key == nullptr) 
+	{
+		std :: cout << "Error in calloc" << std::endl;
+		exit(1);
+    }
+    memcpy(shared_key, message_digest_buffer, SHARED_KEY_SIZE);
+
+    // clean up message_digest_buffer
+	unoptimizedMemset(message_digest_buffer, EVP_MD_size(message_digest));
+    free(message_digest_buffer);
+
+    return shared_key;
+}
+
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
+void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer, 
+						size_t memory_buffer_size)
+{
+	memset(memory_buffer, 0, memory_buffer_size);
+}
+
+#pragma GCC pop_options                           

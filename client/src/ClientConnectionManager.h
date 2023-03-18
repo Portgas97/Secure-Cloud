@@ -7,24 +7,24 @@ class ClientConnectionManager: public ConnectionManager
     public:
         ClientConnectionManager();
         ~ClientConnectionManager();
-
-        void sendHello();
-        void receiveHello();
-		void sendFinalHandshakeMessage();		
+		void handleHandshake();	
 
     private:
-        const unsigned int MAX_USERNAME_SIZE = 50;
-        const char* PRIVATE_KEY_FILENAME_SUFFIX = "_key.pem";
+        const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
         const unsigned int MAX_PRIVATE_KEY_FILENAME_SIZE = 
                                 strlen(PRIVATE_KEY_FILENAME_PREFIX) + 
                                 MAX_USERNAME_SIZE +
                                 strlen(PRIVATE_KEY_FILENAME_SUFFIX) + 1;
 
-        // TO DO: change this constant
-        const unsigned int MAX_FINAL_HANDSHAKE_MESSAGE_SIZE = 2048;
+        const unsigned int MAX_FINAL_HANDSHAKE_MESSAGE_SIZE =                                 
+                                sizeof(ephemeral_public_key_size)
+                                + ephemeral_public_key_size
+                                + sizeof(signature)
+                                + signature_size;
 
         char username[MAX_USERNAME_SIZE];
+		EVP_PKEY* deserialized_ephemeral_server_key;
         
         // username_size_size + nonce_size_size + max_username_size + nonce_size
         const unsigned int MAX_HELLO_SIZE = 
@@ -36,8 +36,12 @@ class ClientConnectionManager: public ConnectionManager
         void createConnection();
         void destroyConnection();
         void obtainUsername();
+        void sendHello();
+        void receiveHello();
+		void sendFinalMessage();
+		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
-        unsigned int getFinalHandshakeMessage(unsigned char*);
+        unsigned int getFinalMessage(unsigned char*);
         
 
 };

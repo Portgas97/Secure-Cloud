@@ -83,6 +83,14 @@ void ClientConnectionManager::obtainUsername()
 
 }
 
+void ClientConnectionManager::handleHandshake()
+{
+    sendHello();
+    receiveHello();
+	sendFinalMessage();
+	setSharedKey();
+}
+
 
 /*
     it creates the hello packet and returns it.
@@ -181,7 +189,7 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(ephemeral_server_key, 
                                                     ephemeral_server_key_size);
     
-	EVP_PKEY* deserialized_ephemeral_server_key =
+	deserialized_ephemeral_server_key =
                     CryptographyManager::deserializeKey(ephemeral_server_key,
                                                     ephemeral_server_key_size);
 
@@ -196,6 +204,7 @@ void ClientConnectionManager::receiveHello()
     deserializer.deserializeByteStream(server_signature, 
                                                     server_signature_size);
 
+	// build clear_message: server_key | client_nonce
     unsigned int clear_message_size = ephemeral_server_key_size 
                                     + CryptographyManager::getNonceSize();
     unsigned char *clear_message = (unsigned char*)calloc(1, 
@@ -210,23 +219,27 @@ void ClientConnectionManager::receiveHello()
     memcpy(clear_message + ephemeral_server_key_size, client_nonce, 
                             CryptographyManager::getNonceSize());
         
-    cryptography_manager.verifySignature(server_signature, server_signature_size, 
+    CryptographyManager::verifySignature(server_signature, server_signature_size, 
                                         clear_message, clear_message_size, 
                                         server_public_key);
 
+	free(ephemeral_server_key);
+	free(server_signature);
+	free(clear_message);
     free(hello_packet);
 }
 
-void ClientConnectionManager::sendFinalHandshakeMessage()
+void ClientConnectionManager::sendFinalMessage()
 {
-    EVP_PKEY* ephemeral_private_key = CryptographyManager::getPrivateKey();
+	std::cout << "Start sendFinalMessage" << std::endl;
+    ephemeral_private_key = CryptographyManager::getPrivateKey();
 
 	ephemeral_public_key = CryptographyManager::serializeKey
 												(ephemeral_private_key,
-                                                ephemeral_private_key_size);
+                                                ephemeral_public_key_size);
 
-    // message to sign: client_private_key | server_nonce                                                
-    unsigned int clear_message_size =  ephemeral_private_key_size 
+    // message to sign: ephemeral_client_private_key | server_nonce                                                
+    unsigned int clear_message_size =  ephemeral_public_key_size 
 						                + CryptographyManager::getNonceSize();
 
 	unsigned char* clear_message = (unsigned char*) 
@@ -242,46 +255,69 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 	memcpy(clear_message + ephemeral_public_key_size, &server_nonce, 
                                 CryptographyManager::getNonceSize());
 
-    signature_size;
+	std::cout << "message to be signed: " << std::endl;
+	printBuffer(clear_message, clear_message_size);
+
 
     // build the private key filename concatenating the prefix, the username
     // and the suffix
-    char private_key_filename[MAX_PRIVATE_KEY_FILENAME_SIZE];
+    char* private_key_filename = (char*) 
+									calloc(1, MAX_PRIVATE_KEY_FILENAME_SIZE);
     strcpy(private_key_filename, PRIVATE_KEY_FILENAME_PREFIX);
     strcat(private_key_filename, username);
     strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
 
+	std::cout << "filename: " << private_key_filename << std::endl;
+
 	signature = CryptographyManager::signMessage(clear_message, 
 				clear_message_size, private_key_filename, signature_size);
 	
-    unsigned char* final_handshake_message = 
+    unsigned char* final_message = 
                     (unsigned char*)calloc(1, MAX_FINAL_HANDSHAKE_MESSAGE_SIZE);
 
-    if (final_handshake_message == nullptr) 
+    if (final_message == nullptr) 
     {
         std::cout << "Error in hello packet calloc\n";
         exit(1);
     }
 
-    unsigned int final_handshake_message_size = 
-                            getFinalHandshakeMessage(final_handshake_message);
+    unsigned int final_message_size = getFinalMessage(final_message);
 
-    sendPacket(final_handshake_message, final_handshake_message_size);
+	std::cout << "final message: " << std::endl;
+	printBuffer(final_message, final_message_size);
 
-	free(final_handshake_message);
+    sendPacket(final_message, final_message_size);
+
+	free(final_message);
+
+	std::cout << "end sendFinalMessage" << std::endl;
 }
 
-unsigned int ClientConnectionManager::getFinalHandshakeMessage
-                                    (unsigned char* final_handshake_message)
+void ClientConnectionManager::setSharedKey()
 {
-	Serializer serializer = Serializer(final_handshake_message);
+	// derive shared secret that will be used to derive the session key
+	size_t shared_secret_size;
+	unsigned char* shared_secret = CryptographyManager::getSharedSecret
+											(ephemeral_private_key,
+											deserialized_ephemeral_server_key,
+											&shared_secret_size);
+	// derive session key
+	shared_key = CryptographyManager::getSharedKey(shared_secret, 
+													shared_secret_size);
+}
 
-    // final_handshake_message: 
+unsigned int ClientConnectionManager::getFinalMessage
+												(unsigned char* final_message)
+{
+	Serializer serializer = Serializer(final_message);
+
+    // final_message: 
     // key_size | key | signature_size | signature
-	serializer.serializeInt(ephemeral_private_key_size);
-	serializer.serializeString(ephemeral_public_key, ephemeral_public_key_size);
+	serializer.serializeInt(ephemeral_public_key_size);
+	serializer.serializeByteStream(ephemeral_public_key, 
+									ephemeral_public_key_size);
     serializer.serializeInt(signature_size);
-    serializer.serializeString(signature, signature_size);
+    serializer.serializeByteStream(signature, signature_size);
                         
 	return serializer.getOffset();	
 }
