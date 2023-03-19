@@ -341,6 +341,7 @@ void ServerConnectionManager::receiveFinalMessage()
     strcat(client_public_key_filename, logged_user_username);
     strcat(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_SUFFIX);
 
+
 	std::cout << "filename: " << client_public_key_filename << std::endl;
 
 	FILE* client_public_key_file = fopen(client_public_key_filename, "r");
@@ -354,7 +355,45 @@ void ServerConnectionManager::receiveFinalMessage()
 													nullptr,
 													nullptr);
 
+	// get file size
+	// move the file pointer to the end of the file
+	fseek(client_public_key_file, 0, SEEK_END);
+	// returns the file pointer position
+	unsigned int client_public_key_file_size = ftell(client_public_key_file);
+	// move file pointer to the beginning of the file
+	fseek(client_public_key_file, 0, SEEK_SET);
+	
+	
+	unsigned char* tmp = (unsigned char*) calloc(1, client_public_key_file_size);
+
+	if(tmp == nullptr) 
+	{ 
+		std::cout << "Error in calloc" << std::endl; 
+		exit(1); 
+	}
+
+	unsigned int return_value = fread(tmp, 1, 
+									client_public_key_file_size, client_public_key_file);
+
+	if(return_value < client_public_key_file_size) 
+	{ 
+		std::cout << "Error in fread" << std::endl;
+		exit(1); 
+	}
+
+	std::cout << "File content:\n";
+	printBuffer(tmp, client_public_key_file_size);
+
 	fclose(client_public_key_file);
+
+	if(client_public_key == nullptr)
+	{
+		std::cout << "Error in reading the public key" << std::endl;
+		std::cout << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+		exit(1);
+	}
+
+
 
     CryptographyManager::verifySignature(client_signature,client_signature_size, 
                                         clear_message, clear_message_size, 

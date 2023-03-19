@@ -20,7 +20,9 @@ class ServerConnectionManager: public ConnectionManager
 
 		const char* CERTIFICATE_FILENAME = 
 									"server/files/pem_files/Certificate.pem";
+
         const char* PRIVATE_KEY_FILENAME = "server/files/pem_files/Key.pem";
+
 		const char* CLIENT_PUBLIC_KEY_FILENAME_PREFIX = "server/files/users/";
 		const char* CLIENT_PUBLIC_KEY_FILENAME_SUFFIX = "/Certificate.pem";
 

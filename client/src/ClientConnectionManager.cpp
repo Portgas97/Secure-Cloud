@@ -96,7 +96,8 @@ void ClientConnectionManager::handleHandshake()
     it creates the hello packet and returns it.
     It returns the hello packet size
 */
-unsigned int ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
+unsigned int ClientConnectionManager::getHelloPacket
+												(unsigned char* hello_packet)
 {
 	Serializer serializer = Serializer(hello_packet);
 
@@ -266,7 +267,7 @@ void ClientConnectionManager::sendFinalMessage()
     strcpy(private_key_filename, PRIVATE_KEY_FILENAME_PREFIX);
     strcat(private_key_filename, username);
     strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
-
+	
 	std::cout << "filename: " << private_key_filename << std::endl;
 
 	signature = CryptographyManager::signMessage(clear_message, 

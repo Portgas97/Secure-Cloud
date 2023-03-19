@@ -155,10 +155,11 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         exit(1); 
     }
 
-	unsigned char* tmp = (unsigned char*)calloc(1,EVP_PKEY_size(private_key));
+	/*unsigned char* tmp = (unsigned char*)calloc(1,EVP_PKEY_size(private_key));
 	memcpy(tmp, private_key, EVP_PKEY_size(private_key));
 	std::cout << "Private key: " << std::endl;
 	ConnectionManager::printBuffer(tmp, EVP_PKEY_size(private_key)); // TO DO: delete include
+*/
 
     // declare some useful variables
     const EVP_MD* message_digest = EVP_sha256();
