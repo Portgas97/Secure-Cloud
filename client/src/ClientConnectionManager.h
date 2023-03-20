@@ -39,6 +39,7 @@ class ClientConnectionManager: public ConnectionManager
         void sendHello();
         void receiveHello();
 		void sendFinalMessage();
+		void receiveFinalMessage();
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);

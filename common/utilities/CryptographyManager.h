@@ -18,8 +18,10 @@ class CryptographyManager
     public:
         CryptographyManager();
         ~CryptographyManager();
-        static void getNonce(char*);
+        static void getRandomBytes(unsigned char*, unsigned int);
         static unsigned int getNonceSize();
+		static unsigned int getInitializationVectorSize();
+		static unsigned int getTagSize();
 		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
 											    size_t*);
 	    static EVP_PKEY* getPrivateKey();
@@ -32,7 +34,17 @@ class CryptographyManager
         static X509* deserializeCertificate(unsigned char*, unsigned int);
         void verifyCertificate(X509*);
         static void verifySignature(unsigned char*, unsigned int, 
-								    unsigned char*, unsigned int, EVP_PKEY*);
+									unsigned char*, unsigned int, EVP_PKEY*);
+		static unsigned int authenticateAndEncryptMessage(unsigned char*, 
+											unsigned int, unsigned char*, 
+											unsigned int, unsigned char*,
+											unsigned char*, unsigned int,
+											unsigned char*, unsigned char*);
+		static unsigned int authenticateAndDecryptMessage(unsigned char*, 
+											unsigned int, unsigned char*, 
+											unsigned int, unsigned char*,
+											unsigned char*, unsigned int,
+											unsigned char*, unsigned char*);
      
     private:
         
@@ -43,6 +55,13 @@ class CryptographyManager
 		
         static const int NONCE_SIZE = 16;
         static const unsigned int SHARED_KEY_SIZE = 32; // bytes
+<<<<<<< HEAD
+=======
+        const static unsigned int NONCE_SIZE = 16;
+        const static unsigned int INITIALIZATION_VECTOR_SIZE = 16;
+		const static unsigned int TAG_SIZE = 16;
+
+>>>>>>> f196782b8817428ded4950e6e23fcf64871ffdcf
 
         X509_STORE* certification_authority_store;
         

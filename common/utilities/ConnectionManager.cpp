@@ -79,7 +79,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     it sends first the packet length, then the packet itself 
 */
 void ConnectionManager::sendPacket(unsigned char* packet, 
-                                    uint32_t packet_length)
+                                    unsigned int packet_length)
 {
     packet_length = htonl(packet_length);
 

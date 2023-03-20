@@ -20,7 +20,7 @@ class ConnectionManager
     public:
         ConnectionManager();
 
-        void sendPacket(unsigned char*, uint32_t);
+        void sendPacket(unsigned char*, unsigned int);
 
         void receivePacket(unsigned char*&);
 
@@ -33,11 +33,10 @@ class ConnectionManager
         int socket_fd;
         const unsigned int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
-        static const unsigned int NONCE_SIZE = 16;
+		static unsigned int message_counter;
+        unsigned char* client_nonce;
+        unsigned char* server_nonce;
         static const unsigned int MAX_USERNAME_SIZE = 50;
-        char client_nonce[NONCE_SIZE];
-        char server_nonce[NONCE_SIZE];
-        unsigned char* shared_key;
         unsigned char* signature;
         unsigned int signature_size;
 		EVP_PKEY* ephemeral_private_key;	
