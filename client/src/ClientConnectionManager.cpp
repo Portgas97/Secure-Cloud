@@ -127,7 +127,7 @@ unsigned int ClientConnectionManager::getHelloPacket
 void ClientConnectionManager::sendHello()
 {
 	client_nonce = (unsigned char*) calloc(1, 
-							CryptographyManager::getInitializationVectorSize());
+							CryptographyManager::getNonceSize());
 
 	if(client_nonce == nullptr)
 	{
@@ -136,7 +136,7 @@ void ClientConnectionManager::sendHello()
 	}
 
     CryptographyManager::getRandomBytes(client_nonce,
-							CryptographyManager::getInitializationVectorSize());
+							CryptographyManager::getNonceSize());
 
     // hello_packet: username_size | username | nonce_size | nonce
     unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
@@ -168,8 +168,7 @@ void ClientConnectionManager::receiveHello()
         std::cout << "Error: received nonce size is wrong" << std::endl;
         exit(1);
     }
-	server_nonce = (unsigned char*) calloc(1, 
-							CryptographyManager::getInitializationVectorSize());
+	server_nonce = (unsigned char*) calloc(1, server_nonce_size);
 
 	if(server_nonce == nullptr)
 	{
@@ -339,6 +338,7 @@ unsigned int ClientConnectionManager::getFinalMessage
 
 void ClientConnectionManager::receiveFinalMessage()
 {
+    std::cout << "receiving final message" << std::endl;
 	// first message exchanged using symmetric encryption 
 	message_counter = 1;
 

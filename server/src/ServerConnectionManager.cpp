@@ -396,6 +396,7 @@ void ServerConnectionManager::receiveFinalMessage()
                             X509_get_pubkey(deserialized_client_certificate));
 
 	free(client_certificate);	
+	std::cout << "final message received()" << std::endl;
 }
 
 void ServerConnectionManager::setSharedKey()
