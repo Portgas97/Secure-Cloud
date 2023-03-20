@@ -123,6 +123,7 @@ void ServerConnectionManager::handleHandshake()
 	sendHello();
 	receiveFinalMessage();
 	setSharedKey();
+	sendFinalMessage();
 }
 
 

@@ -58,6 +58,7 @@ class ServerConnectionManager: public ConnectionManager
         void sendHello();
         void receiveHello();
 		void receiveFinalMessage();
+		void sendFinalMessage();
 		void setSharedKey();
         unsigned int getHelloPacket(unsigned char*);       
         
