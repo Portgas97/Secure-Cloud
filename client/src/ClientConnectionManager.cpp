@@ -282,11 +282,6 @@ void ClientConnectionManager::sendFinalMessage()
     // and the suffix
     char* private_key_filename = (char*) 
 									calloc(1, MAX_PRIVATE_KEY_FILENAME_SIZE);
-    if(private_key_filename == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
     strcpy(private_key_filename, PRIVATE_KEY_FILENAME_PREFIX);
     strcat(private_key_filename, username);
     strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
@@ -357,8 +352,8 @@ void ClientConnectionManager::receiveFinalMessage()
 	// counters on server and client side must have the same value
 	if(message_counter != received_message_counter)
 	{
-		std::cout << "Error: client counter different with regard to server " 
-					<< "counter" << std::endl;
+		std::cout << "Error: client counter different from server counter" 
+					<< std::endl;
 		exit(1);
 	}
 
@@ -416,8 +411,8 @@ void ClientConnectionManager::receiveFinalMessage()
     }
 
 	unsigned int aad_size = sizeof(message_counter) + 
-							sizeof(initialization_vector_size) +
-							initialization_vector_size;
+							// sizeof(initialization_vector_size) + // TO DO, note that this is sent but not part of the AAD
+							+ initialization_vector_size;
 	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
     if(aad == nullptr)
     {
@@ -429,7 +424,10 @@ void ClientConnectionManager::receiveFinalMessage()
 						CryptographyManager::authenticateAndDecryptMessage
 										(ciphertext, ciphertext_size, aad, 
 										aad_size, tag, shared_key, 
-										initialization_vector, plaintext);
+										initialization_vector, 
+                                        initialization_vector_size, plaintext);
 
-	std::cout << "Received " << plaintext << " from server" << std::endl;									
+	std::cout << "Received " << plaintext_size << " from server" << std::endl;
+    printBuffer(plaintext, plaintext_size);
+
 }

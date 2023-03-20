@@ -257,7 +257,6 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 	hello packet:
 	//  nonce_size   | nonce | certificate_size  | certificate   | 
     //  key_size     | key   | signature_size    | signature     |
-
 */
 void ServerConnectionManager::sendHello()
 {
@@ -320,6 +319,7 @@ void ServerConnectionManager::sendHello()
 
 void ServerConnectionManager::receiveFinalMessage()
 {
+	std::cout << "receiveFinalMessage()" << std::endl;
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
 
@@ -378,12 +378,9 @@ void ServerConnectionManager::receiveFinalMessage()
 		exit(1);
 	}
 
-    strncpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX, 
-								strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX));
-    strncat(client_certificate_filename, logged_user_username, 
-								strlen(logged_user_username));
-    strncat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX, 
-								strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 1);
+    strcpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX);
+    strcat(client_certificate_filename, logged_user_username);
+    strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
 
 	unsigned int client_certificate_size;
 	unsigned char* client_certificate = getCertificateFromFile
@@ -418,43 +415,60 @@ void ServerConnectionManager::setSharedKey()
 void ServerConnectionManager::sendFinalMessage()
 {
 	// TO DO: insert into file of constants
-	char plaintext[] = "ACK";
-	unsigned int plaintext_size = strlen(plaintext) + 1;
+	unsigned char plaintext[] = "ACK";
+	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
 
 	unsigned int initialization_vector_size = 
-							CryptographyManager::getInitializationVectorSize();
+						CryptographyManager::getInitializationVectorSize();
 	
-	unsigned char* initialization_vector = (unsigned char*)calloc
-												(1, initialization_vector_size);
+	unsigned char* initialization_vector = 
+						(unsigned char*)calloc(1, initialization_vector_size);	
+
 	CryptographyManager::getRandomBytes(initialization_vector,
 										initialization_vector_size); 
 
-	// packet to be send: aad | ciphertext | tag
-	// aad: counter | initialization vector
+	unsigned int aad_size = 
+				sizeof(message_counter) + initialization_vector_size;
+
+	unsigned char *aad = (unsigned char*)calloc(1, aad_size);
+	if(aad == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	Serializer serializer_aad = Serializer(aad);
+
+	// first message exchanged using symmetric encryption 
+	message_counter = 1;
+
+	// initialize the final_message inserting aad in it
+	serializer_aad.serializeInt(message_counter);
+	serializer_aad.serializeByteStream(initialization_vector, 
+										initialization_vector_size);
+
+	// packet to be send: AAD | ciphertext | tag
+	// AAD: counter | initialization vector
+	unsigned int final_message_size = 
+									// AAD
+									sizeof(message_counter)
+									+ sizeof(initialization_vector_size) 
+									+ initialization_vector_size
+									// CT
+									+ sizeof(plaintext_size)
+									+ plaintext_size
+									// TAG
+									+ sizeof(CryptographyManager::getTagSize())
+									+ CryptographyManager::getTagSize();
+
 	unsigned char* final_message = (unsigned char*) calloc(1, 
-									sizeof(message_counter) + 
-									sizeof(initialization_vector_size) +
-									initialization_vector_size +
-									sizeof(plaintext_size) +
-									plaintext_size +
-									sizeof(CryptographyManager::getTagSize()) +
-									CryptographyManager::getTagSize());
+														final_message_size);
 	if(final_message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-	Serializer serializer = Serializer(final_message);
-
-	// first message exchanged using symmetric encryption 
-	message_counter = 1;
-
-	// initialize the final_message inserting aad in it
-	serializer.serializeInt(message_counter);
-	serializer.serializeInt(initialization_vector_size);
-	serializer.serializeByteStream(initialization_vector, 
-									initialization_vector_size);
 	
 	// ciphertext will be long as the plaintext
 	unsigned char* ciphertext = (unsigned char*) calloc(1, plaintext_size);
@@ -471,15 +485,11 @@ void ServerConnectionManager::sendFinalMessage()
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
-
+ 
 	unsigned int ciphertext_size = 
 				CryptographyManager::authenticateAndEncryptMessage
-													(final_message, 
-													strlen(final_message) + 1,
-													// final_message contains 
-													// aad at the moment
-													final_message,
-													serializer.getOffset(),
+													(plaintext, plaintext_size,
+													aad, aad_size,
 													shared_key, 
 													initialization_vector,
 													initialization_vector_size,
@@ -492,13 +502,27 @@ void ServerConnectionManager::sendFinalMessage()
 		exit(1);
 	}
 
-	// complete the final message inserting ciphertext and tag in it
-	serializer.serializerInt(ciphertext_size);
-	serializer.serializeByteStream(ciphertext, ciphtertext_size);
-	serializer.serializeInt(tag_size);
-	serializer.serializeByteStream(tag, tag_size);
+	Serializer serializer_final_message = Serializer(final_message);
+	// AAD
+	serializer_final_message.serializeInt(message_counter);
+	serializer_final_message.serializeInt(initialization_vector_size);
+	serializer_final_message.serializeByteStream(initialization_vector,
+													initialization_vector_size);
+	// CT
+	serializer_final_message.serializeInt(ciphertext_size);
+	serializer_final_message.serializeByteStream(ciphertext, ciphertext_size);
+	// TAG
+	serializer_final_message.serializeInt(tag_size);
+	serializer_final_message.serializeByteStream(tag, tag_size);
 	
-	unsigned int final_message_size = serializer.getOffset();
+	// already defined, this is used for debugging
+	unsigned int serialized_final_message_size = serializer_final_message.getOffset();
+	if(serialized_final_message_size != final_message_size)
+	{
+		std::cout << "Error in computing the size of the packet" << std::endl;
+		exit(1);
+	}
+	
 	sendPacket(final_message, final_message_size);
 
 	free(final_message);

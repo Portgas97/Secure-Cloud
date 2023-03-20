@@ -3,14 +3,14 @@
 
 #include <string>
 #include <cstring>
-#include <iostream>
+#include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
-#include <openssl/conf.h>
 #include <openssl/hmac.h>
 #include <openssl/x509.h>
 #include <openssl/rand.h>
+#include <iostream>
 
 
 class CryptographyManager
@@ -23,15 +23,14 @@ class CryptographyManager
 		static unsigned int getInitializationVectorSize();
 		static unsigned int getTagSize();
 		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
-											    size_t*);
+											size_t*);
+		static unsigned char* getSharedKey(unsigned char*, unsigned int);
 	    static EVP_PKEY* getPrivateKey();
-        static unsigned char* getSharedKey(unsigned char*, unsigned int);
         static unsigned char* serializeKey(EVP_PKEY*, unsigned int&);
+        static X509* deserializeCertificate(unsigned char*, unsigned int);
         static EVP_PKEY* deserializeKey(unsigned char*, unsigned int);
         static unsigned char* signMessage(unsigned char*, int, const char*,
-                                            unsigned int&);
-
-        static X509* deserializeCertificate(unsigned char*, unsigned int);
+                                         unsigned int&);
         void verifyCertificate(X509*);
         static void verifySignature(unsigned char*, unsigned int, 
 									unsigned char*, unsigned int, EVP_PKEY*);
@@ -43,8 +42,8 @@ class CryptographyManager
 		static unsigned int authenticateAndDecryptMessage(unsigned char*, 
 											unsigned int, unsigned char*, 
 											unsigned int, unsigned char*,
-											unsigned char*, unsigned int,
-											unsigned char*, unsigned char*);
+											unsigned char*, unsigned char*,
+                                            unsigned int, unsigned char*);
      
     private:
         
@@ -53,15 +52,11 @@ class CryptographyManager
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
                             "common/files/FoundationsOfCybersecurity_crl.pem";
 		
-        static const int NONCE_SIZE = 16;
         static const unsigned int SHARED_KEY_SIZE = 32; // bytes
-<<<<<<< HEAD
-=======
         const static unsigned int NONCE_SIZE = 16;
-        const static unsigned int INITIALIZATION_VECTOR_SIZE = 16;
+        const static unsigned int INITIALIZATION_VECTOR_SIZE = 16; // TO DO, default is 12, can be set with EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, ivlen, NULL)
 		const static unsigned int TAG_SIZE = 16;
 
->>>>>>> f196782b8817428ded4950e6e23fcf64871ffdcf
 
         X509_STORE* certification_authority_store;
         
