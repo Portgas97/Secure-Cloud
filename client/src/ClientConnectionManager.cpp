@@ -113,7 +113,7 @@ unsigned int ClientConnectionManager::getHelloPacket
 	serializer.serializeInt(strlen(username) + 1);
  	serializer.serializeString(username, strlen(username) + 1);
 	serializer.serializeInt(CryptographyManager::getNonceSize());
-	serializer.serializeString(client_nonce, 
+	serializer.serializeByteStream(client_nonce, 
                                         CryptographyManager::getNonceSize());
 
 	return serializer.getOffset();	
@@ -126,6 +126,15 @@ unsigned int ClientConnectionManager::getHelloPacket
 */
 void ClientConnectionManager::sendHello()
 {
+	client_nonce = (unsigned char*) calloc(1, 
+							CryptographyManager::getInitializationVectorSize());
+
+	if(client_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
     CryptographyManager::getRandomBytes(client_nonce,
 							CryptographyManager::getInitializationVectorSize());
 
@@ -159,7 +168,16 @@ void ClientConnectionManager::receiveHello()
         std::cout << "Error: received nonce size is wrong" << std::endl;
         exit(1);
     }
-    deserializer.deserializeString(server_nonce, server_nonce_size);
+	server_nonce = (unsigned char*) calloc(1, 
+							CryptographyManager::getInitializationVectorSize());
+
+	if(server_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+    deserializer.deserializeByteStream(server_nonce, server_nonce_size);
 
     unsigned int server_certificate_size = deserializer.deserializeInt();
     unsigned char* server_certificate = (unsigned char*)calloc(1, 

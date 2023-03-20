@@ -161,8 +161,16 @@ void ServerConnectionManager::receiveHello()
 		exit(1);
 	}
 
+	client_nonce = (unsigned char*) calloc(1, client_nonce_size);
+
+	if(client_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
     // TO DO check username existance
-	deserializer.deserializeString(client_nonce, client_nonce_size);
+	deserializer.deserializeByteStream(client_nonce, client_nonce_size);
 
 	free(hello_packet);
 }
@@ -178,8 +186,9 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
-	serializer.serializeInt(NONCE_SIZE);
-	serializer.serializeString(server_nonce, NONCE_SIZE);
+	serializer.serializeInt(CryptographyManager::getNonceSize());
+	serializer.serializeByteStream(server_nonce, 
+									CryptographyManager::getNonceSize());
 	serializer.serializeInt(certificate_size);
 	serializer.serializeByteStream(certificate, certificate_size);
 	serializer.serializeInt(ephemeral_public_key_size);
@@ -252,6 +261,14 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 */
 void ServerConnectionManager::sendHello()
 {
+	server_nonce = (unsigned char*)calloc(1,
+										CryptographyManager::getNonceSize());
+
+	if(server_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
 	// get nonce
     CryptographyManager::getRandomBytes(server_nonce, 
 										CryptographyManager::getNonceSize());
@@ -412,13 +429,13 @@ void ServerConnectionManager::sendFinalMessage()
 	// packet to be send: aad | ciphertext | tag
 	// aad: counter | initialization vector
 	unsigned char* final_message = (unsigned char*) calloc(1, 
-											sizeof(message_counter) + 
-											sizeof(initialization_vector_size) +
-											initialization_vector_size +
-											sizeof(ciphertext_size) +
-											ciphertext_size +
-											sizeof(TAG_SIZE) +
-											TAG_SIZE);
+									sizeof(message_counter) + 
+									sizeof(initialization_vector_size) +
+									initialization_vector_size +
+									sizeof(plaintext_size) +
+									plaintext_size +
+									sizeof(CryptographyManager::getTagSize()) +
+									CryptographyManager::getTagSize());
 	if(final_message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
@@ -453,8 +470,9 @@ void ServerConnectionManager::sendFinalMessage()
 	}
 
 	unsigned int ciphertext_size = 
-				CryptographyManager::authenticateAndEncryptMessage(message, 
-													strlen(message) + 1,
+				CryptographyManager::authenticateAndEncryptMessage
+													(final_message, 
+													strlen(final_message) + 1,
 													// final_message contains 
 													// aad at the moment
 													final_message,
@@ -484,5 +502,4 @@ void ServerConnectionManager::sendFinalMessage()
 	free(ciphertext);
 	free(tag);
 	free(initialization_vector);
-	free(aad);
 }

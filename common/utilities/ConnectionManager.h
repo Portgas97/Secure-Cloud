@@ -34,8 +34,8 @@ class ConnectionManager
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
 		static unsigned int message_counter;
-        unsigned char client_nonce[CryptographyManager::getNonceSize()];
-        unsigned char server_nonce[CryptographyManager::getNonceSize()];
+        unsigned char* client_nonce;
+        unsigned char* server_nonce;
         static const unsigned int MAX_USERNAME_SIZE = 50;
         unsigned char* signature;
         unsigned int signature_size;
