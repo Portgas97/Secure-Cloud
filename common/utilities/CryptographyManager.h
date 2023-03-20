@@ -53,15 +53,11 @@ class CryptographyManager
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
                             "common/files/FoundationsOfCybersecurity_crl.pem";
 		
-        static const int NONCE_SIZE = 16;
         static const unsigned int SHARED_KEY_SIZE = 32; // bytes
-<<<<<<< HEAD
-=======
         const static unsigned int NONCE_SIZE = 16;
         const static unsigned int INITIALIZATION_VECTOR_SIZE = 16;
 		const static unsigned int TAG_SIZE = 16;
 
->>>>>>> f196782b8817428ded4950e6e23fcf64871ffdcf
 
         X509_STORE* certification_authority_store;
         
