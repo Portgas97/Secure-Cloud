@@ -1,8 +1,8 @@
 #ifndef DESERIALIZER_H
 #define DESERIALIZER_H
+#include <cstring>
 #include <iostream>
 #include <arpa/inet.h>
-#include <cstring>
 
 
 class Deserializer
@@ -19,5 +19,7 @@ class Deserializer
 		unsigned int offset;
 
 		char deserializeChar();
+		
 };
+
 #endif

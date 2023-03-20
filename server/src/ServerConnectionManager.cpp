@@ -359,9 +359,12 @@ void ServerConnectionManager::receiveFinalMessage()
 		exit(1);
 	}
 
-    strcpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX);
-    strcat(client_certificate_filename, logged_user_username);
-    strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
+    strncpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX, 
+								strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX));
+    strncat(client_certificate_filename, logged_user_username, 
+								strlen(logged_user_username));
+    strncat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX, 
+								strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 1);
 
 	unsigned int client_certificate_size;
 	unsigned char* client_certificate = getCertificateFromFile

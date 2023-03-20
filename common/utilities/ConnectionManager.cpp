@@ -1,14 +1,17 @@
 #include "ConnectionManager.h"
 
+
 ConnectionManager::ConnectionManager()
 {
         
 }
 
+
 ConnectionManager::~ConnectionManager()
 {
     
 }
+
 
 void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_size)
 {
@@ -18,6 +21,7 @@ void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_s
     std::cout << std::endl;
 }
 
+
 /*
     it receives packet from the sender by receiving first the packet size, then
     the data packet and it returns the received data packet
@@ -25,7 +29,8 @@ void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_s
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
     uint32_t packet_length;
-    int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
+    int return_value = 
+                    recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
 
     if(return_value <= 0)
     {
@@ -33,7 +38,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
         exit(1);
     }
     
-
     packet_length = ntohl(packet_length);
 
     if(return_value < (int)sizeof(uint32_t))
@@ -43,7 +47,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
         exit(1);
     }
     
-    //allocate needed memory space for the packet
     unsigned char* received_packet = (unsigned char*) calloc(1, packet_length);
     if(received_packet == nullptr)
     {
@@ -53,13 +56,12 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
     uint32_t received_bytes = 0;
 
-
-    // hendle fragmented reception
+    // fragmented reception
     while(received_bytes < packet_length)
     {
         return_value = recv(socket_fd, (void*)received_packet, packet_length,  
                                                     MSG_WAITALL);
-
+                                                    
         if(return_value <= 0)
         {
             std::cout << "Error in recv" << std::endl;
@@ -71,6 +73,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
     packet = received_packet;
 }
+
 
 /*
     it sends first the packet length, then the packet itself 

@@ -263,6 +263,11 @@ void ClientConnectionManager::sendFinalMessage()
     // and the suffix
     char* private_key_filename = (char*) 
 									calloc(1, MAX_PRIVATE_KEY_FILENAME_SIZE);
+    if(private_key_filename == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
     strcpy(private_key_filename, PRIVATE_KEY_FILENAME_PREFIX);
     strcat(private_key_filename, username);
     strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
