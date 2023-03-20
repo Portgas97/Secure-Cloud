@@ -81,6 +81,15 @@ void ClientConnectionManager::obtainUsername()
     username[strcspn(username, "\n")] = 0;
 }
 
+/*
+	handshake:
+	1) client sends client_hello
+	2) server receives client_hello and reply with server_hello
+	3) client receives server_hello, performs some checks and reply with a final
+		handshake message
+	4) server receives client final handshake message and performs a check
+	5) handshake completed, client and server obtained the shared key
+*/
 void ClientConnectionManager::handleHandshake()
 {
     sendHello();

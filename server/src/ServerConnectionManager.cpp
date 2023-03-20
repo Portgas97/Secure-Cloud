@@ -97,7 +97,10 @@ void ServerConnectionManager::acceptRequest()
 
 }
 
-
+/*
+	it first performs the handshake with the client connected to client_socket,
+	then it shows it a menu, receives its requests and serves them
+*/
 void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
@@ -106,6 +109,15 @@ void ServerConnectionManager::serveClient(int client_socket)
     
 }
 
+/*
+	handshake:
+	1) client sends client_hello
+	2) server receives client_hello and reply with server_hello
+	3) client receives server_hello, performs some checks and reply with a final
+		handshake message
+	4) server receives client final handshake message and performs a check
+	5) handshake completed, client and server obtained the shared key
+*/
 void ServerConnectionManager::handleHandshake()
 {
 	receiveHello();
@@ -124,6 +136,7 @@ void ServerConnectionManager::receiveHello()
 	unsigned char* hello_packet = nullptr;
 	receivePacket(hello_packet);
 
+	// get each hello_packet field
 	Deserializer deserializer = Deserializer(hello_packet);
 		
 	// received_packet: username_size | username | nonce_size | nonce
@@ -152,13 +165,12 @@ void ServerConnectionManager::receiveHello()
 	deserializer.deserializeString(client_nonce, client_nonce_size);
 
 	free(hello_packet);
-
 }
 
 
 /*
     it creates the hello packet and returns it.
-    It returns the hello packet size
+    It returns also the hello packet size
 */
 unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
@@ -180,6 +192,11 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 }
 
 // TO DO: move into utility class?
+/*
+	it returns the buffer containing bytes read from the file whose filename is
+	passed as an argument.
+	It returns also the buffer size.  
+*/
 unsigned char* ServerConnectionManager::getCertificateFromFile
 										(const char* certificate_filename,
 										unsigned int& certificate_buffer_size)
@@ -211,6 +228,7 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 		exit(1); 
 	}
 
+	// actual read
 	unsigned int return_value = fread(certificate_buffer, 1, 
 									certificate_buffer_size, certificate_file);
 
@@ -225,7 +243,9 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 }
 
 
-/* hello packet:
+/* 
+	It builds and sends the hello packet, which has the following structure
+	hello packet:
 	//  nonce_size   | nonce | certificate_size  | certificate   | 
     //  key_size     | key   | signature_size    | signature     |
 
