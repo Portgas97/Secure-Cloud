@@ -9,6 +9,7 @@ class Deserializer
 {
 	public:
 		Deserializer(unsigned char*);
+		// ~Deserializer();
 		int deserializeInt();
 		void deserializeString(char*, unsigned int);
 		void deserializeByteStream(unsigned char*, unsigned int);

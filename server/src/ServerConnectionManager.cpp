@@ -92,7 +92,7 @@ void ServerConnectionManager::acceptRequest()
     if(child_pid == 0){
 		std::cout << "Connection accepted, serving client..." << std::endl;
         serveClient(client_socket);
-		std::cout << "Client served" << std::endl;
+		std::cout << "Client served, closing." << std::endl;
 	}
 
 }
@@ -105,8 +105,7 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
-	request_handler.handleHandshake();
-    
+	request_handler.handleHandshake();    
 }
 
 /*

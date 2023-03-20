@@ -6,6 +6,12 @@ CryptographyManager::CryptographyManager()
     loadCertificationAuthorityCertificate();
 }
 
+CryptographyManager::~CryptographyManager()
+{
+    free(certification_authority_store);
+}
+
+
 void CryptographyManager::getNonce(char *nonce)
 {
     // seed the random generator
@@ -412,6 +418,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 {
     EVP_PKEY_CTX *context = EVP_PKEY_CTX_new(private_key, nullptr);
 
+    // initializes a context for Diffie-Hellman secret derivation
 	int return_value = EVP_PKEY_derive_init(context);
     if (return_value != 1) 
 	{
@@ -419,6 +426,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 		exit(1);
     }
 
+    // set's the peer's public key
 	return_value = EVP_PKEY_derive_set_peer(context, public_key);
     if (return_value != 1) 
 	{
@@ -429,6 +437,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
     unsigned char *shared_secret = nullptr;
 	size_t local_shared_secret_size;
 
+    // the first time this API returns the maximum number of bytes needed 
 	return_value = EVP_PKEY_derive(context, nullptr, &local_shared_secret_size);
     if (return_value != 1) 
 	{
@@ -443,6 +452,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 		exit(1);
     }
 
+    // the second times derives the shared secret and returns its length
 	return_value = EVP_PKEY_derive(context, shared_secret, 
 													&local_shared_secret_size);
     if (return_value != 1) 
@@ -462,6 +472,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret, 
 												unsigned int shared_secret_size) 
 {
+
     const EVP_MD *message_digest = EVP_sha256();
 
     unsigned char* message_digest_buffer = (unsigned char *) calloc(1, 
@@ -480,7 +491,7 @@ unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret,
 		exit(1);
     }
 
-	return_value = EVP_DigestUpdate(context, (unsigned char *)shared_secret, 
+	return_value = EVP_DigestUpdate(context, (unsigned char*)shared_secret, 
 									shared_secret_size);
     if (return_value != 1) 
 	{
@@ -490,26 +501,27 @@ unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret,
 
     unsigned int message_digest_buffer_size;
 	return_value = EVP_DigestFinal(context, 
-									(unsigned char *)message_digest_buffer, 
+									(unsigned char*)message_digest_buffer, 
 									&message_digest_buffer_size);
     if (return_value != 1) 
 	{
 		std::cout << "Error in shared key derivation" << std::endl;
 		exit(1);
     }
-
+    
     EVP_MD_CTX_free(context);
 
     // clean up the shared secret
 	unoptimizedMemset(shared_secret, shared_secret_size);
     free(shared_secret);
-
+    
     unsigned char* shared_key = (unsigned char *) calloc(1, SHARED_KEY_SIZE);
     if (shared_key == nullptr) 
 	{
 		std :: cout << "Error in calloc" << std::endl;
 		exit(1);
     }
+
     memcpy(shared_key, message_digest_buffer, SHARED_KEY_SIZE);
 
     // clean up message_digest_buffer

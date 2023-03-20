@@ -11,6 +11,5 @@ int main()
         server_connection_manager.acceptRequest();
     }     
 
-    //sendHello();  
-        
+    return 0;        
 }

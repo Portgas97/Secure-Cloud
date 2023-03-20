@@ -17,6 +17,7 @@ class CryptographyManager
 {
     public:
         CryptographyManager();
+        ~CryptographyManager();
         static void getNonce(char*);
         static unsigned int getNonceSize();
 		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
@@ -33,19 +34,19 @@ class CryptographyManager
 									unsigned char*, unsigned int, EVP_PKEY*);
      
     private:
-        const static int NONCE_SIZE = 16;
         
         const char* CERTIFICATION_AUTHORITY_CERTIFICATE_FILENAME =
                             "common/files/FoundationsOfCybersecurity_cert.pem"; 
         const char* CERTIFICATION_AUTHORITY_CRL_FILENAME =
                             "common/files/FoundationsOfCybersecurity_crl.pem";
-		static const unsigned int SHARED_KEY_SIZE = 128;
+		
+        static const unsigned int SHARED_KEY_SIZE = 32; // bytes
+        const static int NONCE_SIZE = 16;
 
-        X509_STORE* certification_authority_store = nullptr;
+        X509_STORE* certification_authority_store;
         
         void loadCertificationAuthorityCertificate();
 		static void unoptimizedMemset(unsigned char*, size_t);
-
                                     
 };
 

@@ -10,7 +10,7 @@ ClientConnectionManager::ClientConnectionManager()
 
 ClientConnectionManager::~ClientConnectionManager()
 {
-
+    // TO DO what to free? shared_key leads to a double-free attempt
 }
 
 
@@ -96,6 +96,7 @@ void ClientConnectionManager::handleHandshake()
     receiveHello();
 	sendFinalMessage();
 	setSharedKey();
+    std::cout << "Session created" << std::endl;
 }
 
 
@@ -226,6 +227,7 @@ void ClientConnectionManager::receiveHello()
                                         clear_message, clear_message_size, 
                                         server_public_key);
 
+    free(server_certificate);
 	free(ephemeral_server_key);
 	free(server_signature);
 	free(clear_message);
@@ -281,18 +283,22 @@ void ClientConnectionManager::sendFinalMessage()
 
     sendPacket(final_message, final_message_size);
 
+    free(clear_message);
+    free(private_key_filename);
 	free(final_message);
 }
 
 void ClientConnectionManager::setSharedKey()
 {
+    std::cout << "setSharedKey() init" << std::endl;
 	// derive shared secret that will be used to derive the session key
 	size_t shared_secret_size;
 	unsigned char* shared_secret = CryptographyManager::getSharedSecret
 											(ephemeral_private_key,
 											deserialized_ephemeral_server_key,
 											&shared_secret_size);
-	// derive session key
+    
+    // derive session key
 	shared_key = CryptographyManager::getSharedKey(shared_secret, 
 													shared_secret_size);
 }

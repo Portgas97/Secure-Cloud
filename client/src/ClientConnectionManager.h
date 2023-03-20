@@ -12,6 +12,10 @@ class ClientConnectionManager: public ConnectionManager
     private:
         const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
+        
+        char username[MAX_USERNAME_SIZE];
+		EVP_PKEY* deserialized_ephemeral_server_key;
+        
         const unsigned int MAX_PRIVATE_KEY_FILENAME_SIZE = 
                                 strlen(PRIVATE_KEY_FILENAME_PREFIX) + 
                                 MAX_USERNAME_SIZE +
@@ -22,11 +26,7 @@ class ClientConnectionManager: public ConnectionManager
                                 + ephemeral_public_key_size
                                 + sizeof(signature)
                                 + signature_size;
-
-        char username[MAX_USERNAME_SIZE];
-		EVP_PKEY* deserialized_ephemeral_server_key;
         
-        // username_size_size + nonce_size_size + max_username_size + nonce_size
         const unsigned int MAX_HELLO_SIZE = 
                     sizeof(MAX_USERNAME_SIZE) 
                     + MAX_USERNAME_SIZE 

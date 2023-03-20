@@ -10,6 +10,7 @@ class Serializer
 {
 	public:
 		Serializer(unsigned char*);
+		//~Serializer();
 		void serializeInt(int);
 		void serializeString(char*, unsigned int);
 		void serializeByteStream(unsigned char*, unsigned int);

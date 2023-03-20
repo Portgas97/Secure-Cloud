@@ -8,6 +8,13 @@ Serializer::Serializer(unsigned char* buffer_to_serialize)
 	offset = 0;
 }
 
+
+// Serializer::~Serializer()
+// {
+// 	free(buffer);
+// }
+
+
 void Serializer::serializeInt(int value)
 {
 	int *network_value_pointer = (int*)calloc(1,sizeof(int));
@@ -24,10 +31,12 @@ void Serializer::serializeInt(int value)
 	free(network_value_pointer);
 }
 
+
 void Serializer::serializeChar(char value)
 {
 	buffer[offset++] = value;
 }
+
 
 void Serializer::serializeString(char* string, unsigned int string_size)
 {
@@ -37,12 +46,14 @@ void Serializer::serializeString(char* string, unsigned int string_size)
 	
 }
 
+
 void Serializer::serializeByteStream(unsigned char* byte_stream, 
 									unsigned int byte_stream_size)
 {
 	memcpy(buffer+offset, byte_stream, byte_stream_size);
 	offset += byte_stream_size;
 }									
+
 
 int Serializer::getOffset()
 {
