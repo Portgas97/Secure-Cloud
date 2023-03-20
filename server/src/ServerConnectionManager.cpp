@@ -179,6 +179,51 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 	return serializer.getOffset();	
 }
 
+// TO DO: move into utility class?
+unsigned char* ServerConnectionManager::getCertificateFromFile
+										(const char* certificate_filename,
+										unsigned int& certificate_buffer_size)
+{
+	// get certificate
+	FILE* certificate_file = fopen(certificate_filename, "r");
+
+	if(certificate_file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}
+
+	// get file size
+	// move the file pointer to the end of the file
+	fseek(certificate_file, 0, SEEK_END);
+	// returns the file pointer position
+	certificate_buffer_size = ftell(certificate_file);
+	// move file pointer to the beginning of the file
+	fseek(certificate_file, 0, SEEK_SET);
+	
+	
+	unsigned char* certificate_buffer = (unsigned char*) 
+											calloc(1, certificate_buffer_size);
+
+	if(certificate_buffer == nullptr) 
+	{ 
+		std::cout << "Error in calloc" << std::endl; 
+		exit(1); 
+	}
+
+	unsigned int return_value = fread(certificate_buffer, 1, 
+									certificate_buffer_size, certificate_file);
+
+	if(return_value < certificate_buffer_size) 
+	{ 
+		std::cout << "Error in fread" << std::endl;
+		exit(1); 
+	}
+
+	fclose(certificate_file);
+	return certificate_buffer;
+}
+
 
 /* hello packet:
 	//  nonce_size   | nonce | certificate_size  | certificate   | 
@@ -190,42 +235,7 @@ void ServerConnectionManager::sendHello()
 	// get nonce
     CryptographyManager::getNonce(server_nonce);
 
-	// get certificate
-	FILE* certificate_file = fopen(CERTIFICATE_FILENAME, "r");
-
-	if(certificate_file == nullptr)
-	{
-		perror("Error in fopen\n");
-		exit(1);
-	}
-
-	// get file size
-	// move the file pointer to the end of the file
-	fseek(certificate_file, 0, SEEK_END);
-	// returns the file pointer position
-	certificate_size = ftell(certificate_file);
-	// move file pointer to the beginning of the file
-	fseek(certificate_file, 0, SEEK_SET);
-	
-	
-	certificate = (unsigned char*) calloc(1, certificate_size);
-
-	if(certificate == nullptr) 
-	{ 
-		std::cout << "Error in calloc" << std::endl; 
-		exit(1); 
-	}
-
-	unsigned int return_value = fread(certificate, 1, 
-									certificate_size, certificate_file);
-
-	if(return_value < certificate_size) 
-	{ 
-		std::cout << "Error in fread" << std::endl;
-		exit(1); 
-	}
-
-	fclose(certificate_file);
+	certificate = getCertificateFromFile(CERTIFICATE_FILENAME, certificate_size);
 
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
 	ephemeral_public_key = CryptographyManager::serializeKey(
@@ -272,7 +282,6 @@ void ServerConnectionManager::sendHello()
 
 void ServerConnectionManager::receiveFinalMessage()
 {
-	std::cout << "start receivaFinalMessage" << std::endl;
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
 
@@ -303,9 +312,6 @@ void ServerConnectionManager::receiveFinalMessage()
     deserializer.deserializeByteStream(client_signature, 
                                                     client_signature_size);
 
-	std::cout << "client_signature: " << std::endl;
-	printBuffer(client_signature, client_signature_size);
-
 	// build the message to check: key | server_nonce
     unsigned int clear_message_size = ephemeral_client_key_size 
                                     + CryptographyManager::getNonceSize();
@@ -322,85 +328,36 @@ void ServerConnectionManager::receiveFinalMessage()
     memcpy(clear_message + ephemeral_client_key_size, server_nonce, 
                             CryptographyManager::getNonceSize());
 
-	std::cout << "message that should be signed: " << std::endl;
-	printBuffer(clear_message, clear_message_size);
-
 	// read the client public key from file
 
     // build the client public key filename concatenating the prefix, 
 	// the client username and the suffix
-    char* client_public_key_filename = (char*)
-								calloc(1, MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE);
-	if(client_public_key_filename == nullptr)
+    char* client_certificate_filename = (char*)
+								calloc(1, MAX_CLIENT_CERTIFICATE_FILENAME_SIZE);
+	if(client_certificate_filename == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-    strcpy(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_PREFIX);
-    strcat(client_public_key_filename, logged_user_username);
-    strcat(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_SUFFIX);
+    strcpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX);
+    strcat(client_certificate_filename, logged_user_username);
+    strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
 
+	unsigned int client_certificate_size;
+	unsigned char* client_certificate = getCertificateFromFile
+										(client_certificate_filename,
+										client_certificate_size);
 
-	std::cout << "filename: " << client_public_key_filename << std::endl;
+	X509* deserialized_client_certificate = 
+							CryptographyManager::deserializeCertificate
+								(client_certificate, client_certificate_size);
 
-	FILE* client_public_key_file = fopen(client_public_key_filename, "r");
-	if(client_public_key_file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}
-	EVP_PKEY* client_public_key = PEM_read_PUBKEY(client_public_key_file,
-													nullptr,
-													nullptr,
-													nullptr);
+	CryptographyManager::verifySignature(client_signature,client_signature_size, 
+                            clear_message, clear_message_size, 
+                            X509_get_pubkey(deserialized_client_certificate));
 
-	// get file size
-	// move the file pointer to the end of the file
-	fseek(client_public_key_file, 0, SEEK_END);
-	// returns the file pointer position
-	unsigned int client_public_key_file_size = ftell(client_public_key_file);
-	// move file pointer to the beginning of the file
-	fseek(client_public_key_file, 0, SEEK_SET);
-	
-	
-	unsigned char* tmp = (unsigned char*) calloc(1, client_public_key_file_size);
-
-	if(tmp == nullptr) 
-	{ 
-		std::cout << "Error in calloc" << std::endl; 
-		exit(1); 
-	}
-
-	unsigned int return_value = fread(tmp, 1, 
-									client_public_key_file_size, client_public_key_file);
-
-	if(return_value < client_public_key_file_size) 
-	{ 
-		std::cout << "Error in fread" << std::endl;
-		exit(1); 
-	}
-
-	std::cout << "File content:\n";
-	printBuffer(tmp, client_public_key_file_size);
-
-	fclose(client_public_key_file);
-
-	if(client_public_key == nullptr)
-	{
-		std::cout << "Error in reading the public key" << std::endl;
-		std::cout << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
-		exit(1);
-	}
-
-
-
-    CryptographyManager::verifySignature(client_signature,client_signature_size, 
-                                        clear_message, clear_message_size, 
-                                        client_public_key);
-
-	free(client_public_key);	
-	std::cout << "end receiveFinalMessage" << std::endl;
+	free(client_certificate);	
 }
 
 void ServerConnectionManager::setSharedKey()

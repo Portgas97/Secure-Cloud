@@ -24,7 +24,6 @@ void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_s
 */
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
-    std::cout << "receivePacket() init" << std::endl;
     uint32_t packet_length;
     int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
 
@@ -36,8 +35,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     
 
     packet_length = ntohl(packet_length);
-
-	std::cout << "Received packet length: " << packet_length << std::endl;
 
     if(return_value < (int)sizeof(uint32_t))
     {
@@ -73,10 +70,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
 
     packet = received_packet;
-    // std::cout << "hello_packet received: ";
-    // printBuffer(packet, packet_length);
-
-    std::cout << "receivePacket() end." << std::endl;
 }
 
 /*
@@ -85,7 +78,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 void ConnectionManager::sendPacket(unsigned char* packet, 
                                     uint32_t packet_length)
 {
-    std::cout << "sendPacket() init, sending " << packet_length << " bytes" << std::endl;
     packet_length = htonl(packet_length);
 
     int return_value = send(socket_fd, (void*)&packet_length, 
@@ -115,6 +107,4 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 
         bytes_sent += return_value;
     }
-
-    std::cout << "sendPacket() end" << std::endl;
 }

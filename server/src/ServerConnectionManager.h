@@ -23,17 +23,17 @@ class ServerConnectionManager: public ConnectionManager
 
         const char* PRIVATE_KEY_FILENAME = "server/files/pem_files/Key.pem";
 
-		const char* CLIENT_PUBLIC_KEY_FILENAME_PREFIX = "server/files/users/";
-		const char* CLIENT_PUBLIC_KEY_FILENAME_SUFFIX = "/Certificate.pem";
+		const char* CLIENT_CERTIFICATE_FILENAME_PREFIX = "server/files/users/";
+		const char* CLIENT_CERTIFICATE_FILENAME_SUFFIX = "/Certificate.pem";
 
-		const unsigned int MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE = 
-									strlen(CLIENT_PUBLIC_KEY_FILENAME_PREFIX) +
+		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
+									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
 									MAX_USERNAME_SIZE +
-									strlen(CLIENT_PUBLIC_KEY_FILENAME_SUFFIX) + 
+									strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 
 									1;
 
         unsigned char* certificate;
-        unsigned long int certificate_size;
+        unsigned int certificate_size;
 
 		EVP_PKEY* deserialized_ephemeral_client_key;
 
@@ -54,6 +54,7 @@ class ServerConnectionManager: public ConnectionManager
         void createConnection();
         void destroyConnection();
         void serveClient(int);
+		unsigned char* getCertificateFromFile(const char*, unsigned int&);
         void sendHello();
         void receiveHello();
 		void receiveFinalMessage();

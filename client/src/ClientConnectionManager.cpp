@@ -79,8 +79,6 @@ void ClientConnectionManager::obtainUsername()
     }
 
     username[strcspn(username, "\n")] = 0;
-    std::cout << "username check: " << username << std::endl;
-
 }
 
 void ClientConnectionManager::handleHandshake()
@@ -104,9 +102,6 @@ unsigned int ClientConnectionManager::getHelloPacket
     // hello_packet: username_size | username | nonce_size | nonce
 	serializer.serializeInt(strlen(username) + 1);
  	serializer.serializeString(username, strlen(username) + 1);
-    std::cout << "int to serialize: " << CryptographyManager::getNonceSize() 
-                                                                << std::endl;
-    std::cout << "string to serialize: " << client_nonce << std::endl;
 	serializer.serializeInt(CryptographyManager::getNonceSize());
 	serializer.serializeString(client_nonce, 
                                         CryptographyManager::getNonceSize());
@@ -121,8 +116,6 @@ unsigned int ClientConnectionManager::getHelloPacket
 */
 void ClientConnectionManager::sendHello()
 {
-	std::cout << "sendHello() init" << std::endl;
-
     CryptographyManager::getNonce(client_nonce);
 
     // hello_packet: username_size | username | nonce_size | nonce
@@ -170,8 +163,8 @@ void ClientConnectionManager::receiveHello()
                                                     server_certificate_size);
 
     X509* deserialized_server_certificate = 
-                        CryptographyManager::deserializeCertificate(server_certificate, 
-                                                        server_certificate_size);
+                        CryptographyManager::deserializeCertificate
+								(server_certificate, server_certificate_size);
 
     CryptographyManager cryptography_manager = CryptographyManager();
     cryptography_manager.verifyCertificate(deserialized_server_certificate);                                                        
@@ -232,7 +225,6 @@ void ClientConnectionManager::receiveHello()
 
 void ClientConnectionManager::sendFinalMessage()
 {
-	std::cout << "Start sendFinalMessage" << std::endl;
     ephemeral_private_key = CryptographyManager::getPrivateKey();
 
 	ephemeral_public_key = CryptographyManager::serializeKey
@@ -256,10 +248,6 @@ void ClientConnectionManager::sendFinalMessage()
 	memcpy(clear_message + ephemeral_public_key_size, &server_nonce, 
                                 CryptographyManager::getNonceSize());
 
-	std::cout << "message to be signed: " << std::endl;
-	printBuffer(clear_message, clear_message_size);
-
-
     // build the private key filename concatenating the prefix, the username
     // and the suffix
     char* private_key_filename = (char*) 
@@ -268,8 +256,6 @@ void ClientConnectionManager::sendFinalMessage()
     strcat(private_key_filename, username);
     strcat(private_key_filename, PRIVATE_KEY_FILENAME_SUFFIX);
 	
-	std::cout << "filename: " << private_key_filename << std::endl;
-
 	signature = CryptographyManager::signMessage(clear_message, 
 				clear_message_size, private_key_filename, signature_size);
 	
@@ -284,14 +270,9 @@ void ClientConnectionManager::sendFinalMessage()
 
     unsigned int final_message_size = getFinalMessage(final_message);
 
-	std::cout << "final message: " << std::endl;
-	printBuffer(final_message, final_message_size);
-
     sendPacket(final_message, final_message_size);
 
 	free(final_message);
-
-	std::cout << "end sendFinalMessage" << std::endl;
 }
 
 void ClientConnectionManager::setSharedKey()
