@@ -48,7 +48,7 @@ class ServerConnectionManager: public ConnectionManager
                                 + certificate_size
                                 + sizeof(ephemeral_public_key_size)
                                 + ephemeral_public_key_size
-                                + sizeof(signature)
+                                + sizeof(signature_size)
                                 + signature_size;
 
         void createConnection();

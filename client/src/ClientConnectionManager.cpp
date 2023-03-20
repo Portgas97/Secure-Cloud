@@ -96,7 +96,7 @@ void ClientConnectionManager::handleHandshake()
     receiveHello();
 	sendFinalMessage();
 	setSharedKey();
-    std::cout << "Session created" << std::endl;
+	receiveFinalMessage();
 }
 
 
@@ -126,7 +126,8 @@ unsigned int ClientConnectionManager::getHelloPacket
 */
 void ClientConnectionManager::sendHello()
 {
-    CryptographyManager::getNonce(client_nonce);
+    CryptographyManager::getRandomBytes(client_nonce,
+							CryptographyManager::getInitializationVectorSize());
 
     // hello_packet: username_size | username | nonce_size | nonce
     unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
@@ -290,7 +291,6 @@ void ClientConnectionManager::sendFinalMessage()
 
 void ClientConnectionManager::setSharedKey()
 {
-    std::cout << "setSharedKey() init" << std::endl;
 	// derive shared secret that will be used to derive the session key
 	size_t shared_secret_size;
 	unsigned char* shared_secret = CryptographyManager::getSharedSecret
@@ -317,4 +317,96 @@ unsigned int ClientConnectionManager::getFinalMessage
     serializer.serializeByteStream(signature, signature_size);
                         
 	return serializer.getOffset();	
+}
+
+void ClientConnectionManager::receiveFinalMessage()
+{
+	// first message exchanged using symmetric encryption 
+	message_counter = 1;
+
+    unsigned char* final_message = nullptr;
+	receivePacket(final_message);
+
+    Deserializer deserializer = Deserializer(final_message);
+
+	unsigned int received_message_counter = deserializer.deserializeInt();
+	
+	// counters on server and client side must have the same value
+	if(message_counter != received_message_counter)
+	{
+		std::cout << "Error: client counter different with regard to server " 
+					<< "counter" << std::endl;
+		exit(1);
+	}
+
+	unsigned int initialization_vector_size = deserializer.deserializeInt();
+	if(initialization_vector_size != 
+							CryptographyManager::getInitializationVectorSize())
+	{
+		std::cout << "Error: the initialization vector size is wrong" << 
+																	std::endl;
+		exit(1);
+	}
+
+    unsigned char* initialization_vector = (unsigned char*)calloc(1, 
+                                                    initialization_vector_size);
+    if(initialization_vector == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+    deserializer.deserializeByteStream(initialization_vector, 
+                                                    initialization_vector_size);
+
+	unsigned int ciphertext_size = deserializer.deserializeInt();
+    unsigned char* ciphertext = (unsigned char*)calloc(1, ciphertext_size);
+    if(ciphertext == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+    deserializer.deserializeByteStream(ciphertext, ciphertext_size);
+	
+	unsigned int tag_size = deserializer.deserializeInt();
+	if(tag_size != CryptographyManager::getTagSize())
+	{
+		std::cout << "Error: the tag size is wrong" << std::endl;
+		exit(1);
+	}
+
+    unsigned char* tag = (unsigned char*)calloc(1, tag_size);
+    if(tag == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+    deserializer.deserializeByteStream(tag, tag_size);
+	
+	// the plaintext and the ciphertext must have the same size
+    unsigned char* plaintext = (unsigned char*)calloc(1, ciphertext_size);
+    if(plaintext == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+	unsigned int aad_size = sizeof(message_counter) + 
+							sizeof(initialization_vector_size) +
+							initialization_vector_size;
+	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
+    if(aad == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+	unsigned int plaintext_size = 
+						CryptographyManager::authenticateAndDecryptMessage
+										(ciphertext, ciphertext_size, aad, 
+										aad_size, tag, shared_key, 
+										initialization_vector, plaintext);
+
+	std::cout << "Received " << plaintext << " from server" << std::endl;									
 }

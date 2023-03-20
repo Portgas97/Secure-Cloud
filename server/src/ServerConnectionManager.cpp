@@ -155,7 +155,7 @@ void ServerConnectionManager::receiveHello()
 
 	unsigned int client_nonce_size = deserializer.deserializeInt();
 
-	if(client_nonce_size != NONCE_SIZE)
+	if(client_nonce_size != CryptographyManager::getNonceSize())
 	{
 		std::cout << "Error in nonce size reception" << std::endl;
 		exit(1);
@@ -253,7 +253,8 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 void ServerConnectionManager::sendHello()
 {
 	// get nonce
-    CryptographyManager::getNonce(server_nonce);
+    CryptographyManager::getRandomBytes(server_nonce, 
+										CryptographyManager::getNonceSize());
 
 	certificate = getCertificateFromFile(CERTIFICATE_FILENAME, certificate_size);
 
@@ -392,4 +393,96 @@ void ServerConnectionManager::setSharedKey()
 	shared_key = CryptographyManager::getSharedKey(shared_secret, 
 													shared_secret_size);
 
+}
+
+void ServerConnectionManager::sendFinalMessage()
+{
+	// TO DO: insert into file of constants
+	char plaintext[] = "ACK";
+	unsigned int plaintext_size = strlen(plaintext) + 1;
+
+	unsigned int initialization_vector_size = 
+							CryptographyManager::getInitializationVectorSize();
+	
+	unsigned char* initialization_vector = (unsigned char*)calloc
+												(1, initialization_vector_size);
+	CryptographyManager::getRandomBytes(initialization_vector,
+										initialization_vector_size); 
+
+	// packet to be send: aad | ciphertext | tag
+	// aad: counter | initialization vector
+	unsigned char* final_message = (unsigned char*) calloc(1, 
+											sizeof(message_counter) + 
+											sizeof(initialization_vector_size) +
+											initialization_vector_size +
+											sizeof(ciphertext_size) +
+											ciphertext_size +
+											sizeof(TAG_SIZE) +
+											TAG_SIZE);
+	if(final_message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	Serializer serializer = Serializer(final_message);
+
+	// first message exchanged using symmetric encryption 
+	message_counter = 1;
+
+	// initialize the final_message inserting aad in it
+	serializer.serializeInt(message_counter);
+	serializer.serializeInt(initialization_vector_size);
+	serializer.serializeByteStream(initialization_vector, 
+									initialization_vector_size);
+	
+	// ciphertext will be long as the plaintext
+	unsigned char* ciphertext = (unsigned char*) calloc(1, plaintext_size);
+	if(ciphertext == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	unsigned int tag_size = CryptographyManager::getTagSize();
+	unsigned char* tag = (unsigned char*) calloc(1, tag_size);
+	if(tag == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	unsigned int ciphertext_size = 
+				CryptographyManager::authenticateAndEncryptMessage(message, 
+													strlen(message) + 1,
+													// final_message contains 
+													// aad at the moment
+													final_message,
+													serializer.getOffset(),
+													shared_key, 
+													initialization_vector,
+													initialization_vector_size,
+													ciphertext, tag);
+													
+	if(plaintext_size != ciphertext_size)
+	{
+		std::cout << "Error: ciphertext and plaintext must have the same length"
+				<< std::endl;
+		exit(1);
+	}
+
+	// complete the final message inserting ciphertext and tag in it
+	serializer.serializerInt(ciphertext_size);
+	serializer.serializeByteStream(ciphertext, ciphtertext_size);
+	serializer.serializeInt(tag_size);
+	serializer.serializeByteStream(tag, tag_size);
+	
+	unsigned int final_message_size = serializer.getOffset();
+	sendPacket(final_message, final_message_size);
+
+	free(final_message);
+	free(ciphertext);
+	free(tag);
+	free(initialization_vector);
+	free(aad);
 }
