@@ -12,28 +12,35 @@ CryptographyManager::~CryptographyManager()
 }
 
 
-void CryptographyManager::getNonce(char *nonce)
+void CryptographyManager::getRandomBytes(unsigned char *bytes, 
+											unsigned int size)
 {
     // seed the random generator
-    if(RAND_poll() < 0)
+	int return_value = RAND_poll();
+    if(return_value < 0)
     {
         std::cout << "Error in RAND_poll" << std::endl;
         exit(1);
     }
 
-    // create the actual nonce
-    if(RAND_bytes((unsigned char*)nonce, NONCE_SIZE) < 0)
+    // create the actual bytes
+	return_value = RAND_bytes(bytes, size);
+    if(return_value < 0)
     {
         std::cout << "Error in RAND_bytes" << std::endl;
         exit(1);
     }
-
 }
 
 
 unsigned int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
+}
+
+unsigned int CryptographyManager::getInitializationVectorSize()
+{
+	return INITIALIZATION_VECTOR_SIZE;
 }
 
 
@@ -160,12 +167,6 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         std::cout << "Error in reading private key" << std::endl;
         exit(1); 
     }
-
-	/*unsigned char* tmp = (unsigned char*)calloc(1,EVP_PKEY_size(private_key));
-	memcpy(tmp, private_key, EVP_PKEY_size(private_key));
-	std::cout << "Private key: " << std::endl;
-	ConnectionManager::printBuffer(tmp, EVP_PKEY_size(private_key)); // TO DO: delete include
-*/
 
     // declare some useful variables
     const EVP_MD* message_digest = EVP_sha256();
@@ -323,6 +324,7 @@ void CryptographyManager::verifySignature   (unsigned char* signature,
     if(return_value == -1 || return_value == 0)
     {
         std::cout << "Error: signature not valid" << std::endl;
+		std::cout << "return_value: " << return_value << std::endl;
         exit(1);
     }
 
@@ -452,7 +454,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 		exit(1);
     }
 
-    // the second times derives the shared secret and returns its length
+    // the second times derives the shared secret and returns its size
 	return_value = EVP_PKEY_derive(context, shared_secret, 
 													&local_shared_secret_size);
     if (return_value != 1) 
@@ -531,13 +533,174 @@ unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret,
     return shared_key;
 }
 
+unsigned int CryptographyManager::authenticateAndEncryptMessage 
+								(unsigned char *plaintext, 
+								unsigned int plaintext_size,
+								unsigned char *aad, 
+								unsigned int aad_size,
+								unsigned char *key,
+								unsigned char *initialization_vector, 
+								unsigned int initialization_vector_size,
+								unsigned char *ciphertext,
+								unsigned char *tag)
+{
+
+    EVP_CIPHER_CTX *context = EVP_CIPHER_CTX_new(); 
+    // Create and initialise the context
+    if(context == nullptr)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+
+    // Initialise the encryption operation
+	int return_value = EVP_EncryptInit(context, EVP_aes_128_gcm(), key, 
+										initialization_vector);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+
+    int size = 0;
+    // Provide any AAD data. This can be called zero or more times as required
+	return_value = EVP_EncryptUpdate(context, NULL, &size, aad, aad_size);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+
+	return_value = EVP_EncryptUpdate(context, ciphertext, &size, plaintext, 
+									plaintext_size);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+ 
+    int ciphertext_size = 0;
+    ciphertext_size = size;
+
+	//Finalize Encryption
+	return_value = EVP_EncryptFinal(context, ciphertext + size, &size);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+
+    ciphertext_size += size;
+    // Get the tag
+	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_GET_TAG, TAG_SIZE, 
+										tag);
+
+	std::cout << "DBG tag:" << std::endl;
+	ConnectionManager::printBuffer(tag, TAG_SIZE);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and encrypt message" << std::endl;
+		exit(1);
+	}
+
+    // clean up
+    EVP_CIPHER_CTX_free(context);
+    return ciphertext_size;
+}
+
+unsigned int CryptographyManager::authenticateAndDecryptMessage
+										(unsigned char *ciphertext, 
+										unsigned int ciphertext_size,
+										unsigned char *aad, 
+										unsigned int aad_size,
+										unsigned char *tag,
+										unsigned char *key,
+										unsigned char *initialization_vector, 
+										unsigned int initialization_vector_size,
+										unsigned char *plaintext)
+{
+    // Create and initialise the context
+    EVP_CIPHER_CTX *context = EVP_CIPHER_CTX_new();
+    if(context == nullptr)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		exit(1);
+	}
+	
+	int return_value = EVP_DecryptInit(context, EVP_aes_128_gcm(), key, 
+										initialization_vector);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		exit(1);
+	}
+
+	int size;
+	//Provide any AAD data
+	return_value = EVP_DecryptUpdate(context, nullptr, &size, aad, aad_size);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		exit(1);
+	}
+
+	std::cout << "DBG aad_size: " << aad_size << std::endl;
+	std::cout << "DBG aad: " << std::endl;
+	ConnectionManager::printBuffer(aad, aad_size);
+
+	//Provide the message to be decrypted, and obtain the plaintext output
+	return_value = EVP_DecryptUpdate(context, plaintext, &size, ciphertext, 
+									ciphertext_size);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		exit(1);
+	}
+
+    unsigned int plaintext_size = size;
+    // Set expected tag value
+	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_SET_TAG, 
+										TAG_SIZE, tag);
+    if(return_value != 1)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		exit(1);
+	}
+
+	std::cout << "DBG tag:" << std::endl;
+	ConnectionManager::printBuffer(tag, TAG_SIZE);
+    
+    //Finalise the decryption. A positive return value indicates success,
+    // anything else is a failure - the plaintext is not trustworthy.
+    return_value = EVP_DecryptFinal(context, plaintext + size, &size);
+
+    // Clean up
+    EVP_CIPHER_CTX_cleanup(context);
+
+	if(return_value <= 0)
+	{
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "DBG return_value " << return_value << std::endl;
+		std::cout << "DBG: " << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+		exit(1);
+	}
+
+    plaintext_size += size;
+    return plaintext_size;
+}
+
+
+unsigned int CryptographyManager::getTagSize()
+{
+	return TAG_SIZE;
+}
+
+
 #pragma GCC push_options
 #pragma GCC optimize("O0")
-
 void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer, 
 						size_t memory_buffer_size)
 {
 	memset(memory_buffer, 0, memory_buffer_size);
 }
-
 #pragma GCC pop_options                           

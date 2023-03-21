@@ -24,8 +24,9 @@ void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_s
 */
 void ConnectionManager::receivePacket(unsigned char* &packet)
 {
-    uint32_t packet_length;
-    int return_value = recv(socket_fd, (void*)&packet_length, sizeof(uint32_t), 0);
+    uint32_t packet_size;
+    int return_value = recv(socket_fd, (void*)&packet_size, 
+							sizeof(uint32_t), 0);
 
     if(return_value <= 0)
     {
@@ -34,7 +35,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
     
 
-    packet_length = ntohl(packet_length);
+    packet_size = ntohl(packet_size);
 
     if(return_value < (int)sizeof(uint32_t))
     {
@@ -44,7 +45,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
     
     //allocate needed memory space for the packet
-    unsigned char* received_packet = (unsigned char*) calloc(1, packet_length);
+    unsigned char* received_packet = (unsigned char*) calloc(1, packet_size);
     if(received_packet == nullptr)
     {
         std::cout << "Error in packet calloc" << std::endl;
@@ -55,9 +56,9 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 
 
     // hendle fragmented reception
-    while(received_bytes < packet_length)
+    while(received_bytes < packet_size)
     {
-        return_value = recv(socket_fd, (void*)received_packet, packet_length,  
+        return_value = recv(socket_fd, (void*)received_packet, packet_size,  
                                                     MSG_WAITALL);
 
         if(return_value <= 0)
@@ -76,11 +77,11 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     it sends first the packet length, then the packet itself 
 */
 void ConnectionManager::sendPacket(unsigned char* packet, 
-                                    uint32_t packet_length)
+                                    unsigned int packet_size)
 {
-    packet_length = htonl(packet_length);
+    packet_size = htonl(packet_size);
 
-    int return_value = send(socket_fd, (void*)&packet_length, 
+    int return_value = send(socket_fd, (void*)&packet_size, 
 									sizeof(uint32_t), 0);
 
     if (return_value < 0) 
@@ -89,15 +90,15 @@ void ConnectionManager::sendPacket(unsigned char* packet,
         exit(1);
     }
 
-    packet_length = ntohl(packet_length);
+    packet_size = ntohl(packet_size);
 
     uint32_t bytes_sent = 0;
 
     // handle fragmented send
-    while (bytes_sent < packet_length)
+    while (bytes_sent < packet_size)
     {
         return_value = send(socket_fd, (void*)(packet + bytes_sent), 
-                            packet_length - bytes_sent, 0);
+                            packet_size - bytes_sent, 0);
 
         if (return_value < 0) 
         {

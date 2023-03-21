@@ -24,7 +24,7 @@ class ClientConnectionManager: public ConnectionManager
         const unsigned int MAX_FINAL_HANDSHAKE_MESSAGE_SIZE =                                 
                                 sizeof(ephemeral_public_key_size)
                                 + ephemeral_public_key_size
-                                + sizeof(signature)
+                                + sizeof(signature_size)
                                 + signature_size;
         
         const unsigned int MAX_HELLO_SIZE = 
@@ -39,6 +39,7 @@ class ClientConnectionManager: public ConnectionManager
         void sendHello();
         void receiveHello();
 		void sendFinalMessage();
+		void receiveFinalMessage();
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);

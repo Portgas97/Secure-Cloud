@@ -3,7 +3,6 @@
 
 Serializer::Serializer(unsigned char* buffer_to_serialize)
 {
-	
 	buffer = buffer_to_serialize;
 	offset = 0;
 }
@@ -11,7 +10,7 @@ Serializer::Serializer(unsigned char* buffer_to_serialize)
 
 // Serializer::~Serializer()
 // {
-// 	free(buffer);
+// 	free(buffer); // don't works
 // }
 
 
