@@ -123,6 +123,7 @@ void ServerConnectionManager::handleHandshake()
 	sendHello();
 	receiveFinalMessage();
 	setSharedKey();
+	std::cout << "DBG: start sendFinalMessage()" << std::endl;
 	sendFinalMessage();
 }
 
@@ -155,14 +156,22 @@ void ServerConnectionManager::receiveHello()
 
 	unsigned int client_nonce_size = deserializer.deserializeInt();
 
-	if(client_nonce_size != NONCE_SIZE)
+	if(client_nonce_size != CryptographyManager::getNonceSize())
 	{
 		std::cout << "Error in nonce size reception" << std::endl;
 		exit(1);
 	}
 
+	client_nonce = (unsigned char*) calloc(1, client_nonce_size);
+
+	if(client_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
     // TO DO check username existance
-	deserializer.deserializeString(client_nonce, client_nonce_size);
+	deserializer.deserializeByteStream(client_nonce, client_nonce_size);
 
 	free(hello_packet);
 }
@@ -178,8 +187,9 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
-	serializer.serializeInt(NONCE_SIZE);
-	serializer.serializeString(server_nonce, NONCE_SIZE);
+	serializer.serializeInt(CryptographyManager::getNonceSize());
+	serializer.serializeByteStream(server_nonce, 
+									CryptographyManager::getNonceSize());
 	serializer.serializeInt(certificate_size);
 	serializer.serializeByteStream(certificate, certificate_size);
 	serializer.serializeInt(ephemeral_public_key_size);
@@ -248,12 +258,20 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 	hello packet:
 	//  nonce_size   | nonce | certificate_size  | certificate   | 
     //  key_size     | key   | signature_size    | signature     |
-
 */
 void ServerConnectionManager::sendHello()
 {
+	server_nonce = (unsigned char*)calloc(1,
+										CryptographyManager::getNonceSize());
+
+	if(server_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
 	// get nonce
-    CryptographyManager::getNonce(server_nonce);
+    CryptographyManager::getRandomBytes(server_nonce, 
+										CryptographyManager::getNonceSize());
 
 	certificate = getCertificateFromFile(CERTIFICATE_FILENAME, certificate_size);
 
@@ -277,7 +295,7 @@ void ServerConnectionManager::sendHello()
 
 	// building the message to be signed 
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, client_nonce, 
 				CryptographyManager::getNonceSize());
 
 	signature = CryptographyManager::signMessage(clear_message, 
@@ -302,6 +320,7 @@ void ServerConnectionManager::sendHello()
 
 void ServerConnectionManager::receiveFinalMessage()
 {
+	std::cout << "receiveFinalMessage()" << std::endl;
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
 
@@ -378,6 +397,7 @@ void ServerConnectionManager::receiveFinalMessage()
                             X509_get_pubkey(deserialized_client_certificate));
 
 	free(client_certificate);	
+	std::cout << "final message received()" << std::endl;
 }
 
 void ServerConnectionManager::setSharedKey()
@@ -393,8 +413,7 @@ void ServerConnectionManager::setSharedKey()
 													shared_secret_size);
 
 }
-<<<<<<< Updated upstream
-=======
+
 
 void ServerConnectionManager::sendFinalMessage()
 {
@@ -514,4 +533,3 @@ void ServerConnectionManager::sendFinalMessage()
 	free(tag);
 	free(initialization_vector);
 }
->>>>>>> Stashed changes

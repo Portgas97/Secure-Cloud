@@ -1,10 +1,11 @@
 #ifndef SERIALIZER_H
 #define SERIALIZER_H
-#include <iostream>
-#include <arpa/inet.h>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <arpa/inet.h>
 #include <openssl/bio.h>
+
 
 class Serializer
 {
@@ -21,6 +22,7 @@ class Serializer
 		unsigned int offset;
 
 		void serializeChar(char);
+		
 };
 
 #endif

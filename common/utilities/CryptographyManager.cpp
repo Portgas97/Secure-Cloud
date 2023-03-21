@@ -12,28 +12,35 @@ CryptographyManager::~CryptographyManager()
 }
 
 
-void CryptographyManager::getNonce(char *nonce)
+void CryptographyManager::getRandomBytes(unsigned char *bytes, 
+											unsigned int size)
 {
     // seed the random generator
-    if(RAND_poll() < 0)
+	int return_value = RAND_poll();
+    if(return_value < 0)
     {
         std::cout << "Error in RAND_poll" << std::endl;
         exit(1);
     }
 
-    // create the actual nonce
-    if(RAND_bytes((unsigned char*)nonce, NONCE_SIZE) < 0)
+    // create the actual bytes
+	return_value = RAND_bytes(bytes, size);
+    if(return_value < 0)
     {
         std::cout << "Error in RAND_bytes" << std::endl;
         exit(1);
     }
-
 }
 
 
 unsigned int CryptographyManager::getNonceSize()
 {
     return NONCE_SIZE;
+}
+
+unsigned int CryptographyManager::getInitializationVectorSize()
+{
+	return INITIALIZATION_VECTOR_SIZE;
 }
 
 
@@ -160,12 +167,6 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         std::cout << "Error in reading private key" << std::endl;
         exit(1); 
     }
-
-	/*unsigned char* tmp = (unsigned char*)calloc(1,EVP_PKEY_size(private_key));
-	memcpy(tmp, private_key, EVP_PKEY_size(private_key));
-	std::cout << "Private key: " << std::endl;
-	ConnectionManager::printBuffer(tmp, EVP_PKEY_size(private_key)); // TO DO: delete include
-*/
 
     // declare some useful variables
     const EVP_MD* message_digest = EVP_sha256();
@@ -323,6 +324,7 @@ void CryptographyManager::verifySignature   (unsigned char* signature,
     if(return_value == -1 || return_value == 0)
     {
         std::cout << "Error: signature not valid" << std::endl;
+		std::cout << "return_value: " << return_value << std::endl;
         exit(1);
     }
 
@@ -452,7 +454,7 @@ unsigned char* CryptographyManager::getSharedSecret(EVP_PKEY* private_key,
 		exit(1);
     }
 
-    // the second times derives the shared secret and returns its length
+    // the second times derives the shared secret and returns its size
 	return_value = EVP_PKEY_derive(context, shared_secret, 
 													&local_shared_secret_size);
     if (return_value != 1) 
@@ -531,8 +533,7 @@ unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret,
     return shared_key;
 }
 
-<<<<<<< Updated upstream
-=======
+
 unsigned int CryptographyManager::authenticateAndEncryptMessage 
 								(unsigned char *plaintext, 
 								unsigned int plaintext_size,
@@ -685,14 +686,11 @@ unsigned int CryptographyManager::getTagSize()
 }
 
 
->>>>>>> Stashed changes
 #pragma GCC push_options
 #pragma GCC optimize("O0")
-
 void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer, 
 						size_t memory_buffer_size)
 {
 	memset(memory_buffer, 0, memory_buffer_size);
 }
-
 #pragma GCC pop_options                           

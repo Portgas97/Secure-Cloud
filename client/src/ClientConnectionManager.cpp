@@ -96,11 +96,7 @@ void ClientConnectionManager::handleHandshake()
     receiveHello();
 	sendFinalMessage();
 	setSharedKey();
-<<<<<<< Updated upstream
-    std::cout << "Session created" << std::endl;
-=======
 	receiveFinalMessage();
->>>>>>> Stashed changes
 }
 
 
@@ -117,7 +113,7 @@ unsigned int ClientConnectionManager::getHelloPacket
 	serializer.serializeInt(strlen(username) + 1);
  	serializer.serializeString(username, strlen(username) + 1);
 	serializer.serializeInt(CryptographyManager::getNonceSize());
-	serializer.serializeString(client_nonce, 
+	serializer.serializeByteStream(client_nonce, 
                                         CryptographyManager::getNonceSize());
 
 	return serializer.getOffset();	
@@ -130,7 +126,17 @@ unsigned int ClientConnectionManager::getHelloPacket
 */
 void ClientConnectionManager::sendHello()
 {
-    CryptographyManager::getNonce(client_nonce);
+	client_nonce = (unsigned char*) calloc(1, 
+							CryptographyManager::getNonceSize());
+
+	if(client_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+    CryptographyManager::getRandomBytes(client_nonce,
+							CryptographyManager::getNonceSize());
 
     // hello_packet: username_size | username | nonce_size | nonce
     unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
@@ -162,7 +168,15 @@ void ClientConnectionManager::receiveHello()
         std::cout << "Error: received nonce size is wrong" << std::endl;
         exit(1);
     }
-    deserializer.deserializeString(server_nonce, server_nonce_size);
+	server_nonce = (unsigned char*) calloc(1, server_nonce_size);
+
+	if(server_nonce == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+    deserializer.deserializeByteStream(server_nonce, server_nonce_size);
 
     unsigned int server_certificate_size = deserializer.deserializeInt();
     unsigned char* server_certificate = (unsigned char*)calloc(1, 
@@ -227,9 +241,9 @@ void ClientConnectionManager::receiveHello()
     memcpy(clear_message + ephemeral_server_key_size, client_nonce, 
                             CryptographyManager::getNonceSize());
         
-    CryptographyManager::verifySignature(server_signature, server_signature_size, 
-                                        clear_message, clear_message_size, 
-                                        server_public_key);
+    CryptographyManager::verifySignature(server_signature, 
+										server_signature_size, clear_message, 
+										clear_message_size, server_public_key);
 
     free(server_certificate);
 	free(ephemeral_server_key);
@@ -260,7 +274,7 @@ void ClientConnectionManager::sendFinalMessage()
 
 	// building the message to be signed 
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &server_nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, server_nonce, 
                                 CryptographyManager::getNonceSize());
 
     // build the private key filename concatenating the prefix, the username
@@ -294,7 +308,6 @@ void ClientConnectionManager::sendFinalMessage()
 
 void ClientConnectionManager::setSharedKey()
 {
-    std::cout << "setSharedKey() init" << std::endl;
 	// derive shared secret that will be used to derive the session key
 	size_t shared_secret_size;
 	unsigned char* shared_secret = CryptographyManager::getSharedSecret
@@ -322,8 +335,7 @@ unsigned int ClientConnectionManager::getFinalMessage
                         
 	return serializer.getOffset();	
 }
-<<<<<<< Updated upstream
-=======
+
 
 void ClientConnectionManager::receiveFinalMessage()
 {
@@ -530,4 +542,4 @@ void ClientConnectionManager::logout()
 {
     
 }
->>>>>>> Stashed changes
+
