@@ -96,6 +96,7 @@ void ClientConnectionManager::handleHandshake()
     receiveHello();
 	sendFinalMessage();
 	setSharedKey();
+	std::cout << "DBG: start receiveFinalMessage()" << std::endl;
 	receiveFinalMessage();
 }
 
@@ -241,9 +242,9 @@ void ClientConnectionManager::receiveHello()
     memcpy(clear_message + ephemeral_server_key_size, client_nonce, 
                             CryptographyManager::getNonceSize());
         
-    CryptographyManager::verifySignature(server_signature, server_signature_size, 
-                                        clear_message, clear_message_size, 
-                                        server_public_key);
+    CryptographyManager::verifySignature(server_signature, 
+										server_signature_size, clear_message, 
+										clear_message_size, server_public_key);
 
     free(server_certificate);
 	free(ephemeral_server_key);
@@ -274,7 +275,7 @@ void ClientConnectionManager::sendFinalMessage()
 
 	// building the message to be signed 
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &server_nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, server_nonce, 
                                 CryptographyManager::getNonceSize());
 
     // build the private key filename concatenating the prefix, the username
@@ -338,7 +339,6 @@ unsigned int ClientConnectionManager::getFinalMessage
 
 void ClientConnectionManager::receiveFinalMessage()
 {
-    std::cout << "receiving final message" << std::endl;
 	// first message exchanged using symmetric encryption 
 	message_counter = 1;
 

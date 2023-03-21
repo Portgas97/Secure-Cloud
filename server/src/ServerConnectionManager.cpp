@@ -123,6 +123,7 @@ void ServerConnectionManager::handleHandshake()
 	sendHello();
 	receiveFinalMessage();
 	setSharedKey();
+	std::cout << "DBG: start sendFinalMessage()" << std::endl;
 	sendFinalMessage();
 }
 
@@ -294,7 +295,7 @@ void ServerConnectionManager::sendHello()
 
 	// building the message to be signed 
 	memcpy(clear_message, ephemeral_public_key, ephemeral_public_key_size);
-	memcpy(clear_message + ephemeral_public_key_size, &client_nonce, 
+	memcpy(clear_message + ephemeral_public_key_size, client_nonce, 
 				CryptographyManager::getNonceSize());
 
 	signature = CryptographyManager::signMessage(clear_message, 
@@ -503,6 +504,8 @@ void ServerConnectionManager::sendFinalMessage()
 		exit(1);
 	}
 
+	std::cout << "DBG. ciphertext_size: " << ciphertext_size << std::endl;
+
 	Serializer serializer_final_message = Serializer(final_message);
 	// AAD
 	serializer_final_message.serializeInt(message_counter);
@@ -523,6 +526,8 @@ void ServerConnectionManager::sendFinalMessage()
 		std::cout << "Error in computing the size of the packet" << std::endl;
 		exit(1);
 	}
+
+	std::cout << "DBG sending #bytes: " << final_message_size << std::endl;
 	
 	sendPacket(final_message, final_message_size);
 

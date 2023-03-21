@@ -324,6 +324,7 @@ void CryptographyManager::verifySignature   (unsigned char* signature,
     if(return_value == -1 || return_value == 0)
     {
         std::cout << "Error: signature not valid" << std::endl;
+		std::cout << "return_value: " << return_value << std::endl;
         exit(1);
     }
 
