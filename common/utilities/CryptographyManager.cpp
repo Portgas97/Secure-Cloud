@@ -592,7 +592,11 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 
     ciphertext_size += size;
     // Get the tag
-	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_GET_TAG, 16, tag);
+	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_GET_TAG, TAG_SIZE, 
+										tag);
+
+	std::cout << "DBG tag:" << std::endl;
+	ConnectionManager::printBuffer(tag, TAG_SIZE);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and encrypt message" << std::endl;
@@ -640,6 +644,10 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 		exit(1);
 	}
 
+	std::cout << "DBG aad_size: " << aad_size << std::endl;
+	std::cout << "DBG aad: " << std::endl;
+	ConnectionManager::printBuffer(aad, aad_size);
+
 	//Provide the message to be decrypted, and obtain the plaintext output
 	return_value = EVP_DecryptUpdate(context, plaintext, &size, ciphertext, 
 									ciphertext_size);
@@ -651,12 +659,16 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 
     unsigned int plaintext_size = size;
     // Set expected tag value
-	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_SET_TAG, 16, tag);
+	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_SET_TAG, 
+										TAG_SIZE, tag);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and decrypt message" << std::endl;
 		exit(1);
 	}
+
+	std::cout << "DBG tag:" << std::endl;
+	ConnectionManager::printBuffer(tag, TAG_SIZE);
     
     //Finalise the decryption. A positive return value indicates success,
     // anything else is a failure - the plaintext is not trustworthy.
@@ -665,12 +677,16 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
     // Clean up
     EVP_CIPHER_CTX_cleanup(context);
 
-    if(return_value > 0) // Success
+	if(return_value <= 0)
 	{
-        plaintext_size += size;
-        return plaintext_size;
-    } else
-        return -1;
+		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "DBG return_value " << return_value << std::endl;
+		std::cout << "DBG: " << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+		exit(1);
+	}
+
+    plaintext_size += size;
+    return plaintext_size;
 }
 
 

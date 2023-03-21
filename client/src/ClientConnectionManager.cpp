@@ -357,6 +357,8 @@ void ClientConnectionManager::receiveFinalMessage()
 		exit(1);
 	}
 
+	std::cout << "DBG message_counter: " << message_counter << std::endl;
+
 	unsigned int initialization_vector_size = deserializer.deserializeInt();
 	if(initialization_vector_size != 
 							CryptographyManager::getInitializationVectorSize())
@@ -377,7 +379,13 @@ void ClientConnectionManager::receiveFinalMessage()
     deserializer.deserializeByteStream(initialization_vector, 
                                                     initialization_vector_size);
 
+	std::cout << "DBG initialization_vector:" << std::endl;
+	printBuffer(initialization_vector, initialization_vector_size);
+
 	unsigned int ciphertext_size = deserializer.deserializeInt();
+
+	std::cout << "DBG ciphertext_size:" << ciphertext_size << std::endl;
+
     unsigned char* ciphertext = (unsigned char*)calloc(1, ciphertext_size);
     if(ciphertext == nullptr)
     {
@@ -385,8 +393,13 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
     deserializer.deserializeByteStream(ciphertext, ciphertext_size);
+
+	std::cout << "DBG ciphertext:" << std::endl;
+	printBuffer(ciphertext, ciphertext_size);
 	
 	unsigned int tag_size = deserializer.deserializeInt();
+	std::cout << "DBG tag_size:" << tag_size << std::endl;
+
 	if(tag_size != CryptographyManager::getTagSize())
 	{
 		std::cout << "Error: the tag size is wrong" << std::endl;
@@ -402,6 +415,9 @@ void ClientConnectionManager::receiveFinalMessage()
 
     deserializer.deserializeByteStream(tag, tag_size);
 	
+	std::cout << "DBG tag:" << std::endl;
+	printBuffer(tag, tag_size);
+
 	// the plaintext and the ciphertext must have the same size
     unsigned char* plaintext = (unsigned char*)calloc(1, ciphertext_size);
     if(plaintext == nullptr)
@@ -420,6 +436,12 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
 
+	Serializer serializer_aad = Serializer(aad);
+
+	serializer_aad.serializeInt(message_counter);
+	serializer_aad.serializeByteStream(initialization_vector, 
+										initialization_vector_size);
+
 	unsigned int plaintext_size = 
 						CryptographyManager::authenticateAndDecryptMessage
 										(ciphertext, ciphertext_size, aad, 
@@ -427,7 +449,7 @@ void ClientConnectionManager::receiveFinalMessage()
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
 
-	std::cout << "Received " << plaintext_size << " from server" << std::endl;
+	std::cout << "DBG plaintext_size: " << plaintext_size << std::endl;
     printBuffer(plaintext, plaintext_size);
 
 }
