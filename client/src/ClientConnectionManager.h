@@ -8,6 +8,8 @@ class ClientConnectionManager: public ConnectionManager
         ClientConnectionManager();
         ~ClientConnectionManager();
 		void handleHandshake();	
+        void retrieveCommand();
+
 
     private:
         const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
@@ -42,7 +44,14 @@ class ClientConnectionManager: public ConnectionManager
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
-        
+
+        void showMenu();
+        void uploadFile();
+        void downloadFile();
+        void deleteFile();
+        void listFile();
+        void renameFile();
+        void logout();
 
 };
 
