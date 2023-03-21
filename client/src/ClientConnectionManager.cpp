@@ -339,9 +339,6 @@ unsigned int ClientConnectionManager::getFinalMessage
 
 void ClientConnectionManager::receiveFinalMessage()
 {
-	// first message exchanged using symmetric encryption 
-	message_counter = 1;
-
     unsigned char* final_message = nullptr;
 	receivePacket(final_message);
 
@@ -350,24 +347,25 @@ void ClientConnectionManager::receiveFinalMessage()
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
 	// counters on server and client side must have the same value
-	if(message_counter != received_message_counter)
+	if(received_message_counter != message_counter)
 	{
 		std::cout << "Error: client counter different from server counter" 
 					<< std::endl;
 		exit(1);
 	}
 
-	unsigned int initialization_vector_size = deserializer.deserializeInt();
+	initialization_vector_size = deserializer.deserializeInt();
 	if(initialization_vector_size != 
 							CryptographyManager::getInitializationVectorSize())
 	{
-		std::cout << "Error: the initialization vector size is wrong" << 
-																	std::endl;
+		std::cout << "Error: the initialization vector size is wrong" 
+                  << std::endl;
 		exit(1);
 	}
 
-    unsigned char* initialization_vector = (unsigned char*)calloc(1, 
-                                                    initialization_vector_size);
+    initialization_vector = 
+                        (unsigned char*)calloc(1, initialization_vector_size);
+
     if(initialization_vector == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
@@ -412,10 +410,9 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
 
-	unsigned int aad_size = sizeof(message_counter) + 
-							// sizeof(initialization_vector_size) + // TO DO, note that this is sent but not part of the AAD
-							+ initialization_vector_size;
-	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
+	aad_size = sizeof(message_counter) + initialization_vector_size;
+	aad = (unsigned char*)calloc(1, aad_size);
+
     if(aad == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
@@ -434,7 +431,10 @@ void ClientConnectionManager::receiveFinalMessage()
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-
+    free(aad);
+    free(tag);
+    free(ciphertext);
+    free(initialization_vector);
 }
 
 

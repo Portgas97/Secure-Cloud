@@ -22,6 +22,8 @@ class ConnectionManager
 
         void receivePacket(unsigned char*&);
 
+        void setIVandAAD(); // TO DO can be protected?
+
         //closeSocket();
 
         virtual ~ConnectionManager();
@@ -33,7 +35,7 @@ class ConnectionManager
         int socket_fd;
         const int SERVER_PORT = 1234;
         const char* SERVER_ADDRESS = "127.0.0.1";
-		unsigned int message_counter;
+		unsigned int message_counter = 0;
         unsigned char* client_nonce;
         unsigned char* server_nonce;
         static const unsigned int MAX_USERNAME_SIZE = 50;
@@ -43,6 +45,11 @@ class ConnectionManager
         unsigned char* ephemeral_public_key;
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
+
+        unsigned char* initialization_vector;
+        unsigned int initialization_vector_size;
+        unsigned char* aad; 
+        unsigned int aad_size;
 
         
         virtual void createConnection() = 0;

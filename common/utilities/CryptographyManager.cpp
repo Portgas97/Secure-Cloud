@@ -694,3 +694,4 @@ void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer,
 	memset(memory_buffer, 0, memory_buffer_size);
 }
 #pragma GCC pop_options                           
+
