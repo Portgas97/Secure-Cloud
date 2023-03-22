@@ -10,12 +10,32 @@ ConnectionManager::~ConnectionManager()
     
 }
 
+// TO DO: move in utility class
 void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_size)
 {
     for(unsigned int i = 0; i < buffer_size; i++)
         std::cout << buffer[i];
 
     std::cout << std::endl;
+}
+
+// TO DO: move in utility class
+/*
+	It compares two byteStreams and returns 1 if they are equal, 0 otherwise
+*/
+unsigned int ConnectionManager::areBuffersEqual(unsigned char* buffer1, 
+										unsigned int buffer1_size,
+										unsigned char* buffer2,
+										unsigned int buffer2_size)
+{
+	if(buffer1_size != buffer2_size)
+		return 0;
+
+    for(unsigned int i = 0; i < buffer1_size; i++)
+		if(buffer1[i] != buffer2[i])
+			return 0;
+
+	return 1;
 }
 
 /*

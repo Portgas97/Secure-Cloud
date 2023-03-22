@@ -105,7 +105,8 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
-	request_handler.handleHandshake();    
+	request_handler.handleHandshake();   
+	request_handler.handleRequest(); 
 }
 
 /*
@@ -414,15 +415,10 @@ void ServerConnectionManager::setSharedKey()
 
 }												
 												
-
-
 void ServerConnectionManager::sendFinalMessage()
 {
-	// TO DO: insert into file of constants
-	unsigned char plaintext[] = "ACK";
-
 	unsigned int message_size;
-	unsigned char* message = getMessageToSend(plaintext, message_size);
+	unsigned char* message = getMessageToSend(ACK_MESSAGE, message_size);
 	
 	sendPacket(message, message_size);
 
@@ -431,3 +427,36 @@ void ServerConnectionManager::sendFinalMessage()
 	free(message);
 }
 
+/*
+	It receives request from client and select the operation it choose.
+*/
+void ServerConnectionManager::handleRequest()
+{
+	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	Deserializer deserializer = Deserializer(request_message);
+
+	// take the operation_code to understand which operation has been selected 
+	// by the client
+	unsigned int operation_code = deserializer.deserializeInt();
+
+	switch(operation_code)
+	{
+		case 3:
+			
+			break;
+	}
+	
+}
+
+void ServerConnectionManager::getFilenamesList
+									(Deserializer request_message_deserializer)
+{
+	
+}

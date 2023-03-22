@@ -13,6 +13,7 @@ class ServerConnectionManager: public ConnectionManager
 
 		// will be called on each ServerConnectionManager instance
 		void handleHandshake();
+		void handleRequest();
 
 
     private:
@@ -60,7 +61,7 @@ class ServerConnectionManager: public ConnectionManager
 		void receiveFinalMessage();
 		void sendFinalMessage();
 		void setSharedKey();
-        unsigned int getHelloPacket(unsigned char*);  
+        unsigned int getHelloPacket(unsigned char*); 
         
 };
 

@@ -24,6 +24,8 @@ class ConnectionManager
         virtual ~ConnectionManager();
 
         static void printBuffer(unsigned char*, unsigned int);
+		static unsigned int areBuffersEqual(unsigned char*, unsigned int,
+											unsigned char*, unsigned int);
 
 
     protected:
@@ -45,6 +47,13 @@ class ConnectionManager
 										const int = -1);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
+
+		// TO DO: insert in a file of constants
+		const int LIST_OPERATION_CODE = 3;
+
+		// TO DO: insert in a file of constants
+		const char* OPERATION_MESSAGE = "OPERATION";
+		const char* ACK_MESSAGE = "ACK";		
 
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

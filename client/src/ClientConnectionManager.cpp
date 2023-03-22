@@ -528,13 +528,18 @@ void ClientConnectionManager::deleteFile()
 void ClientConnectionManager::printFilenamesList()
 {
 	// check counter overflow
- 	if(message_counter == UINT32_MAX - 2)
+ 	if(message_counter == UINT32_MAX)
 	{
-		std::cout << "Error: counter overflow" << std::endl;
+		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
 	
-	
+	unsigned int request_message_size;
+	// TO DO: insert in a file of constants
+	unsigned char* request_message = getMessageToSend(OPERATION_MESSAGE, 
+													request_message_size, 
+													LIST_OPERATION_CODE);
+	sendPacket(request_message, request_message_size);
 	message_counter++;
 }
 
