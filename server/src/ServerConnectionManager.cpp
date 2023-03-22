@@ -414,32 +414,38 @@ void ServerConnectionManager::setSharedKey()
 
 }
 
-
-void ServerConnectionManager::sendFinalMessage()
+/*
+	it returns the message to be sent containing aad | ciphertext | tag.
+	It returns also the message_size as argument.
+	If the operation_code is not set, it means the function has to prepare 
+	an ACK message.
+*/
+unsigned char* ServerConnectionManager::getMessageToSend
+												(unsigned char* plaintext, 
+												unsigned int& message_size,
+												const int operation_code = -1)
 {
-	// TO DO: insert into file of constants
-	unsigned char plaintext[] = "ACK";
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
 
-	setIVandAAD();
+	unsigned char* initialization_vector = 
+CryptographyManager::getInitializationVector(initialization_vector);
 
 	// packet to be send: AAD | ciphertext | tag
 	// AAD: counter | initialization vector
-	unsigned int final_message_size = 
-									// AAD
-									sizeof(message_counter)
-									+ sizeof(initialization_vector_size) 
-									+ initialization_vector_size
-									// CT
-									+ sizeof(plaintext_size)
-									+ plaintext_size
-									// TAG
-									+ sizeof(CryptographyManager::getTagSize())
-									+ CryptographyManager::getTagSize();
+	message_size = 
+					// AAD
+					sizeof(message_counter)
+					+ sizeof(initialization_vector_size) 
+					+ initialization_vector_size
+					// CT
+					+ sizeof(plaintext_size)
+					+ plaintext_size
+					// TAG
+					+ sizeof(CryptographyManager::getTagSize())
+					+ CryptographyManager::getTagSize();
 
-	unsigned char* final_message = (unsigned char*) calloc(1, 
-														final_message_size);
-	if(final_message == nullptr)
+	unsigned char* message = (unsigned char*) calloc(1, message_size);
+	if(message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
@@ -478,7 +484,7 @@ void ServerConnectionManager::sendFinalMessage()
 		exit(1);
 	}
 
-	Serializer serializer_final_message = Serializer(final_message);
+	Serializer serializer_final_message = Serializer(message);
 	// AAD
 	serializer_final_message.serializeInt(message_counter);
 	serializer_final_message.serializeInt(initialization_vector_size);
@@ -491,21 +497,35 @@ void ServerConnectionManager::sendFinalMessage()
 	serializer_final_message.serializeInt(tag_size);
 	serializer_final_message.serializeByteStream(tag, tag_size);
 	
-	// already defined, this is used for debugging
+	// already defined, this is used for DBG
 	unsigned int serialized_final_message_size = serializer_final_message.getOffset();
-	if(serialized_final_message_size != final_message_size)
+	if(serialized_final_message_size != message_size)
 	{
 		std::cout << "Error in computing the size of the packet" << std::endl;
 		exit(1);
 	}
+
+	return message;
+}
+												
+												
+
+
+void ServerConnectionManager::sendFinalMessage()
+{
+	// TO DO: insert into file of constants
+	unsigned char plaintext[] = "ACK";
+
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend(plaintext, message_size);
 	
-	sendPacket(final_message, final_message_size);
+	sendPacket(message, message_size);
 
 	message_counter++;
 	
 	free(tag);
 	free(ciphertext);
-	free(final_message);
+	free(message);
 	free(aad);
 	free(initialization_vector);
 }

@@ -22,6 +22,9 @@ class CryptographyManager
         static unsigned int getNonceSize();
 		static unsigned int getInitializationVectorSize();
 		static unsigned int getTagSize();
+		static void getInitializationVector(unsigned char*);
+		static unsigned int getAad(unsigned char*, unsigned char*, 
+									unsigned int, int);
 		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
 											size_t*);
 		static unsigned char* getSharedKey(unsigned char*, unsigned int);

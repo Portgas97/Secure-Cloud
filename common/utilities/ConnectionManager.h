@@ -22,8 +22,6 @@ class ConnectionManager
 
         void receivePacket(unsigned char*&);
 
-        void setIVandAAD(); // TO DO can be protected?
-
         //closeSocket();
 
         virtual ~ConnectionManager();
@@ -46,12 +44,6 @@ class ConnectionManager
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
 
-        unsigned char* initialization_vector;
-        unsigned int initialization_vector_size;
-        unsigned char* aad; 
-        unsigned int aad_size;
-
-        
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;
         virtual void sendHello() = 0;

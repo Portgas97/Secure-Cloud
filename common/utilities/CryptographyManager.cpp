@@ -685,6 +685,60 @@ unsigned int CryptographyManager::getTagSize()
 	return TAG_SIZE;
 }
 
+void CryptographyManager::getInitializationVector
+										(unsigned char* initialization_vector)
+{
+	unsigned int initialization_vector_size = getInitializationVectorSize();
+
+	initialization_vector = 
+						(unsigned char*)calloc(1, initialization_vector_size);
+	
+	if(initialization_vector == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}	
+
+	getRandomBytes(initialization_vector, initialization_vector_size); 
+}
+
+unsigned int CryptographyManager::getAad(unsigned char* aad,
+										unsigned char* initialization_vector,
+										unsigned int message_counter,
+										int operation_code = -1)
+{
+	unsigned int aad_size = sizeof(message_counter) + 
+							initialization_vector_size;
+
+	// operation case: operation_code is added to aad
+	// aad: operation_code | message_counter | initialization_vector
+	if(operation_code != -1)
+		aad_size += sizeof(operation_code);
+
+	// else ACK case: no operation_code is added to aad
+	// aad: message_counter | initialization_vector
+
+	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
+	
+	if(aad == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	Serializer serializer = Serializer(aad);
+
+	// operation case
+	if(operation_code != -1)
+		serializer.serializeInt(operation_code);
+
+	serializer.serializeInt(message_counter);
+	serializer.serializeByteStream(initialization_vector, 
+									getInitializationVectorSize());
+
+	return aad_size;
+}
+
 
 #pragma GCC push_options
 #pragma GCC optimize("O0")

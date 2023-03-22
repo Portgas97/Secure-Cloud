@@ -451,7 +451,8 @@ void ClientConnectionManager::showMenu()
     << "\t- upload: ..." << std::endl
     << "\t- download: ..." << std::endl
     << "\t- delete: ..." << std::endl
-    << "\t- list: ..." << std::endl
+    << "\t- list: it prints the list of the filenames of the available files" <<
+		 "in your dedicated storage" << std::endl
     << "\t- rename: ..." << std::endl
     << "\t- logout: ..." << std::endl
     << std::endl
@@ -489,7 +490,7 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(command == "list")
         {
-            listFile();
+            printFilenamesList();
         } 
         else if(command == "rename")
         {
@@ -526,9 +527,9 @@ void ClientConnectionManager::deleteFile()
 }
 
 
-void ClientConnectionManager::listFile()
+void ClientConnectionManager::printFilenamesList()
 {
-    
+	   
 }
 
 
