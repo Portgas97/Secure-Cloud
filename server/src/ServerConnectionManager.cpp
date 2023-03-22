@@ -460,6 +460,8 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
 
 	std::cout << "realpath: " << canonicalized_filename << std::endl;
 
+
+	//NOTE errno is set
 	return canonicalized_filename;
 }
 
