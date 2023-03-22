@@ -139,8 +139,15 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
 												unsigned int& message_size,
-												const int operation_code)
+												int operation_code) // TO DO default value also here?
 {
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
  
 	unsigned int initialization_vector_size = 	
@@ -159,7 +166,8 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size);
+													message_counter, aad_size, 
+													operation_code);
 
 	// packet to be send: AAD | ciphertext | tag
 	// AAD: counter | initialization vector
@@ -175,6 +183,9 @@ unsigned char* ConnectionManager::getMessageToSend
 					+ sizeof(CryptographyManager::getTagSize())
 					+ CryptographyManager::getTagSize();
 
+	// operation_code is added to the AAD in case of an operation
+	if(operation_code != -1)
+		message_size += sizeof(operation_code);
 	
 
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
@@ -219,6 +230,8 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	Serializer serializer = Serializer(message);
 	// AAD
+	if(operation_code != -1)
+		serializer.serializeInt(operation_code);
 	serializer.serializeInt(message_counter);
 	serializer.serializeInt(initialization_vector_size);
 	serializer.serializeByteStream(initialization_vector,
@@ -251,7 +264,12 @@ unsigned char* ConnectionManager::getMessageToSend
 	It parses received message and check everything is correct, otherwise
 	it exits.
 */
-void ConnectionManager::parseReceivedMessage(Deserializer deserializer)
+void ConnectionManager::parseReceivedMessage(
+											Deserializer deserializer,  
+											unsigned char*& output_plaintext, 
+											unsigned int& output_plaintext_size, 
+											int operation_code
+											)
 {
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
@@ -321,7 +339,8 @@ void ConnectionManager::parseReceivedMessage(Deserializer deserializer)
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size);
+													message_counter, aad_size, 
+													operation_code);
 
     if(aad == nullptr)
     {
@@ -336,15 +355,13 @@ void ConnectionManager::parseReceivedMessage(Deserializer deserializer)
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-    
-	// check if the plaintext is the one expected // TO DO: is this check needed?
-	if(!areBuffersEqual(plaintext, plaintext_size, 
-						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
-	{
-		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
-		exit(1);
-	}
 	
+	output_plaintext = plaintext;
+	output_plaintext_size = plaintext_size;
+
+	std::cout << "DBG: received plaintext: ";
+	printBuffer(plaintext, plaintext_size);
+
 	free(aad);
     free(tag);
     free(ciphertext);

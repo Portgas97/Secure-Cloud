@@ -344,7 +344,20 @@ void ClientConnectionManager::receiveFinalMessage()
 
     Deserializer deserializer = Deserializer(final_message);
 
-	parseReceivedMessage(deserializer);
+	unsigned char* plaintext;
+	unsigned int plaintext_size;
+	parseReceivedMessage(deserializer, plaintext, plaintext_size);
+    message_counter++;
+    
+	if(!areBuffersEqual(plaintext, plaintext_size, 
+						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
+	{
+		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
+        std::cout << "Received: ";
+        printBuffer(plaintext, plaintext_size);
+		exit(1);
+	}
+
 }
 
 
@@ -415,7 +428,7 @@ void ClientConnectionManager::retrieveCommand()
         }
         else
         {
-            std::cout << "Error in paring the command" << std::endl;
+            std::cout << "Error in parsing the command" << std::endl;
             exit(1);
         }
     }
@@ -429,7 +442,18 @@ void ClientConnectionManager::uploadFile()
 
 void ClientConnectionManager::downloadFile()
 {
-    
+    std::cout << "DBG: starting the downloadFile() routine" << std::endl;
+    unsigned int request_message_size;
+    std::cout << "getMessageToSend() call" << std::endl;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)"prova.txt", 
+											request_message_size, 
+											DOWNLOAD_OPERATION_CODE);
+    std::cout << "getMessageToSend() called" << std::endl;
+    std::cout << "Sending packet" << std::endl;
+	sendPacket(request_message, request_message_size);
+	message_counter++;
+    std::cout << "packet sent" << std::endl;
 }
 
 
@@ -441,13 +465,6 @@ void ClientConnectionManager::deleteFile()
 
 void ClientConnectionManager::printFilenamesList()
 {
-	// check counter overflow
- 	if(message_counter == UINT32_MAX)
-	{
-		std::cout << "Error: message counter overflow" << std::endl;
-		exit(1);
-	}
-	
 	unsigned int request_message_size;
 	// TO DO: insert in a file of constants
 	unsigned char* request_message = getMessageToSend

@@ -9,6 +9,8 @@
 #include <stdio.h> // fgets, to delete? better cstdio
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <limits.h> // required for realpath()
+#include <stdlib.h> // required for realpath()
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -43,13 +45,15 @@ class ConnectionManager
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
 
-		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
-										const int = -1);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
-		void parseReceivedMessage(Deserializer);
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
+                                            int = -1);     
+		void parseReceivedMessage(Deserializer, unsigned char*&, 
+											unsigned int&, int = -1);
 
 		// TO DO: insert in a file of constants
+        const int DOWNLOAD_OPERATION_CODE = 1;
 		const int LIST_OPERATION_CODE = 3;
 
 		// TO DO: insert in a file of constants
