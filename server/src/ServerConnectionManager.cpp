@@ -143,18 +143,21 @@ void ServerConnectionManager::receiveHello()
 	Deserializer deserializer = Deserializer(hello_packet);
 		
 	// received_packet: username_size | username | nonce_size | nonce
-	unsigned int logged_user_username_size = deserializer.deserializeInt();
+	logged_username_size = deserializer.deserializeInt();
 
-	logged_user_username = (char*)calloc(1, logged_user_username_size);
+	char* received_logged_username = (char*)calloc(1, 
+												logged_username_size);
 
-	if(logged_user_username == nullptr)
+	if(received_logged_username == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-	deserializer.deserializeString(logged_user_username, 
-									logged_user_username_size);
+	deserializer.deserializeString(received_logged_username, 
+									logged_username_size);
+	
+	strncpy(logged_username, received_logged_username, logged_username_size);	
 
 	unsigned int client_nonce_size = deserializer.deserializeInt();
 
@@ -381,7 +384,7 @@ void ServerConnectionManager::receiveFinalMessage()
 	}
 
     strcpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX);
-    strcat(client_certificate_filename, logged_user_username);
+    strcat(client_certificate_filename, logged_username);
     strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
 
 	unsigned int client_certificate_size;
@@ -425,6 +428,39 @@ void ServerConnectionManager::sendFinalMessage()
 	free(message);
 }
 
+
+const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
+{
+	// the pattern is the following: server/files/<username>/<filename>
+	char file_path[strlen("server/files/") 
+				+ MAX_USERNAME_SIZE 
+				+ 1 
+				+ MAX_FILENAME_SIZE
+				+ 1
+				];
+
+	// not passing the '\0'
+	strncpy(file_path, "server/files/users/", strlen("server/files/users/") + 1);
+	strncat(file_path, logged_username, logged_username_size);
+	strncat(file_path, "/", strlen("/") + 1);
+	strncat(file_path, filename, strlen(filename) + 1);
+
+	std::cout << "file_path: " << file_path << std::endl;
+	
+	const char* canonicalized_filename = realpath(file_path, nullptr);
+
+	if(canonicalized_filename == nullptr)
+	{
+		std::cout << "Error in realpath" << std::endl;
+		exit(1);
+	}
+
+	std::cout << "realpath: " << canonicalized_filename << std::endl;
+
+	return canonicalized_filename;
+}
+
+
 /*
 	It receives request from client and select the operation it choose.
 	It returns 0 if the user has not logged out, 1 otherwise
@@ -442,16 +478,20 @@ unsigned int ServerConnectionManager::handleRequest()
 	// request_message: operation_code | operation_specific_fields
 	Deserializer deserializer = Deserializer(request_message);
 
-	// take the operation_code to understand which operation has been selected 
-	// by the client
+	//  which operation has been selected by the client
 	unsigned int operation_code = deserializer.deserializeInt();
 
 	switch(operation_code)
 	{
-		//case LIST_OPERATION_CODE:
+		case 1:
+			handleDownloadOperation(deserializer);
+			break;
 		case 3:
 			handleListOperation(deserializer);
-			return 0;
+			break;
+		default:
+			std::cout << "Error in operation code received" << std::endl;
+			exit(1);
 	}
 	
 	return 1;
@@ -492,6 +532,7 @@ std::string ServerConnectionManager::getDirectoryFilenames
 void ServerConnectionManager::handleListOperation
 									(Deserializer request_message_deserializer)
 {
+
 	unsigned int received_plaintext_size;
 	unsigned char* received_plaintext = parseReceivedMessage
 												(request_message_deserializer, 
@@ -527,3 +568,21 @@ void ServerConnectionManager::handleListOperation
 
 	sendPacket(message, message_size);
 }
+
+void ServerConnectionManager::handleDownloadOperation
+									(Deserializer request_message_deserializer)
+{
+	unsigned char* plaintext;
+	unsigned int plaintext_size;
+	parseReceivedMessage(request_message_deserializer, plaintext,
+									plaintext_size, DOWNLOAD_OPERATION_CODE);
+
+	std::cout << "The download message has been parsed, user wants to download "
+	<< plaintext << std::endl;
+
+	char plaintext_string[plaintext_size + 1];
+	strncpy(plaintext_string, (char*)plaintext, plaintext_size);
+
+	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
+}
+

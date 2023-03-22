@@ -141,8 +141,15 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
 												unsigned int& message_size,
-												const int operation_code)
+												int operation_code) // TO DO default value also here?
 {
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
  
 	unsigned int initialization_vector_size = 	
@@ -177,6 +184,9 @@ unsigned char* ConnectionManager::getMessageToSend
 					+ sizeof(CryptographyManager::getTagSize())
 					+ CryptographyManager::getTagSize();
 
+	// operation_code is added to the AAD in case of an operation
+	if(operation_code != -1)
+		message_size += sizeof(operation_code);
 	
 
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
@@ -226,6 +236,8 @@ unsigned char* ConnectionManager::getMessageToSend
 		serializer.serializeInt(operation_code);
 
 	// AAD
+	if(operation_code != -1)
+		serializer.serializeInt(operation_code);
 	serializer.serializeInt(message_counter);
 	serializer.serializeInt(initialization_vector_size);
 	serializer.serializeByteStream(initialization_vector,
@@ -348,15 +360,13 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-    
-	// check if the plaintext is the one expected // TO DO: is this check needed?
-	/*if(!areBuffersEqual(plaintext, plaintext_size, 
-						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
-	{
-		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
-		exit(1);
-	}*/
 	
+	output_plaintext = plaintext;
+	output_plaintext_size = plaintext_size;
+
+	std::cout << "DBG: received plaintext: ";
+	printBuffer(plaintext, plaintext_size);
+
 	free(aad);
     free(tag);
     free(ciphertext);
