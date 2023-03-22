@@ -105,8 +105,10 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
-	request_handler.handleHandshake();   
-	request_handler.handleRequest(); 
+	request_handler.handleHandshake();
+	unsigned int has_user_logged_out = 0;
+	while(!has_user_logged_out)   
+		has_user_logged_out = request_handler.handleRequest(); 
 }
 
 /*
@@ -124,7 +126,6 @@ void ServerConnectionManager::handleHandshake()
 	sendHello();
 	receiveFinalMessage();
 	setSharedKey();
-	std::cout << "DBG: start sendFinalMessage()" << std::endl;
 	sendFinalMessage();
 }
 
@@ -324,7 +325,6 @@ void ServerConnectionManager::sendHello()
 
 void ServerConnectionManager::receiveFinalMessage()
 {
-	std::cout << "receiveFinalMessage()" << std::endl;
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
 
@@ -401,7 +401,6 @@ void ServerConnectionManager::receiveFinalMessage()
                             X509_get_pubkey(deserialized_client_certificate));
 
 	free(client_certificate);	
-	std::cout << "final message received()" << std::endl;
 }
 
 void ServerConnectionManager::setSharedKey()
@@ -426,8 +425,6 @@ void ServerConnectionManager::sendFinalMessage()
 	
 	sendPacket(message, message_size);
 
-	message_counter++;
-	
 	free(message);
 }
 
@@ -466,8 +463,9 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
 
 /*
 	It receives request from client and select the operation it choose.
+	It returns 0 if the user has not logged out, 1 otherwise
 */
-void ServerConnectionManager::handleRequest()
+unsigned int ServerConnectionManager::handleRequest()
 {
 	if(message_counter == UINT32_MAX)
 	{
@@ -496,6 +494,35 @@ void ServerConnectionManager::handleRequest()
 			exit(1);
 	}
 	
+	return 1;
+}
+
+// TO DO: insert it in a utility file
+/*
+	It takes as argument the file path and obtain the relative filename
+*/
+std::string ServerConnectionManager::getFilename(std::string file_path_name)
+{
+	std::experimental::filesystem::path file_path(file_path_name);
+	return file_path.filename();
+}
+
+// TO DO: insert it in a utility file
+/*
+	It returns a list of filenames of file belonging to the directory whose
+	name is passed as argument
+*/
+std::string ServerConnectionManager::getDirectoryFilenames
+												(std::string directory_name)
+{
+	std::string directory_filenames;
+	// TO DO: evaluate if std::experimental::filesystem:: it's ok
+	//			added -lstdc++fs flag to compiler
+    for (const auto & file : 
+			std::experimental::filesystem::directory_iterator(directory_name))
+		directory_filenames += "\t" + getFilename(file.path()) + "\n";
+
+	return directory_filenames;
 }
 
 /*
@@ -505,12 +532,41 @@ void ServerConnectionManager::handleRequest()
 void ServerConnectionManager::handleListOperation
 									(Deserializer request_message_deserializer)
 {
-	unsigned char* plaintext;
-	unsigned int plaintext_size;
-	parseReceivedMessage(request_message_deserializer, plaintext,
-															plaintext_size);
-	message_counter++;
-	
+
+	unsigned int received_plaintext_size;
+	unsigned char* received_plaintext = parseReceivedMessage
+												(request_message_deserializer, 
+												received_plaintext_size, 
+												LIST_OPERATION_CODE);
+
+	if(!areBuffersEqual(received_plaintext, received_plaintext_size, 
+						(unsigned char*) OPERATION_MESSAGE, 
+						strlen(OPERATION_MESSAGE) + 1))
+	{
+		std::cout << "Error: expected " << OPERATION_MESSAGE << std::endl;
+		exit(1);
+	}
+  
+	// building user's dedicated directory path
+	std::string directory_name = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+	directory_name += logged_user_username;
+	directory_name += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+
+	std::string directory_filenames = getDirectoryFilenames(directory_name);
+	char* plaintext = (char*) calloc(1, directory_filenames.length() + 1);
+	if(plaintext == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	strcpy(plaintext, directory_filenames.c_str());
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend(
+								(unsigned char*)directory_filenames.c_str(), 
+								message_size);
+
+	sendPacket(message, message_size);
 }
 
 void ServerConnectionManager::handleDownloadOperation
@@ -520,7 +576,6 @@ void ServerConnectionManager::handleDownloadOperation
 	unsigned int plaintext_size;
 	parseReceivedMessage(request_message_deserializer, plaintext,
 									plaintext_size, DOWNLOAD_OPERATION_CODE);
-	message_counter++;
 
 	std::cout << "The download message has been parsed, user wants to download "
 	<< plaintext << std::endl;

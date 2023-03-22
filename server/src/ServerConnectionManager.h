@@ -13,7 +13,7 @@ class ServerConnectionManager: public ConnectionManager
 
 		// will be called on each ServerConnectionManager instance
 		void handleHandshake();
-		void handleRequest();
+		unsigned int handleRequest();
 
 
     private:
@@ -26,7 +26,13 @@ class ServerConnectionManager: public ConnectionManager
         const char* PRIVATE_KEY_FILENAME = "server/files/pem_files/Key.pem";
 
 		const char* CLIENT_CERTIFICATE_FILENAME_PREFIX = "server/files/users/";
-		const char* CLIENT_CERTIFICATE_FILENAME_SUFFIX = "/Certificate.pem";
+		const char* CLIENT_CERTIFICATE_FILENAME_SUFFIX = 
+												"/pem_files/Certificate.pem";
+
+		const char* CLIENT_STORAGE_DIRECTORY_NAME_PREFIX = 
+														"server/files/users/";
+		const char* CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX = "/storage";
+		
 
 		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
 									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
@@ -68,8 +74,9 @@ class ServerConnectionManager: public ConnectionManager
 		void getFilenamesList(Deserializer);
 		void handleListOperation(Deserializer);
         void handleDownloadOperation(Deserializer);
-
         const char* canonicalizeUserPath(const char*);
+		std::string getDirectoryFilenames(std::string);
+		std::string getFilename(std::string);
         
 };
 

@@ -578,8 +578,6 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 
 	return_value = EVP_EncryptUpdate(context, ciphertext, &size, plaintext, 
 									plaintext_size);
-	std::cout << "DBG plaintext: " << std::endl;
-	ConnectionManager::printBuffer(plaintext, plaintext_size);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and encrypt message" << std::endl;

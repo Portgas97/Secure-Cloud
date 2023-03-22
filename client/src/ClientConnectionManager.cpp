@@ -344,17 +344,14 @@ void ClientConnectionManager::receiveFinalMessage()
 
     Deserializer deserializer = Deserializer(final_message);
 
-	unsigned char* plaintext;
 	unsigned int plaintext_size;
-	parseReceivedMessage(deserializer, plaintext, plaintext_size);
-    message_counter++;
-    
+	unsigned char* plaintext = parseReceivedMessage(deserializer, 
+													plaintext_size);
+
 	if(!areBuffersEqual(plaintext, plaintext_size, 
-						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
+				(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
 	{
 		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
-        std::cout << "Received: ";
-        printBuffer(plaintext, plaintext_size);
 		exit(1);
 	}
 
@@ -396,46 +393,59 @@ void ClientConnectionManager::retrieveCommand()
             std::cout << "Error in reading command" << std::endl;
             exit(1);
         }
+
+		// TO DO: is this operation safe?
+		std::string operation = command.substr(0, command.find(" "));
         
-        std::cout << "DBG: you typed: " << command << std::endl;
-
 		// TO DO: security check on the inserted command
+		// TO DO: on commands which require filename execute check (maybe only on server)
 
-        if(command == "upload")
+        if(operation == "upload")
         {
             uploadFile();
         } 
-        else if(command == "download")
+        else if(operation == "download")
         {
             downloadFile();
         }
-        else if(command == "delete")
+        else if(operation == "delete")
         {
             deleteFile();
         }
-        else if(command == "list")
+        else if(operation == "list")
         {
             printFilenamesList();
         } 
-        else if(command == "rename")
+        else if(operation == "rename")
         {
             renameFile();
         }
-        else if(command == "logout")
+        else if(operation == "logout")
         {
             logout();
             logout_exit = true;
         }
         else
-        {
             std::cout << "Error in parsing the command" << std::endl;
-            exit(1);
-        }
     }
 }
 
 void ClientConnectionManager::uploadFile()
 {
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	
+	unsigned int request_message_size;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)OPERATION_MESSAGE, 
+											request_message_size, 
+											UPLOAD_OPERATION_CODE);
+	// send the request
+	sendPacket(request_message, request_message_size);
 
 }
 
@@ -466,13 +476,27 @@ void ClientConnectionManager::deleteFile()
 void ClientConnectionManager::printFilenamesList()
 {
 	unsigned int request_message_size;
-	// TO DO: insert in a file of constants
 	unsigned char* request_message = getMessageToSend
 											((unsigned char*)OPERATION_MESSAGE, 
 											request_message_size, 
 											LIST_OPERATION_CODE);
+	// send the request
 	sendPacket(request_message, request_message_size);
-	message_counter++;
+
+	// receive the reply
+	unsigned char* reply_message = nullptr;
+	receivePacket(reply_message);
+
+	Deserializer deserializer = Deserializer(reply_message);
+	unsigned int plaintext_size;
+	// TO DO: is it correct to send operation_code in clear?
+	unsigned char* plaintext = parseReceivedMessage(deserializer, 
+													plaintext_size);
+
+	std::cout << "File list: " << std::endl;
+	printBuffer(plaintext, plaintext_size);
+
+	
 }
 
 

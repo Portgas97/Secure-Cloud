@@ -6,11 +6,12 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <cstdlib>
-#include <stdio.h> // fgets, to delete? better cstdio
+#include <stdio.h> // TO DO: fgets, to delete? better cstdio
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <limits.h> // required for realpath()
 #include <stdlib.h> // required for realpath()
+#include <experimental/filesystem>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -47,14 +48,19 @@ class ConnectionManager
 
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
+        
 		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
-                                            int = -1);     
-		void parseReceivedMessage(Deserializer, unsigned char*&, 
-											unsigned int&, int = -1);
+                                            const int = -1);     
+		unsigned char* parseReceivedMessage(Deserializer, unsigned int&, 
+											unsigned int = -1);
 
 		// TO DO: insert in a file of constants
-        const int DOWNLOAD_OPERATION_CODE = 1;
-		const int LIST_OPERATION_CODE = 3;
+		const unsigned int UPLOAD_OPERATION_CODE = 0;
+		const unsigned int DOWNLOAD_OPERATION_CODE = 1;
+		const unsigned int DELETE_OPERATION_CODE = 2;
+		const unsigned int LIST_OPERATION_CODE = 3;
+		const unsigned int RENAME_OPERATION_CODE = 4;
+		const unsigned int LOGOUT_OPERATION_CODE = 5;
 
 		// TO DO: insert in a file of constants
 		const char* OPERATION_MESSAGE = "OPERATION";

@@ -54,7 +54,6 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
         exit(1);
     }
     
-
     packet_size = ntohl(packet_size);
 
     if(return_value < (int)sizeof(uint32_t))
@@ -63,7 +62,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
                     << sizeof(uint32_t) << std::endl;
         exit(1);
     }
-    
+
     //allocate needed memory space for the packet
     unsigned char* received_packet = (unsigned char*) calloc(1, packet_size);
     if(received_packet == nullptr)
@@ -91,6 +90,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     }
 
     packet = received_packet;
+
 }
 
 /*
@@ -99,7 +99,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
 void ConnectionManager::sendPacket(unsigned char* packet, 
                                     unsigned int packet_size)
 {
-    packet_size = htonl(packet_size);
+	packet_size = htonl(packet_size);
 
     int return_value = send(socket_fd, (void*)&packet_size, 
 									sizeof(uint32_t), 0);
@@ -113,6 +113,8 @@ void ConnectionManager::sendPacket(unsigned char* packet,
     packet_size = ntohl(packet_size);
 
     uint32_t bytes_sent = 0;
+
+	
 
     // handle fragmented send
     while (bytes_sent < packet_size)
@@ -166,16 +168,15 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size, 
+													message_counter, aad_size,
 													operation_code);
 
 	// packet to be send: AAD | ciphertext | tag
-	// AAD: counter | initialization vector
+	// AAD: {operation_code} | counter | initialization vector
 	message_size = 
+					sizeof(initialization_vector_size) 
 					// AAD
-					sizeof(message_counter)
-					+ sizeof(initialization_vector_size) 
-					+ initialization_vector_size
+					+ aad_size
 					// CT
 					+ sizeof(plaintext_size)
 					+ plaintext_size
@@ -229,6 +230,11 @@ unsigned char* ConnectionManager::getMessageToSend
 	}
 
 	Serializer serializer = Serializer(message);
+
+	// operation case
+	if(operation_code != -1)
+		serializer.serializeInt(operation_code);
+
 	// AAD
 	if(operation_code != -1)
 		serializer.serializeInt(operation_code);
@@ -256,6 +262,9 @@ unsigned char* ConnectionManager::getMessageToSend
 	free(tag);
 	free(ciphertext);
 
+	// TO DO: evaluate if it's ok put here the message_counter increment
+	message_counter++;
+
 	return message;
 }
 
@@ -264,12 +273,9 @@ unsigned char* ConnectionManager::getMessageToSend
 	It parses received message and check everything is correct, otherwise
 	it exits.
 */
-void ConnectionManager::parseReceivedMessage(
-											Deserializer deserializer,  
-											unsigned char*& output_plaintext, 
-											unsigned int& output_plaintext_size, 
-											int operation_code
-											)
+unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer,
+											unsigned int& plaintext_size, 
+											unsigned int operation_code)
 {
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
@@ -339,7 +345,7 @@ void ConnectionManager::parseReceivedMessage(
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size, 
+													message_counter, aad_size,
 													operation_code);
 
     if(aad == nullptr)
@@ -349,8 +355,7 @@ void ConnectionManager::parseReceivedMessage(
     }
 
 
-	unsigned int plaintext_size = 
-						CryptographyManager::authenticateAndDecryptMessage
+	plaintext_size = CryptographyManager::authenticateAndDecryptMessage
 										(ciphertext, ciphertext_size, aad, 
 										aad_size, tag, shared_key, 
 										initialization_vector, 
@@ -367,4 +372,8 @@ void ConnectionManager::parseReceivedMessage(
     free(ciphertext);
     free(initialization_vector);
 
+	// TO DO: evaluate if it's ok put here the message_counter increment
+	message_counter++;
+
+	return plaintext;
 }
