@@ -344,7 +344,17 @@ void ClientConnectionManager::receiveFinalMessage()
 
     Deserializer deserializer = Deserializer(final_message);
 
-	parseReceivedMessage(deserializer);
+	unsigned int plaintext_size;
+	unsigned char* plaintext = parseReceivedMessage(deserializer, 
+													plaintext_size);
+
+	if(!areBuffersEqual(plaintext, plaintext_size, 
+				(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
+	{
+		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
+		exit(1);
+	}
+
 }
 
 
@@ -384,8 +394,6 @@ void ClientConnectionManager::retrieveCommand()
             exit(1);
         }
         
-        std::cout << "DBG: you typed: " << command << std::endl;
-
 		// TO DO: security check on the inserted command
 
         if(command == "upload")
@@ -414,10 +422,7 @@ void ClientConnectionManager::retrieveCommand()
             logout_exit = true;
         }
         else
-        {
-            std::cout << "Error in paring the command" << std::endl;
-            exit(1);
-        }
+            std::cout << "Error in parsing the command" << std::endl;
     }
 }
 
@@ -454,8 +459,23 @@ void ClientConnectionManager::printFilenamesList()
 											((unsigned char*)OPERATION_MESSAGE, 
 											request_message_size, 
 											LIST_OPERATION_CODE);
+	// send the request
 	sendPacket(request_message, request_message_size);
-	message_counter++;
+
+	// receive the reply
+	unsigned char* reply_message = nullptr;
+	receivePacket(reply_message);
+
+	Deserializer deserializer = Deserializer(reply_message);
+	unsigned int plaintext_size;
+	// TO DO: is it correct to send operation_code in clear?
+	unsigned char* plaintext = parseReceivedMessage(deserializer, 
+													plaintext_size);
+
+	std::cout << "File list: " << std::endl;
+	printBuffer(plaintext, plaintext_size);
+
+	
 }
 
 

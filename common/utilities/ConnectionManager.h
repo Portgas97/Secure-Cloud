@@ -6,9 +6,10 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <cstdlib>
-#include <stdio.h> // fgets, to delete? better cstdio
+#include <stdio.h> // TO DO: fgets, to delete? better cstdio
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <experimental/filesystem>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -47,10 +48,11 @@ class ConnectionManager
 										const int = -1);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
-		void parseReceivedMessage(Deserializer);
+		unsigned char* parseReceivedMessage(Deserializer, unsigned int&, 
+											unsigned int = -1);
 
 		// TO DO: insert in a file of constants
-		const int LIST_OPERATION_CODE = 3;
+		const unsigned int LIST_OPERATION_CODE = 3;
 
 		// TO DO: insert in a file of constants
 		const char* OPERATION_MESSAGE = "OPERATION";
