@@ -50,7 +50,7 @@ class ClientConnectionManager: public ConnectionManager
         void uploadFile();
         void downloadFile();
         void deleteFile();
-        void listFile();
+        void printFilenamesList();
         void renameFile();
         void logout();
 

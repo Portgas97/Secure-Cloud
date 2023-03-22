@@ -10,12 +10,32 @@ ConnectionManager::~ConnectionManager()
     
 }
 
+// TO DO: move in utility class
 void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_size)
 {
     for(unsigned int i = 0; i < buffer_size; i++)
         std::cout << buffer[i];
 
     std::cout << std::endl;
+}
+
+// TO DO: move in utility class
+/*
+	It compares two byteStreams and returns 1 if they are equal, 0 otherwise
+*/
+unsigned int ConnectionManager::areBuffersEqual(unsigned char* buffer1, 
+										unsigned int buffer1_size,
+										unsigned char* buffer2,
+										unsigned int buffer2_size)
+{
+	if(buffer1_size != buffer2_size)
+		return 0;
+
+    for(unsigned int i = 0; i < buffer1_size; i++)
+		if(buffer1[i] != buffer2[i])
+			return 0;
+
+	return 1;
 }
 
 /*
@@ -110,13 +130,23 @@ void ConnectionManager::sendPacket(unsigned char* packet,
     }
 }
 
-
-void ConnectionManager::setIVandAAD()
+/*
+	it returns the message to be sent containing aad | ciphertext | tag.
+	It returns also the message_size as argument.
+	If the operation_code is not set, it means the function has to prepare 
+	an ACK message.
+*/
+unsigned char* ConnectionManager::getMessageToSend
+												(unsigned char* plaintext, 
+												unsigned int& message_size,
+												const int operation_code)
 {
-	initialization_vector_size = 
-						CryptographyManager::getInitializationVectorSize();
-	
-	initialization_vector = 
+	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
+ 
+	unsigned int initialization_vector_size = 	
+							CryptographyManager::getInitializationVectorSize();
+
+	unsigned char* initialization_vector = 
 						(unsigned char*)calloc(1, initialization_vector_size);
 	
 	if(initialization_vector == nullptr)
@@ -125,22 +155,199 @@ void ConnectionManager::setIVandAAD()
 		exit(1);
 	}	
 
-	CryptographyManager::getRandomBytes(initialization_vector,
-										initialization_vector_size); 
+	CryptographyManager::getInitializationVector(initialization_vector);
 
-	aad_size = sizeof(message_counter) + initialization_vector_size;
+	unsigned int aad_size;
+	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
+													message_counter, aad_size);
 
-	aad = (unsigned char*)calloc(1, aad_size);
-    
-	if(aad == nullptr)
+	// packet to be send: AAD | ciphertext | tag
+	// AAD: counter | initialization vector
+	message_size = 
+					// AAD
+					sizeof(message_counter)
+					+ sizeof(initialization_vector_size) 
+					+ initialization_vector_size
+					// CT
+					+ sizeof(plaintext_size)
+					+ plaintext_size
+					// TAG
+					+ sizeof(CryptographyManager::getTagSize())
+					+ CryptographyManager::getTagSize();
+
+	
+
+	unsigned char* message = (unsigned char*) calloc(1, message_size);
+	if(message == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-	Serializer serializer_aad = Serializer(aad);
+	
+	// ciphertext will be long as the plaintext
+	unsigned char* ciphertext = (unsigned char*) calloc(1, plaintext_size);
+	if(ciphertext == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
 
-	serializer_aad.serializeInt(message_counter);
-	serializer_aad.serializeByteStream(initialization_vector, 
-										initialization_vector_size);
+	unsigned int tag_size = CryptographyManager::getTagSize();
+	unsigned char* tag = (unsigned char*) calloc(1, tag_size);
+	if(tag == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+ 
+	unsigned int ciphertext_size = 
+				CryptographyManager::authenticateAndEncryptMessage
+													(plaintext, plaintext_size,
+													aad, aad_size,
+													shared_key, 
+													initialization_vector,
+													initialization_vector_size,
+													ciphertext, tag);
+													
+	if(plaintext_size != ciphertext_size)
+	{
+		std::cout << "Error: ciphertext and plaintext must have the same length"
+				<< std::endl;
+		exit(1);
+	}
+
+	Serializer serializer = Serializer(message);
+	// AAD
+	serializer.serializeInt(message_counter);
+	serializer.serializeInt(initialization_vector_size);
+	serializer.serializeByteStream(initialization_vector,
+													initialization_vector_size);
+	// CT
+	serializer.serializeInt(ciphertext_size);
+	serializer.serializeByteStream(ciphertext, ciphertext_size);
+	// TAG
+	serializer.serializeInt(tag_size);
+	serializer.serializeByteStream(tag, tag_size);
+	
+	// already defined, this is used for DBG
+	unsigned int serialized_final_message_size = serializer.getOffset();
+	if(serialized_final_message_size != message_size)
+	{
+		std::cout << "Error in computing the size of the packet" << std::endl;
+		exit(1);
+	}
+
+	free(aad);
+	free(initialization_vector);
+	free(tag);
+	free(ciphertext);
+
+	return message;
+}
+
+// TO DO: maybe the function name is misleading
+/*
+	It parses received message and check everything is correct, otherwise
+	it exits.
+*/
+void ConnectionManager::parseReceivedMessage(Deserializer deserializer)
+{
+	unsigned int received_message_counter = deserializer.deserializeInt();
+	
+	// counters on server and client side must have the same value
+	if(received_message_counter != message_counter)
+	{
+		std::cout << "Error: client counter different from server counter" 
+					<< std::endl;
+		exit(1);
+	}
+
+	unsigned int initialization_vector_size = deserializer.deserializeInt();
+	if(initialization_vector_size != 
+							CryptographyManager::getInitializationVectorSize())
+	{
+		std::cout << "Error: the initialization vector size is wrong" 
+                  << std::endl;
+		exit(1);
+	}
+
+    unsigned char* initialization_vector = 
+                        (unsigned char*)calloc(1, initialization_vector_size);
+
+    if(initialization_vector == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+    deserializer.deserializeByteStream(initialization_vector, 
+                                                    initialization_vector_size);
+
+	unsigned int ciphertext_size = deserializer.deserializeInt();
+
+    unsigned char* ciphertext = (unsigned char*)calloc(1, ciphertext_size);
+    if(ciphertext == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+    deserializer.deserializeByteStream(ciphertext, ciphertext_size);
+	
+	unsigned int tag_size = deserializer.deserializeInt();
+
+	if(tag_size != CryptographyManager::getTagSize())
+	{
+		std::cout << "Error: the tag size is wrong" << std::endl;
+		exit(1);
+	}
+
+    unsigned char* tag = (unsigned char*)calloc(1, tag_size);
+    if(tag == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+    deserializer.deserializeByteStream(tag, tag_size);
+	
+	// the plaintext and the ciphertext must have the same size
+    unsigned char* plaintext = (unsigned char*)calloc(1, ciphertext_size);
+    if(plaintext == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+	unsigned int aad_size;
+	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
+													message_counter, aad_size);
+
+    if(aad == nullptr)
+    {
+        std::cout << "Error in calloc" << std::endl;
+        exit(1);
+    }
+
+
+	unsigned int plaintext_size = 
+						CryptographyManager::authenticateAndDecryptMessage
+										(ciphertext, ciphertext_size, aad, 
+										aad_size, tag, shared_key, 
+										initialization_vector, 
+                                        initialization_vector_size, plaintext);
+    
+	// check if the plaintext is the one expected // TO DO: is this check needed?
+	if(!areBuffersEqual(plaintext, plaintext_size, 
+						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
+	{
+		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
+		exit(1);
+	}
+	
+	free(aad);
+    free(tag);
+    free(ciphertext);
+    free(initialization_vector);
+
 }

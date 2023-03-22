@@ -105,7 +105,8 @@ void ServerConnectionManager::serveClient(int client_socket)
 {
 	ServerConnectionManager request_handler =
  										ServerConnectionManager(client_socket);
-	request_handler.handleHandshake();    
+	request_handler.handleHandshake();   
+	request_handler.handleRequest(); 
 }
 
 /*
@@ -412,101 +413,57 @@ void ServerConnectionManager::setSharedKey()
 	shared_key = CryptographyManager::getSharedKey(shared_secret, 
 													shared_secret_size);
 
-}
-
-
+}												
+												
 void ServerConnectionManager::sendFinalMessage()
 {
-	// TO DO: insert into file of constants
-	unsigned char plaintext[] = "ACK";
-	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
-
-	setIVandAAD();
-
-	// packet to be send: AAD | ciphertext | tag
-	// AAD: counter | initialization vector
-	unsigned int final_message_size = 
-									// AAD
-									sizeof(message_counter)
-									+ sizeof(initialization_vector_size) 
-									+ initialization_vector_size
-									// CT
-									+ sizeof(plaintext_size)
-									+ plaintext_size
-									// TAG
-									+ sizeof(CryptographyManager::getTagSize())
-									+ CryptographyManager::getTagSize();
-
-	unsigned char* final_message = (unsigned char*) calloc(1, 
-														final_message_size);
-	if(final_message == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		exit(1);
-	}
-
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend((unsigned char*)ACK_MESSAGE, 
+												message_size);
 	
-	// ciphertext will be long as the plaintext
-	unsigned char* ciphertext = (unsigned char*) calloc(1, plaintext_size);
-	if(ciphertext == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		exit(1);
-	}
-
-	unsigned int tag_size = CryptographyManager::getTagSize();
-	unsigned char* tag = (unsigned char*) calloc(1, tag_size);
-	if(tag == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		exit(1);
-	}
- 
-	unsigned int ciphertext_size = 
-				CryptographyManager::authenticateAndEncryptMessage
-													(plaintext, plaintext_size,
-													aad, aad_size,
-													shared_key, 
-													initialization_vector,
-													initialization_vector_size,
-													ciphertext, tag);
-													
-	if(plaintext_size != ciphertext_size)
-	{
-		std::cout << "Error: ciphertext and plaintext must have the same length"
-				<< std::endl;
-		exit(1);
-	}
-
-	Serializer serializer_final_message = Serializer(final_message);
-	// AAD
-	serializer_final_message.serializeInt(message_counter);
-	serializer_final_message.serializeInt(initialization_vector_size);
-	serializer_final_message.serializeByteStream(initialization_vector,
-													initialization_vector_size);
-	// CT
-	serializer_final_message.serializeInt(ciphertext_size);
-	serializer_final_message.serializeByteStream(ciphertext, ciphertext_size);
-	// TAG
-	serializer_final_message.serializeInt(tag_size);
-	serializer_final_message.serializeByteStream(tag, tag_size);
-	
-	// already defined, this is used for debugging
-	unsigned int serialized_final_message_size = serializer_final_message.getOffset();
-	if(serialized_final_message_size != final_message_size)
-	{
-		std::cout << "Error in computing the size of the packet" << std::endl;
-		exit(1);
-	}
-	
-	sendPacket(final_message, final_message_size);
+	sendPacket(message, message_size);
 
 	message_counter++;
 	
-	free(tag);
-	free(ciphertext);
-	free(final_message);
-	free(aad);
-	free(initialization_vector);
+	free(message);
 }
 
+/*
+	It receives request from client and select the operation it choose.
+*/
+void ServerConnectionManager::handleRequest()
+{
+	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	// request_message: operation_code | operation_specific_fields
+	Deserializer deserializer = Deserializer(request_message);
+
+	// take the operation_code to understand which operation has been selected 
+	// by the client
+	unsigned int operation_code = deserializer.deserializeInt();
+
+	switch(operation_code)
+	{
+		case 3:
+			handleListOperation(deserializer);
+			break;
+	}
+	
+}
+
+/*
+	It parses the received packet, checks if everything is correct and then
+	replies with the filenames list
+*/
+void ServerConnectionManager::handleListOperation
+									(Deserializer request_message_deserializer)
+{
+	parseReceivedMessage(request_message_deserializer);
+	
+}

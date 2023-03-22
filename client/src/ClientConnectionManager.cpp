@@ -344,97 +344,7 @@ void ClientConnectionManager::receiveFinalMessage()
 
     Deserializer deserializer = Deserializer(final_message);
 
-	unsigned int received_message_counter = deserializer.deserializeInt();
-	
-	// counters on server and client side must have the same value
-	if(received_message_counter != message_counter)
-	{
-		std::cout << "Error: client counter different from server counter" 
-					<< std::endl;
-		exit(1);
-	}
-
-	initialization_vector_size = deserializer.deserializeInt();
-	if(initialization_vector_size != 
-							CryptographyManager::getInitializationVectorSize())
-	{
-		std::cout << "Error: the initialization vector size is wrong" 
-                  << std::endl;
-		exit(1);
-	}
-
-    initialization_vector = 
-                        (unsigned char*)calloc(1, initialization_vector_size);
-
-    if(initialization_vector == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
-
-    deserializer.deserializeByteStream(initialization_vector, 
-                                                    initialization_vector_size);
-
-	unsigned int ciphertext_size = deserializer.deserializeInt();
-
-    unsigned char* ciphertext = (unsigned char*)calloc(1, ciphertext_size);
-    if(ciphertext == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
-    deserializer.deserializeByteStream(ciphertext, ciphertext_size);
-	
-	unsigned int tag_size = deserializer.deserializeInt();
-
-	if(tag_size != CryptographyManager::getTagSize())
-	{
-		std::cout << "Error: the tag size is wrong" << std::endl;
-		exit(1);
-	}
-
-    unsigned char* tag = (unsigned char*)calloc(1, tag_size);
-    if(tag == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
-
-    deserializer.deserializeByteStream(tag, tag_size);
-	
-	// the plaintext and the ciphertext must have the same size
-    unsigned char* plaintext = (unsigned char*)calloc(1, ciphertext_size);
-    if(plaintext == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
-
-	aad_size = sizeof(message_counter) + initialization_vector_size;
-	aad = (unsigned char*)calloc(1, aad_size);
-
-    if(aad == nullptr)
-    {
-        std::cout << "Error in calloc" << std::endl;
-        exit(1);
-    }
-
-	Serializer serializer_aad = Serializer(aad);
-
-	serializer_aad.serializeInt(message_counter);
-	serializer_aad.serializeByteStream(initialization_vector, 
-										initialization_vector_size);
-
-	unsigned int plaintext_size = 
-						CryptographyManager::authenticateAndDecryptMessage
-										(ciphertext, ciphertext_size, aad, 
-										aad_size, tag, shared_key, 
-										initialization_vector, 
-                                        initialization_vector_size, plaintext);
-    free(aad);
-    free(tag);
-    free(ciphertext);
-    free(initialization_vector);
+	parseReceivedMessage(deserializer);
 }
 
 
@@ -451,7 +361,8 @@ void ClientConnectionManager::showMenu()
     << "\t- upload: ..." << std::endl
     << "\t- download: ..." << std::endl
     << "\t- delete: ..." << std::endl
-    << "\t- list: ..." << std::endl
+    << "\t- list: it prints the list of the filenames of the available files" <<
+		 "in your dedicated storage" << std::endl
     << "\t- rename: ..." << std::endl
     << "\t- logout: ..." << std::endl
     << std::endl
@@ -475,6 +386,8 @@ void ClientConnectionManager::retrieveCommand()
         
         std::cout << "DBG: you typed: " << command << std::endl;
 
+		// TO DO: security check on the inserted command
+
         if(command == "upload")
         {
             uploadFile();
@@ -489,7 +402,7 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(command == "list")
         {
-            listFile();
+            printFilenamesList();
         } 
         else if(command == "rename")
         {
@@ -526,9 +439,23 @@ void ClientConnectionManager::deleteFile()
 }
 
 
-void ClientConnectionManager::listFile()
+void ClientConnectionManager::printFilenamesList()
 {
-    
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	
+	unsigned int request_message_size;
+	// TO DO: insert in a file of constants
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)OPERATION_MESSAGE, 
+											request_message_size, 
+											LIST_OPERATION_CODE);
+	sendPacket(request_message, request_message_size);
+	message_counter++;
 }
 
 
