@@ -203,7 +203,8 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
         exit(1); 
     }
     
-    return_value = EVP_SignFinal(signature_context, signature, &signature_size, private_key);
+    return_value = EVP_SignFinal(signature_context, signature, &signature_size, 
+								private_key);
     if(return_value == 0)
     {
         std::cout << "Error in signature" << std::endl;
@@ -389,7 +390,8 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
     
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority certificate" << std::endl;
+        std::cout << "Error in storing certification authority certificate" 
+					<< std::endl;
         exit(1); 
     }
 
@@ -397,7 +399,8 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
                                                 certification_authority_crl);
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority certificate" << std::endl;
+        std::cout << "Error in storing certification authority certificate" 
+					<< std::endl;
         exit(1); 
     }
 
@@ -405,7 +408,8 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
                                                         X509_V_FLAG_CRL_CHECK);
     if(return_value != 1)
     {
-        std::cout << "Error in storing certification authority certificate" << std::endl;
+        std::cout << "Error in storing certification authority certificate" 
+					<< std::endl;
         exit(1); 
     }
 
@@ -565,7 +569,7 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 
     int size = 0;
     // Provide any AAD data. This can be called zero or more times as required
-	return_value = EVP_EncryptUpdate(context, NULL, &size, aad, aad_size);
+	return_value = EVP_EncryptUpdate(context, nullptr, &size, aad, aad_size);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and encrypt message" << std::endl;
@@ -574,6 +578,8 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 
 	return_value = EVP_EncryptUpdate(context, ciphertext, &size, plaintext, 
 									plaintext_size);
+	std::cout << "DBG plaintext: " << std::endl;
+	ConnectionManager::printBuffer(plaintext, plaintext_size);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and encrypt message" << std::endl;
@@ -688,27 +694,15 @@ unsigned int CryptographyManager::getTagSize()
 void CryptographyManager::getInitializationVector
 										(unsigned char* initialization_vector)
 {
-	unsigned int initialization_vector_size = getInitializationVectorSize();
-
-	initialization_vector = 
-						(unsigned char*)calloc(1, initialization_vector_size);
-	
-	if(initialization_vector == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		exit(1);
-	}	
-
-	getRandomBytes(initialization_vector, initialization_vector_size); 
+	getRandomBytes(initialization_vector, getInitializationVectorSize()); 
 }
 
-unsigned int CryptographyManager::getAad(unsigned char* aad,
-										unsigned char* initialization_vector,
+unsigned char* CryptographyManager::getAad(unsigned char* initialization_vector,
 										unsigned int message_counter,
-										int operation_code = -1)
+										unsigned int& aad_size,
+										int operation_code)
 {
-	unsigned int aad_size = sizeof(message_counter) + 
-							initialization_vector_size;
+	aad_size = sizeof(message_counter) + getInitializationVectorSize();
 
 	// operation case: operation_code is added to aad
 	// aad: operation_code | message_counter | initialization_vector
@@ -736,7 +730,7 @@ unsigned int CryptographyManager::getAad(unsigned char* aad,
 	serializer.serializeByteStream(initialization_vector, 
 									getInitializationVectorSize());
 
-	return aad_size;
+	return aad;
 }
 
 

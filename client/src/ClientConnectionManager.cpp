@@ -354,7 +354,7 @@ void ClientConnectionManager::receiveFinalMessage()
 		exit(1);
 	}
 
-	initialization_vector_size = deserializer.deserializeInt();
+	unsigned int initialization_vector_size = deserializer.deserializeInt();
 	if(initialization_vector_size != 
 							CryptographyManager::getInitializationVectorSize())
 	{
@@ -363,7 +363,7 @@ void ClientConnectionManager::receiveFinalMessage()
 		exit(1);
 	}
 
-    initialization_vector = 
+    unsigned char* initialization_vector = 
                         (unsigned char*)calloc(1, initialization_vector_size);
 
     if(initialization_vector == nullptr)
@@ -410,8 +410,9 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
 
-	aad_size = sizeof(message_counter) + initialization_vector_size;
-	aad = (unsigned char*)calloc(1, aad_size);
+	unsigned int aad_size;
+	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
+													message_counter, aad_size);
 
     if(aad == nullptr)
     {
@@ -419,11 +420,6 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
 
-	Serializer serializer_aad = Serializer(aad);
-
-	serializer_aad.serializeInt(message_counter);
-	serializer_aad.serializeByteStream(initialization_vector, 
-										initialization_vector_size);
 
 	unsigned int plaintext_size = 
 						CryptographyManager::authenticateAndDecryptMessage

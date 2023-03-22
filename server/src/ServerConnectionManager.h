@@ -60,7 +60,9 @@ class ServerConnectionManager: public ConnectionManager
 		void receiveFinalMessage();
 		void sendFinalMessage();
 		void setSharedKey();
-        unsigned int getHelloPacket(unsigned char*);       
+        unsigned int getHelloPacket(unsigned char*);  
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
+										const int);     
         
 };
 

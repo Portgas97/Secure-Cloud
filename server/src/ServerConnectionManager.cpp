@@ -426,9 +426,24 @@ unsigned char* ServerConnectionManager::getMessageToSend
 												const int operation_code = -1)
 {
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
+ 
+	unsigned int initialization_vector_size = 	
+							CryptographyManager::getInitializationVectorSize();
 
 	unsigned char* initialization_vector = 
-CryptographyManager::getInitializationVector(initialization_vector);
+						(unsigned char*)calloc(1, initialization_vector_size);
+	
+	if(initialization_vector == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}	
+
+	CryptographyManager::getInitializationVector(initialization_vector);
+
+	unsigned int aad_size;
+	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
+													message_counter, aad_size);
 
 	// packet to be send: AAD | ciphertext | tag
 	// AAD: counter | initialization vector
@@ -443,6 +458,8 @@ CryptographyManager::getInitializationVector(initialization_vector);
 					// TAG
 					+ sizeof(CryptographyManager::getTagSize())
 					+ CryptographyManager::getTagSize();
+
+	
 
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
 	if(message == nullptr)
@@ -484,26 +501,31 @@ CryptographyManager::getInitializationVector(initialization_vector);
 		exit(1);
 	}
 
-	Serializer serializer_final_message = Serializer(message);
+	Serializer serializer = Serializer(message);
 	// AAD
-	serializer_final_message.serializeInt(message_counter);
-	serializer_final_message.serializeInt(initialization_vector_size);
-	serializer_final_message.serializeByteStream(initialization_vector,
+	serializer.serializeInt(message_counter);
+	serializer.serializeInt(initialization_vector_size);
+	serializer.serializeByteStream(initialization_vector,
 													initialization_vector_size);
 	// CT
-	serializer_final_message.serializeInt(ciphertext_size);
-	serializer_final_message.serializeByteStream(ciphertext, ciphertext_size);
+	serializer.serializeInt(ciphertext_size);
+	serializer.serializeByteStream(ciphertext, ciphertext_size);
 	// TAG
-	serializer_final_message.serializeInt(tag_size);
-	serializer_final_message.serializeByteStream(tag, tag_size);
+	serializer.serializeInt(tag_size);
+	serializer.serializeByteStream(tag, tag_size);
 	
 	// already defined, this is used for DBG
-	unsigned int serialized_final_message_size = serializer_final_message.getOffset();
+	unsigned int serialized_final_message_size = serializer.getOffset();
 	if(serialized_final_message_size != message_size)
 	{
 		std::cout << "Error in computing the size of the packet" << std::endl;
 		exit(1);
 	}
+
+	free(aad);
+	free(initialization_vector);
+	free(tag);
+	free(ciphertext);
 
 	return message;
 }
@@ -523,10 +545,6 @@ void ServerConnectionManager::sendFinalMessage()
 
 	message_counter++;
 	
-	free(tag);
-	free(ciphertext);
 	free(message);
-	free(aad);
-	free(initialization_vector);
 }
 
