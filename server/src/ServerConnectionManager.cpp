@@ -418,7 +418,8 @@ void ServerConnectionManager::setSharedKey()
 void ServerConnectionManager::sendFinalMessage()
 {
 	unsigned int message_size;
-	unsigned char* message = getMessageToSend(ACK_MESSAGE, message_size);
+	unsigned char* message = getMessageToSend((unsigned char*)ACK_MESSAGE, 
+												message_size);
 	
 	sendPacket(message, message_size);
 

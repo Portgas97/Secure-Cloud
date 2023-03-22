@@ -427,7 +427,16 @@ void ClientConnectionManager::receiveFinalMessage()
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-    free(aad);
+    
+	// check if the plaintext is the one expected // TO DO: is this check needed?
+	if(!areBuffersEqual(plaintext, plaintext_size, 
+						(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
+	{
+		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
+		exit(1);
+	}
+	
+	free(aad);
     free(tag);
     free(ciphertext);
     free(initialization_vector);
@@ -536,9 +545,10 @@ void ClientConnectionManager::printFilenamesList()
 	
 	unsigned int request_message_size;
 	// TO DO: insert in a file of constants
-	unsigned char* request_message = getMessageToSend(OPERATION_MESSAGE, 
-													request_message_size, 
-													LIST_OPERATION_CODE);
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)OPERATION_MESSAGE, 
+											request_message_size, 
+											LIST_OPERATION_CODE);
 	sendPacket(request_message, request_message_size);
 	message_counter++;
 }
