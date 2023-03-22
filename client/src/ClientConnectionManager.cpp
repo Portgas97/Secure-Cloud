@@ -96,7 +96,6 @@ void ClientConnectionManager::handleHandshake()
     receiveHello();
 	sendFinalMessage();
 	setSharedKey();
-	std::cout << "DBG: start receiveFinalMessage()" << std::endl;
 	receiveFinalMessage();
 }
 
@@ -337,11 +336,9 @@ unsigned int ClientConnectionManager::getFinalMessage
 	return serializer.getOffset();	
 }
 
+
 void ClientConnectionManager::receiveFinalMessage()
 {
-	// first message exchanged using symmetric encryption 
-	message_counter = 1;
-
     unsigned char* final_message = nullptr;
 	receivePacket(final_message);
 
@@ -350,26 +347,25 @@ void ClientConnectionManager::receiveFinalMessage()
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
 	// counters on server and client side must have the same value
-	if(message_counter != received_message_counter)
+	if(received_message_counter != message_counter)
 	{
 		std::cout << "Error: client counter different from server counter" 
 					<< std::endl;
 		exit(1);
 	}
 
-	std::cout << "DBG message_counter: " << message_counter << std::endl;
-
-	unsigned int initialization_vector_size = deserializer.deserializeInt();
+	initialization_vector_size = deserializer.deserializeInt();
 	if(initialization_vector_size != 
 							CryptographyManager::getInitializationVectorSize())
 	{
-		std::cout << "Error: the initialization vector size is wrong" << 
-																	std::endl;
+		std::cout << "Error: the initialization vector size is wrong" 
+                  << std::endl;
 		exit(1);
 	}
 
-    unsigned char* initialization_vector = (unsigned char*)calloc(1, 
-                                                    initialization_vector_size);
+    initialization_vector = 
+                        (unsigned char*)calloc(1, initialization_vector_size);
+
     if(initialization_vector == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
@@ -379,12 +375,7 @@ void ClientConnectionManager::receiveFinalMessage()
     deserializer.deserializeByteStream(initialization_vector, 
                                                     initialization_vector_size);
 
-	std::cout << "DBG initialization_vector:" << std::endl;
-	printBuffer(initialization_vector, initialization_vector_size);
-
 	unsigned int ciphertext_size = deserializer.deserializeInt();
-
-	std::cout << "DBG ciphertext_size:" << ciphertext_size << std::endl;
 
     unsigned char* ciphertext = (unsigned char*)calloc(1, ciphertext_size);
     if(ciphertext == nullptr)
@@ -393,12 +384,8 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
     deserializer.deserializeByteStream(ciphertext, ciphertext_size);
-
-	std::cout << "DBG ciphertext:" << std::endl;
-	printBuffer(ciphertext, ciphertext_size);
 	
 	unsigned int tag_size = deserializer.deserializeInt();
-	std::cout << "DBG tag_size:" << tag_size << std::endl;
 
 	if(tag_size != CryptographyManager::getTagSize())
 	{
@@ -415,9 +402,6 @@ void ClientConnectionManager::receiveFinalMessage()
 
     deserializer.deserializeByteStream(tag, tag_size);
 	
-	std::cout << "DBG tag:" << std::endl;
-	printBuffer(tag, tag_size);
-
 	// the plaintext and the ciphertext must have the same size
     unsigned char* plaintext = (unsigned char*)calloc(1, ciphertext_size);
     if(plaintext == nullptr)
@@ -426,10 +410,9 @@ void ClientConnectionManager::receiveFinalMessage()
         exit(1);
     }
 
-	unsigned int aad_size = sizeof(message_counter) + 
-							// sizeof(initialization_vector_size) + // TO DO, note that this is sent but not part of the AAD
-							+ initialization_vector_size;
-	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
+	aad_size = sizeof(message_counter) + initialization_vector_size;
+	aad = (unsigned char*)calloc(1, aad_size);
+
     if(aad == nullptr)
     {
         std::cout << "Error in calloc" << std::endl;
@@ -448,8 +431,115 @@ void ClientConnectionManager::receiveFinalMessage()
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
+    free(aad);
+    free(tag);
+    free(ciphertext);
+    free(initialization_vector);
+}
 
-	std::cout << "DBG plaintext_size: " << plaintext_size << std::endl;
-    printBuffer(plaintext, plaintext_size);
+
+void ClientConnectionManager::showMenu()
+{
+    std::cout << std::endl 
+              << "+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl
+              << "|S|e|c|u|r|e|-|C|l|o|u|d|" << std::endl
+              << "+-+-+-+-+-+-+-+-+-+-+-+-+" << std::endl
+              << std::endl;
+    
+    std::cout << "Welcome, " << username << "! Please, select an operation:"
+    << std::endl
+    << "\t- upload: ..." << std::endl
+    << "\t- download: ..." << std::endl
+    << "\t- delete: ..." << std::endl
+    << "\t- list: ..." << std::endl
+    << "\t- rename: ..." << std::endl
+    << "\t- logout: ..." << std::endl
+    << std::endl
+    << ">";
+}
+
+
+void ClientConnectionManager::retrieveCommand()
+{
+    bool logout_exit = false;
+    while(!logout_exit)
+    {
+        showMenu();
+        std::string command;
+        std::getline(std::cin, command);
+        if(!std::cin)
+        {
+            std::cout << "Error in reading command" << std::endl;
+            exit(1);
+        }
+        
+        std::cout << "DBG: you typed: " << command << std::endl;
+
+        if(command == "upload")
+        {
+            uploadFile();
+        } 
+        else if(command == "download")
+        {
+            downloadFile();
+        }
+        else if(command == "delete")
+        {
+            deleteFile();
+        }
+        else if(command == "list")
+        {
+            listFile();
+        } 
+        else if(command == "rename")
+        {
+            renameFile();
+        }
+        else if(command == "logout")
+        {
+            logout();
+            logout_exit = true;
+        }
+        else
+        {
+            std::cout << "Error in paring the command" << std::endl;
+            exit(1);
+        }
+    }
+}
+
+void ClientConnectionManager::uploadFile()
+{
 
 }
+
+
+void ClientConnectionManager::downloadFile()
+{
+    
+}
+
+
+void ClientConnectionManager::deleteFile()
+{
+    
+}
+
+
+void ClientConnectionManager::listFile()
+{
+    
+}
+
+
+void ClientConnectionManager::renameFile()
+{
+    
+}
+
+
+void ClientConnectionManager::logout()
+{
+    
+}
+

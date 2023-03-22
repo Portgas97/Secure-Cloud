@@ -414,40 +414,14 @@ void ServerConnectionManager::setSharedKey()
 
 }
 
+
 void ServerConnectionManager::sendFinalMessage()
 {
 	// TO DO: insert into file of constants
 	unsigned char plaintext[] = "ACK";
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
 
-	unsigned int initialization_vector_size = 
-						CryptographyManager::getInitializationVectorSize();
-	
-	unsigned char* initialization_vector = 
-						(unsigned char*)calloc(1, initialization_vector_size);	
-
-	CryptographyManager::getRandomBytes(initialization_vector,
-										initialization_vector_size); 
-
-	unsigned int aad_size = 
-				sizeof(message_counter) + initialization_vector_size;
-
-	unsigned char *aad = (unsigned char*)calloc(1, aad_size);
-	if(aad == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		exit(1);
-	}
-
-	Serializer serializer_aad = Serializer(aad);
-
-	// first message exchanged using symmetric encryption 
-	message_counter = 1;
-
-	// initialize the final_message inserting aad in it
-	serializer_aad.serializeInt(message_counter);
-	serializer_aad.serializeByteStream(initialization_vector, 
-										initialization_vector_size);
+	setIVandAAD();
 
 	// packet to be send: AAD | ciphertext | tag
 	// AAD: counter | initialization vector
@@ -504,8 +478,6 @@ void ServerConnectionManager::sendFinalMessage()
 		exit(1);
 	}
 
-	std::cout << "DBG. ciphertext_size: " << ciphertext_size << std::endl;
-
 	Serializer serializer_final_message = Serializer(final_message);
 	// AAD
 	serializer_final_message.serializeInt(message_counter);
@@ -526,13 +498,15 @@ void ServerConnectionManager::sendFinalMessage()
 		std::cout << "Error in computing the size of the packet" << std::endl;
 		exit(1);
 	}
-
-	std::cout << "DBG sending #bytes: " << final_message_size << std::endl;
 	
 	sendPacket(final_message, final_message_size);
 
-	free(final_message);
-	free(ciphertext);
+	message_counter++;
+	
 	free(tag);
+	free(ciphertext);
+	free(final_message);
+	free(aad);
 	free(initialization_vector);
 }
+

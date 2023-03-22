@@ -533,6 +533,7 @@ unsigned char* CryptographyManager::getSharedKey(unsigned char *shared_secret,
     return shared_key;
 }
 
+
 unsigned int CryptographyManager::authenticateAndEncryptMessage 
 								(unsigned char *plaintext, 
 								unsigned int plaintext_size,
@@ -595,8 +596,6 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 	return_value = EVP_CIPHER_CTX_ctrl(context, EVP_CTRL_AEAD_GET_TAG, TAG_SIZE, 
 										tag);
 
-	std::cout << "DBG tag:" << std::endl;
-	ConnectionManager::printBuffer(tag, TAG_SIZE);
     if(return_value != 1)
 	{
 		std::cout << "Error in authenticate and encrypt message" << std::endl;
@@ -644,10 +643,6 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 		exit(1);
 	}
 
-	std::cout << "DBG aad_size: " << aad_size << std::endl;
-	std::cout << "DBG aad: " << std::endl;
-	ConnectionManager::printBuffer(aad, aad_size);
-
 	//Provide the message to be decrypted, and obtain the plaintext output
 	return_value = EVP_DecryptUpdate(context, plaintext, &size, ciphertext, 
 									ciphertext_size);
@@ -666,9 +661,6 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 		std::cout << "Error in authenticate and decrypt message" << std::endl;
 		exit(1);
 	}
-
-	std::cout << "DBG tag:" << std::endl;
-	ConnectionManager::printBuffer(tag, TAG_SIZE);
     
     //Finalise the decryption. A positive return value indicates success,
     // anything else is a failure - the plaintext is not trustworthy.
@@ -680,8 +672,6 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 	if(return_value <= 0)
 	{
 		std::cout << "Error in authenticate and decrypt message" << std::endl;
-		std::cout << "DBG return_value " << return_value << std::endl;
-		std::cout << "DBG: " << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
 		exit(1);
 	}
 
@@ -704,3 +694,4 @@ void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer,
 	memset(memory_buffer, 0, memory_buffer_size);
 }
 #pragma GCC pop_options                           
+
