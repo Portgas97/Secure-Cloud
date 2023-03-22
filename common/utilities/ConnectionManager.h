@@ -52,7 +52,12 @@ class ConnectionManager
 											unsigned int = -1);
 
 		// TO DO: insert in a file of constants
+		const unsigned int UPLOAD_OPERATION_CODE = 0;
+		const unsigned int DOWNLOAD_OPERATION_CODE = 1;
+		const unsigned int DELETE_OPERATION_CODE = 2;
 		const unsigned int LIST_OPERATION_CODE = 3;
+		const unsigned int RENAME_OPERATION_CODE = 4;
+		const unsigned int LOGOUT_OPERATION_CODE = 5;
 
 		// TO DO: insert in a file of constants
 		const char* OPERATION_MESSAGE = "OPERATION";

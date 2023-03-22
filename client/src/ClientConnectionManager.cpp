@@ -393,30 +393,34 @@ void ClientConnectionManager::retrieveCommand()
             std::cout << "Error in reading command" << std::endl;
             exit(1);
         }
+
+		// TO DO: is this operation safe?
+		std::string operation = command.substr(0, command.find(" "));
         
 		// TO DO: security check on the inserted command
+		// TO DO: on commands which require filename execute check (maybe only on server)
 
-        if(command == "upload")
+        if(operation == "upload")
         {
             uploadFile();
         } 
-        else if(command == "download")
+        else if(operation == "download")
         {
             downloadFile();
         }
-        else if(command == "delete")
+        else if(operation == "delete")
         {
             deleteFile();
         }
-        else if(command == "list")
+        else if(operation == "list")
         {
             printFilenamesList();
         } 
-        else if(command == "rename")
+        else if(operation == "rename")
         {
             renameFile();
         }
-        else if(command == "logout")
+        else if(operation == "logout")
         {
             logout();
             logout_exit = true;
@@ -428,6 +432,20 @@ void ClientConnectionManager::retrieveCommand()
 
 void ClientConnectionManager::uploadFile()
 {
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+	
+	unsigned int request_message_size;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)OPERATION_MESSAGE, 
+											request_message_size, 
+											UPLOAD_OPERATION_CODE);
+	// send the request
+	sendPacket(request_message, request_message_size);
 
 }
 
@@ -454,7 +472,6 @@ void ClientConnectionManager::printFilenamesList()
 	}
 	
 	unsigned int request_message_size;
-	// TO DO: insert in a file of constants
 	unsigned char* request_message = getMessageToSend
 											((unsigned char*)OPERATION_MESSAGE, 
 											request_message_size, 
