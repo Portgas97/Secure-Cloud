@@ -44,12 +44,10 @@ class ConnectionManager
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
 
-		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
-										const int = -1);     
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
-		unsigned char* parseReceivedMessage(Deserializer, unsigned int&, 
-											unsigned int = -1);
+		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;
@@ -60,7 +58,7 @@ class ConnectionManager
 		const unsigned int LOGOUT_OPERATION_CODE = 5;
 
 		// TO DO: insert in a file of constants
-		const char* OPERATION_MESSAGE = "OPERATION";
+		const char* LIST_MESSAGE = "LIST";
 		const char* ACK_MESSAGE = "ACK";		
 
         virtual void createConnection() = 0;

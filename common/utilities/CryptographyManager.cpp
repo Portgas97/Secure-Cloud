@@ -697,8 +697,7 @@ void CryptographyManager::getInitializationVector
 
 unsigned char* CryptographyManager::getAad(unsigned char* initialization_vector,
 										unsigned int message_counter,
-										unsigned int& aad_size,
-										int operation_code)
+										unsigned int& aad_size)
 {
 	aad_size = sizeof(message_counter) + getInitializationVectorSize();
 

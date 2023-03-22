@@ -442,17 +442,26 @@ unsigned int ServerConnectionManager::handleRequest()
 	// request_message: operation_code | operation_specific_fields
 	Deserializer deserializer = Deserializer(request_message);
 
+	unsigned int plaintext_size;
+	unsigned char* plaintext_buffer = getMessagePlaintext(deserializer, 
+													plaintext_size);
+
+	std::string plaintext(plaintext_buffer, plaintext_buffer + 
+						sizeof(plaintext_buffer)/sizeof(plaintext_buffer[0]));
+
+	std::cout << "DBG plaintext: " << plaintext << std::endl;
+
 	// take the operation_code to understand which operation has been selected 
 	// by the client
-	unsigned int operation_code = deserializer.deserializeInt();
 
-	switch(operation_code)
+/*	switch(operation_code)
 	{
 		//case LIST_OPERATION_CODE:
 		case 3:
 			handleListOperation(deserializer);
 			return 0;
 	}
+*/
 	
 	return 1;
 }
@@ -489,23 +498,19 @@ std::string ServerConnectionManager::getDirectoryFilenames
 	It parses the received packet, checks if everything is correct and then
 	replies with the filenames list
 */
-void ServerConnectionManager::handleListOperation
-									(Deserializer request_message_deserializer)
+unsigned char* ServerConnectionManager::getMessagePlaintext
+									(Deserializer request_message_deserializer,
+									unsigned int& plaintext_size)
 {
-	unsigned int received_plaintext_size;
-	unsigned char* received_plaintext = parseReceivedMessage
+	unsigned char* plaintext = parseReceivedMessage
 												(request_message_deserializer, 
-												received_plaintext_size, 
-												LIST_OPERATION_CODE);
+												plaintext_size);
+	return plaintext;
 
-	if(!areBuffersEqual(received_plaintext, received_plaintext_size, 
-						(unsigned char*) OPERATION_MESSAGE, 
-						strlen(OPERATION_MESSAGE) + 1))
-	{
-		std::cout << "Error: expected " << OPERATION_MESSAGE << std::endl;
-		exit(1);
-	}
-  
+}
+
+void ServerConnectionManager::handleListOperation()
+{	  
 	// building user's dedicated directory path
 	std::string directory_name = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 	directory_name += logged_user_username;

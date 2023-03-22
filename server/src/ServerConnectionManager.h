@@ -70,6 +70,7 @@ class ServerConnectionManager: public ConnectionManager
         unsigned int getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
 		void handleListOperation(Deserializer);
+		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
         

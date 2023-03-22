@@ -470,12 +470,11 @@ void ClientConnectionManager::printFilenamesList()
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
-	
+
 	unsigned int request_message_size;
 	unsigned char* request_message = getMessageToSend
-											((unsigned char*)OPERATION_MESSAGE, 
-											request_message_size, 
-											LIST_OPERATION_CODE);
+											((unsigned char*)LIST_MESSAGE, 
+											request_message_size);
 	// send the request
 	sendPacket(request_message, request_message_size);
 

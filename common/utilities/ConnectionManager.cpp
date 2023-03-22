@@ -140,8 +140,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 */
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
-												unsigned int& message_size,
-												const int operation_code)
+												unsigned int& message_size)
 {
 	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
  
@@ -161,11 +160,10 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size,
-													operation_code);
+													message_counter, aad_size);
 
 	// packet to be send: AAD | ciphertext | tag
-	// AAD: {operation_code} | counter | initialization vector
+	// AAD: counter | initialization vector
 	message_size = 
 					sizeof(initialization_vector_size) 
 					// AAD
@@ -262,8 +260,7 @@ unsigned char* ConnectionManager::getMessageToSend
 	it exits.
 */
 unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer,
-											unsigned int& plaintext_size, 
-											unsigned int operation_code)
+											unsigned int& plaintext_size)
 {
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
@@ -333,8 +330,7 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size,
-													operation_code);
+													message_counter, aad_size);
 
     if(aad == nullptr)
     {
