@@ -47,6 +47,7 @@ class ConnectionManager
 										const int = -1);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
+		void parseReceivedMessage(Deserializer);
 
 		// TO DO: insert in a file of constants
 		const int LIST_OPERATION_CODE = 3;

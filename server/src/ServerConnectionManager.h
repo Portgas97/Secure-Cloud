@@ -63,6 +63,7 @@ class ServerConnectionManager: public ConnectionManager
 		void setSharedKey();
         unsigned int getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
+		void handleListOperation(Deserializer);
         
 };
 

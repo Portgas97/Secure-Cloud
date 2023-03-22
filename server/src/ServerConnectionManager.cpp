@@ -441,6 +441,7 @@ void ServerConnectionManager::handleRequest()
 	unsigned char* request_message = nullptr;
 	receivePacket(request_message);
 
+	// request_message: operation_code | operation_specific_fields
 	Deserializer deserializer = Deserializer(request_message);
 
 	// take the operation_code to understand which operation has been selected 
@@ -450,14 +451,19 @@ void ServerConnectionManager::handleRequest()
 	switch(operation_code)
 	{
 		case 3:
-			
+			handleListOperation(deserializer);
 			break;
 	}
 	
 }
 
-void ServerConnectionManager::getFilenamesList
+/*
+	It parses the received packet, checks if everything is correct and then
+	replies with the filenames list
+*/
+void ServerConnectionManager::handleListOperation
 									(Deserializer request_message_deserializer)
 {
+	parseReceivedMessage(request_message_deserializer);
 	
 }
