@@ -472,6 +472,8 @@ void ClientConnectionManager::retrieveCommand()
         
         std::cout << "DBG: you typed: " << command << std::endl;
 
+		// TO DO: security check on the inserted command
+
         if(command == "upload")
         {
             uploadFile();
@@ -525,7 +527,15 @@ void ClientConnectionManager::deleteFile()
 
 void ClientConnectionManager::printFilenamesList()
 {
-	   
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX - 2)
+	{
+		std::cout << "Error: counter overflow" << std::endl;
+		exit(1);
+	}
+	
+	
+	message_counter++;
 }
 
 

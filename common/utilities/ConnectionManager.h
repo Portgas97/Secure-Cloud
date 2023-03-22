@@ -18,9 +18,6 @@ class ConnectionManager
     public:
         ConnectionManager();
 
-        void sendPacket(unsigned char*, unsigned int);
-
-        void receivePacket(unsigned char*&);
 
         //closeSocket();
 
@@ -43,6 +40,11 @@ class ConnectionManager
         unsigned char* ephemeral_public_key;
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
+
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
+										const int = -1);     
+        void sendPacket(unsigned char*, unsigned int);
+        void receivePacket(unsigned char*&);
 
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;
