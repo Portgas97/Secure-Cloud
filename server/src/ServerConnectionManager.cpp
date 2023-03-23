@@ -456,28 +456,49 @@ unsigned int ServerConnectionManager::handleRequest()
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
-	unsigned char* request_message = nullptr;
-	receivePacket(request_message);
+	
+	std::string command = getRequestCommand();
 
-	unsigned int plaintext_size;
-	unsigned char* plaintext = getMessagePlaintext(request_message, 
-													plaintext_size);
+	unsigned int command_first_delimiter_position = 
+								command.find(" ") >= command.length() ? 
+								command.length() - 1: command.find(" ");
 
-	// pointers to first and to last array element
-	std::string command(plaintext, 
-						plaintext + plaintext_size/sizeof(plaintext[0]));
-
-	std::string operation = command.substr(0, 
-									command.find(" ") >= command.length() ? 
-									command.length() - 1: command.find(" "));
+	std::string operation = command.substr(0, command_first_delimiter_position);
 
 	if(operation == DOWNLOAD_MESSAGE)
 	{
-			//handleDownloadOperation(deserializer);
+		//handleDownloadOperation(deserializer);
 	}
 	else if(operation == LIST_MESSAGE)
 	{
-			handleListOperation();
+		handleListOperation();
+	}
+	else if(operation == UPLOAD_MESSAGE || operation == LAST_UPLOAD_MESSAGE)
+	{
+		unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command_second_delimiter_position - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		std::string file_content = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+
+		handleUploadOperation(operation, file_path, 
+								(unsigned char*)file_content.c_str(), 
+								file_content.length() - 1);
+
 	}
 	else
 	{
@@ -551,8 +572,8 @@ void ServerConnectionManager::handleListOperation()
 
 	strcpy(plaintext, directory_filenames.c_str());
 	unsigned int message_size;
-	unsigned char* message = getMessageToSend(
-								(unsigned char*)directory_filenames.c_str(), 
+	unsigned char* message = getMessageToSend
+								((unsigned char*)directory_filenames.c_str(), 
 								message_size);
 
 	sendPacket(message, message_size);
@@ -576,3 +597,83 @@ void ServerConnectionManager::handleDownloadOperation
 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
 }
 */
+
+void ServerConnectionManager::handleUploadOperation(std::string operation, 
+											std::string filename,
+											unsigned char* file_content_buffer,
+											unsigned int file_content_size)
+{
+	// TO DO: usable also for download
+	storeFileContent(filename, file_content_buffer, file_content_size);
+
+	// TO DO: evalutate if it's ok do the free here and not in the function caller
+	free(file_content_buffer);
+	std::string command, file_content;
+	unsigned int command_first_delimiter_position;
+	while(operation == UPLOAD_MESSAGE)
+	{
+		command = getRequestCommand();
+		command_first_delimiter_position = 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" ");
+
+		operation = command.substr(0, command_first_delimiter_position);
+		
+		file_content = command.substr(command_first_delimiter_position + 1,
+										command.length() - 
+										command_first_delimiter_position - 1);
+		file_content_size = file_content.length();
+
+		// store the next file chunk
+		storeFileContent(filename, (unsigned char*)file_content.c_str(), 
+						file_content_size);
+	}	
+}
+
+// TO DO: insert in a utility file
+void ServerConnectionManager::storeFileContent(std::string filename, 
+												unsigned char* file_content,
+												unsigned int file_content_size)
+{
+	// TO DO: canonicalize filename
+
+	FILE* file = fopen(filename.c_str(), "wb");
+	if(file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}
+
+	unsigned int written_file_content_size = fwrite(file_content, 
+													sizeof(unsigned char),
+													file_content_size, 
+													file);
+
+	if(written_file_content_size >= UINT32_MAX || 
+								written_file_content_size < file_content_size)
+	{
+		std::cout << "Error in write file content" << std::endl;
+		exit(1);
+	}
+
+	fclose(file);
+	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
+}
+
+std::string ServerConnectionManager::getRequestCommand()
+{
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	unsigned int plaintext_size;
+	unsigned char* plaintext = getMessagePlaintext(request_message, 
+													plaintext_size);
+
+	// pointers to first and to last array element
+	std::string command(plaintext, 
+						plaintext + plaintext_size/sizeof(plaintext[0]));
+
+
+	free(request_message);
+	return command;
+}

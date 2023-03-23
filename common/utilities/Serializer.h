@@ -15,13 +15,14 @@ class Serializer
 		void serializeInt(int);
 		void serializeString(char*, unsigned int);
 		void serializeByteStream(unsigned char*, unsigned int);
+		void serializeChar(char);
 		int getOffset();
 		
 	private:
 		unsigned char* buffer;
 		unsigned int offset;
 
-		void serializeChar(char);
+
 		
 };
 

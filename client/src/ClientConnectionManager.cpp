@@ -396,7 +396,7 @@ void ClientConnectionManager::retrieveCommand()
 
 		unsigned int command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
-									command.length() - 1: command.find(" ");
+									command.length(): command.find(" ");
 		// TO DO: is this operation safe?
 		std::string operation = command.substr(0, 
 											command_first_delimiter_position);
@@ -410,8 +410,14 @@ void ClientConnectionManager::retrieveCommand()
 			// take the filename argument
 			std::string filename = command.substr
 										(command_first_delimiter_position + 1,
-										command.length() - 1);			
-            uploadFile(filename);
+										command.length() -
+										command_first_delimiter_position - 1);
+			// build the file path
+			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+			file_path += username;
+			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+			file_path += filename;
+            uploadFile(file_path);
         } 
         else if(operation == "download")
         {
@@ -440,20 +446,25 @@ void ClientConnectionManager::retrieveCommand()
 }
 
 // TO DO: to insert in utility file
-void ClientConnectionManager::sendFileContent(std::string filename)
+void ClientConnectionManager::sendFileContent(std::string file_path)
 {
-	FILE* file = fopen(filename, "rb");
+	FILE* file = fopen(file_path.c_str(), "rb");
 	if(file == nullptr)
 	{
 		std::cout << "Error in fopen" << std::endl;
 		exit(1);
 	}	
 
+	// with rfind I search the passed symbol from the end towards the start
+	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
+											std::string::npos - 
+											file_path.rfind("/") - 1);
+
 	// get file size
 	// move the file pointer to the end of the file
 	fseek(file, 0, SEEK_END);
 	// returns the file pointer position
-	file_size = ftell(file);
+	unsigned int file_size = ftell(file);
 	// move file pointer to the beginning of the file
 	fseek(file, 0, SEEK_SET);
 
@@ -470,11 +481,10 @@ void ClientConnectionManager::sendFileContent(std::string filename)
 	unsigned char* fragment = nullptr;
 	unsigned int message_to_send_size;
 	unsigned char* message_to_send = nullptr;
-	Serializer serializer;
     while (sent_bytes < file_size) 
 	{
 		// check if it's the last send
-		if(file_size - sent_bytes < CHUNK_SIZE)
+		if(file_size - sent_bytes >= CHUNK_SIZE)
 		{	
 			fragment_size = CHUNK_SIZE;
 			upload_message_size = strlen(UPLOAD_MESSAGE) + 1;
@@ -485,6 +495,10 @@ void ClientConnectionManager::sendFileContent(std::string filename)
 			fragment_size = file_size - sent_bytes;
 			upload_message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
 		}
+		// if it's the first send, add the filename to the request message
+		if(sent_bytes == 0)
+			upload_message_size += filename.length() + 1;
+
 		upload_message_size += fragment_size;
 		// +1 for the space character
 		upload_message = (unsigned char*) calloc(1, upload_message_size + 1);
@@ -495,12 +509,22 @@ void ClientConnectionManager::sendFileContent(std::string filename)
 		}
 
 		// prepare fragment upload packet
-		serializer = Serializer(upload_message);
+		Serializer serializer = Serializer(upload_message);
 
-		if(file_size - sent_bytes < CHUNK_SIZE)
-			serializer.serializeString(UPLOAD_MESSAGE);
+		if(file_size - sent_bytes >= CHUNK_SIZE)
+			serializer.serializeString((char*)UPLOAD_MESSAGE, 
+										strlen(UPLOAD_MESSAGE));
 		else
-			serializer.serializeString(LAST_UPLOAD_MESSAGE);
+			serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
+										strlen(LAST_UPLOAD_MESSAGE));
+
+		if(sent_bytes == 0)
+		{
+			// serialize the space after the operation name
+			serializer.serializeChar(' ');
+			serializer.serializeString((char*)filename.c_str(), 
+										filename.length());
+		}
 
 		fragment = (unsigned char*) calloc(1, fragment_size);
 		if(fragment == nullptr)
@@ -509,10 +533,10 @@ void ClientConnectionManager::sendFileContent(std::string filename)
 			exit(1);
 		}
 		fragment = getSmallFileContent(file, fragment_size);
-		serializer.serializeString(" ");
+		serializer.serializeChar(' ');
 		serializer.serializeByteStream(fragment, fragment_size);
 
-		message_to_send = messageToBeSend(upload_message, message_to_send_size);
+		message_to_send = getMessageToSend(upload_message, message_to_send_size);
 		sendPacket(message_to_send, message_to_send_size);
 							
 		sent_bytes += fragment_size;
@@ -535,14 +559,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 		exit(1);
 	}
 
-	
-	
-	unsigned int request_message_size;
-	unsigned char* request_message = getMessageToSend
-											((unsigned char*)OPERATION_MESSAGE, 
-											request_message_size);
-	// send the request
-	sendPacket(request_message, request_message_size);
+	sendFileContent(filename);
 }
 
 

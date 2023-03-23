@@ -47,6 +47,7 @@ class CryptographyManager
 											unsigned int, unsigned char*,
 											unsigned char*, unsigned char*,
                                             unsigned int, unsigned char*);
+		static void unoptimizedMemset(unsigned char*, size_t);
      
     private:
         
@@ -63,7 +64,7 @@ class CryptographyManager
         X509_STORE* certification_authority_store;
         
         void loadCertificationAuthorityCertificate();
-		static void unoptimizedMemset(unsigned char*, size_t);
+
                                     
 };
 

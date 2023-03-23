@@ -375,6 +375,7 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 	if(return_value < file_size) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
+		std::cout << "DBG file_size: " << file_size << ", return_value: " << return_value << std::endl;
 		exit(1); 
 	}
 	return buffer;
