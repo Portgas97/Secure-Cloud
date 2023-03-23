@@ -234,24 +234,8 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 	fseek(certificate_file, 0, SEEK_SET);
 	
 	
-	unsigned char* certificate_buffer = (unsigned char*) 
-											calloc(1, certificate_buffer_size);
-
-	if(certificate_buffer == nullptr) 
-	{ 
-		std::cout << "Error in calloc" << std::endl; 
-		exit(1); 
-	}
-
-	// actual read
-	unsigned int return_value = fread(certificate_buffer, 1, 
-									certificate_buffer_size, certificate_file);
-
-	if(return_value < certificate_buffer_size) 
-	{ 
-		std::cout << "Error in fread" << std::endl;
-		exit(1); 
-	}
+	unsigned char* certificate_buffer = getSmallFileContent(certificate_file,
+													certificate_buffer_size);
 
 	fclose(certificate_file);
 	return certificate_buffer;

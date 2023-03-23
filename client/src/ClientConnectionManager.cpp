@@ -394,15 +394,24 @@ void ClientConnectionManager::retrieveCommand()
             exit(1);
         }
 
+		unsigned int command_first_delimiter_position = 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" ");
 		// TO DO: is this operation safe?
-		std::string operation = command.substr(0, command.find(" "));
+		std::string operation = command.substr(0, 
+											command_first_delimiter_position);
+
         
 		// TO DO: security check on the inserted command
 		// TO DO: on commands which require filename execute check (maybe only on server)
 
         if(operation == "upload")
         {
-            uploadFile();
+			// take the filename argument
+			std::string filename = command.substr
+										(command_first_delimiter_position + 1,
+										command.length() - 1);			
+            uploadFile(filename);
         } 
         else if(operation == "download")
         {
@@ -430,23 +439,110 @@ void ClientConnectionManager::retrieveCommand()
     }
 }
 
-void ClientConnectionManager::uploadFile()
+// TO DO: to insert in utility file
+void ClientConnectionManager::sendFileContent(std::string filename)
+{
+	FILE* file = fopen(filename, "rb");
+	if(file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}	
+
+	// get file size
+	// move the file pointer to the end of the file
+	fseek(file, 0, SEEK_END);
+	// returns the file pointer position
+	file_size = ftell(file);
+	// move file pointer to the beginning of the file
+	fseek(file, 0, SEEK_SET);
+
+    if (file_size > UINT32_MAX) 
+	{
+		std::cout << "Error: the file is too big" << std::endl;
+		exit(1);
+    }
+
+	unsigned long int sent_bytes = 0;
+	unsigned int upload_message_size;
+	unsigned char* upload_message = nullptr; 
+	unsigned int fragment_size;
+	unsigned char* fragment = nullptr;
+	unsigned int message_to_send_size;
+	unsigned char* message_to_send = nullptr;
+	Serializer serializer;
+    while (sent_bytes < file_size) 
+	{
+		// check if it's the last send
+		if(file_size - sent_bytes < CHUNK_SIZE)
+		{	
+			fragment_size = CHUNK_SIZE;
+			upload_message_size = strlen(UPLOAD_MESSAGE) + 1;
+		}
+		else
+		{
+			// last send case
+			fragment_size = file_size - sent_bytes;
+			upload_message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
+		}
+		upload_message_size += fragment_size;
+		// +1 for the space character
+		upload_message = (unsigned char*) calloc(1, upload_message_size + 1);
+		if(upload_message == nullptr)
+		{
+			std::cout << "Error in calloc" << std::endl;
+			exit(1);
+		}
+
+		// prepare fragment upload packet
+		serializer = Serializer(upload_message);
+
+		if(file_size - sent_bytes < CHUNK_SIZE)
+			serializer.serializeString(UPLOAD_MESSAGE);
+		else
+			serializer.serializeString(LAST_UPLOAD_MESSAGE);
+
+		fragment = (unsigned char*) calloc(1, fragment_size);
+		if(fragment == nullptr)
+		{
+			std::cout << "Error in calloc" << std::endl;
+			exit(1);
+		}
+		fragment = getSmallFileContent(file, fragment_size);
+		serializer.serializeString(" ");
+		serializer.serializeByteStream(fragment, fragment_size);
+
+		message_to_send = messageToBeSend(upload_message, message_to_send_size);
+		sendPacket(message_to_send, message_to_send_size);
+							
+		sent_bytes += fragment_size;
+		free(fragment);
+		free(upload_message);
+		free(message_to_send);
+	}
+
+	fclose(file);
+
+
+}
+
+void ClientConnectionManager::uploadFile(std::string filename)
 {
 	// check counter overflow
-/* 	if(message_counter == UINT32_MAX)
+ 	if(message_counter == UINT32_MAX)
 	{
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
+
+	
 	
 	unsigned int request_message_size;
 	unsigned char* request_message = getMessageToSend
 											((unsigned char*)OPERATION_MESSAGE, 
-											request_message_size, 
-											UPLOAD_OPERATION_CODE);
+											request_message_size);
 	// send the request
 	sendPacket(request_message, request_message_size);
-*/
 }
 
 
@@ -463,7 +559,7 @@ void ClientConnectionManager::downloadFile()
     std::cout << "Sending packet" << std::endl;
 	sendPacket(request_message, request_message_size);
 	message_counter++;
-    std::cout << "packet sent" << std::endl;
+    std::cout << "packet sent_bytes" << std::endl;
 */
 }
 

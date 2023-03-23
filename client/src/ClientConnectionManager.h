@@ -45,6 +45,7 @@ class ClientConnectionManager: public ConnectionManager
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
+		void sendFileContent(std::string);
 
         void showMenu();
         void uploadFile();
