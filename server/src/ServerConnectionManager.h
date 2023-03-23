@@ -72,12 +72,13 @@ class ServerConnectionManager: public ConnectionManager
 		void setSharedKey();
         unsigned int getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
-		void handleListOperation(Deserializer);
+		void handleListOperation();
 		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
         void handleDownloadOperation(Deserializer);
         const char* canonicalizeUserPath(const char*);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
+		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
         
 };
 

@@ -182,11 +182,6 @@ unsigned char* ConnectionManager::getMessageToSend
 					+ sizeof(CryptographyManager::getTagSize())
 					+ CryptographyManager::getTagSize();
 
-	// operation_code is added to the AAD in case of an operation
-	if(operation_code != -1)
-		message_size += sizeof(operation_code);
-	
-
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
 	if(message == nullptr)
 	{
@@ -229,13 +224,7 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	Serializer serializer = Serializer(message);
 
-	// operation case
-	if(operation_code != -1)
-		serializer.serializeInt(operation_code);
-
 	// AAD
-	if(operation_code != -1)
-		serializer.serializeInt(operation_code);
 	serializer.serializeInt(message_counter);
 	serializer.serializeInt(initialization_vector_size);
 	serializer.serializeByteStream(initialization_vector,
@@ -357,12 +346,6 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
 	
-	output_plaintext = plaintext;
-	output_plaintext_size = plaintext_size;
-
-	std::cout << "DBG: received plaintext: ";
-	printBuffer(plaintext, plaintext_size);
-
 	free(aad);
     free(tag);
     free(ciphertext);

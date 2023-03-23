@@ -475,26 +475,33 @@ unsigned int ServerConnectionManager::handleRequest()
 	unsigned char* request_message = nullptr;
 	receivePacket(request_message);
 
-	// request_message: operation_code | operation_specific_fields
-	Deserializer deserializer = Deserializer(request_message);
+	unsigned int plaintext_size;
+	unsigned char* plaintext = getMessagePlaintext(request_message, 
+													plaintext_size);
 
-	//  which operation has been selected by the client
-	unsigned int operation_code = deserializer.deserializeInt();
+	// pointers to first and to last array element
+	std::string command(plaintext, 
+						plaintext + plaintext_size/sizeof(plaintext[0]));
 
-	switch(operation_code)
+	std::string operation = command.substr(0, 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" "));
+
+	if(operation == DOWNLOAD_MESSAGE)
 	{
-		case 1:
-			handleDownloadOperation(deserializer);
-			break;
-		case 3:
-			handleListOperation(deserializer);
-			break;
-		default:
-			std::cout << "Error in operation code received" << std::endl;
+			//handleDownloadOperation(deserializer);
+	}
+	else if(operation == LIST_MESSAGE)
+	{
+			handleListOperation();
+	}
+	else
+	{
+			std::cout << "Error in command received" << std::endl;
 			exit(1);
 	}
 	
-	return 1;
+	return 0;
 }
 
 // TO DO: insert it in a utility file
@@ -525,31 +532,29 @@ std::string ServerConnectionManager::getDirectoryFilenames
 	return directory_filenames;
 }
 
+unsigned char* ServerConnectionManager::getMessagePlaintext
+											(unsigned char* message,
+											unsigned int& plaintext_size)
+{
+	Deserializer deserializer = Deserializer(message);
+
+	unsigned char* plaintext = parseReceivedMessage
+												(deserializer, 
+												plaintext_size);
+
+	return plaintext;
+}
+
 /*
 	It parses the received packet, checks if everything is correct and then
 	replies with the filenames list
 */
-void ServerConnectionManager::handleListOperation
-									(Deserializer request_message_deserializer)
+void ServerConnectionManager::handleListOperation()
 {
 
-	unsigned int received_plaintext_size;
-	unsigned char* received_plaintext = parseReceivedMessage
-												(request_message_deserializer, 
-												received_plaintext_size, 
-												LIST_OPERATION_CODE);
-
-	if(!areBuffersEqual(received_plaintext, received_plaintext_size, 
-						(unsigned char*) OPERATION_MESSAGE, 
-						strlen(OPERATION_MESSAGE) + 1))
-	{
-		std::cout << "Error: expected " << OPERATION_MESSAGE << std::endl;
-		exit(1);
-	}
-  
 	// building user's dedicated directory path
 	std::string directory_name = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
-	directory_name += logged_user_username;
+	directory_name += logged_username;
 	directory_name += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 
 	std::string directory_filenames = getDirectoryFilenames(directory_name);
@@ -569,6 +574,7 @@ void ServerConnectionManager::handleListOperation
 	sendPacket(message, message_size);
 }
 
+/*
 void ServerConnectionManager::handleDownloadOperation
 									(Deserializer request_message_deserializer)
 {
@@ -585,3 +591,4 @@ void ServerConnectionManager::handleDownloadOperation
 
 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
 }
+*/

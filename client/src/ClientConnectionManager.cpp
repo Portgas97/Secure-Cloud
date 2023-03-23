@@ -433,7 +433,7 @@ void ClientConnectionManager::retrieveCommand()
 void ClientConnectionManager::uploadFile()
 {
 	// check counter overflow
- 	if(message_counter == UINT32_MAX)
+/* 	if(message_counter == UINT32_MAX)
 	{
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
@@ -446,13 +446,13 @@ void ClientConnectionManager::uploadFile()
 											UPLOAD_OPERATION_CODE);
 	// send the request
 	sendPacket(request_message, request_message_size);
-
+*/
 }
 
 
 void ClientConnectionManager::downloadFile()
 {
-    std::cout << "DBG: starting the downloadFile() routine" << std::endl;
+/*    std::cout << "DBG: starting the downloadFile() routine" << std::endl;
     unsigned int request_message_size;
     std::cout << "getMessageToSend() call" << std::endl;
 	unsigned char* request_message = getMessageToSend
@@ -464,6 +464,7 @@ void ClientConnectionManager::downloadFile()
 	sendPacket(request_message, request_message_size);
 	message_counter++;
     std::cout << "packet sent" << std::endl;
+*/
 }
 
 

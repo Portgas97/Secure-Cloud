@@ -701,14 +701,7 @@ unsigned char* CryptographyManager::getAad(unsigned char* initialization_vector,
 {
 	aad_size = sizeof(message_counter) + getInitializationVectorSize();
 
-	// operation case: operation_code is added to aad
-	// aad: operation_code | message_counter | initialization_vector
-	if(operation_code != -1)
-		aad_size += sizeof(operation_code);
-
-	// else ACK case: no operation_code is added to aad
 	// aad: message_counter | initialization_vector
-
 	unsigned char* aad = (unsigned char*)calloc(1, aad_size);
 	
 	if(aad == nullptr)
@@ -718,10 +711,6 @@ unsigned char* CryptographyManager::getAad(unsigned char* initialization_vector,
 	}
 
 	Serializer serializer = Serializer(aad);
-
-	// operation case
-	if(operation_code != -1)
-		serializer.serializeInt(operation_code);
 
 	serializer.serializeInt(message_counter);
 	serializer.serializeByteStream(initialization_vector, 

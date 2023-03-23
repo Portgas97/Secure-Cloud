@@ -60,7 +60,12 @@ class ConnectionManager
 		const unsigned int LOGOUT_OPERATION_CODE = 5;
 
 		// TO DO: insert in a file of constants
+		const char* UPLOAD_MESSAGE = "UPLOAD";
+		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
+		const char* DELETE_MESSAGE = "DELETE";
 		const char* LIST_MESSAGE = "LIST";
+		const char* RENAME_MESSAGE = "RENAME";
+		const char* LOGOUT_MESSAGE = "LOGOUT";
 		const char* ACK_MESSAGE = "ACK";		
 
         virtual void createConnection() = 0;
