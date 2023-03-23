@@ -17,7 +17,8 @@ class ServerConnectionManager: public ConnectionManager
 
 
     private:
-		char* logged_user_username;
+		char logged_username[MAX_USERNAME_SIZE];
+        unsigned int logged_username_size;
 
 		const char* CERTIFICATE_FILENAME = 
 									"server/files/pem_files/Certificate.pem";
@@ -57,6 +58,8 @@ class ServerConnectionManager: public ConnectionManager
                                 + ephemeral_public_key_size
                                 + sizeof(signature_size)
                                 + signature_size;
+        
+        const unsigned int MAX_FILENAME_SIZE = 100;
 
         void createConnection();
         void destroyConnection();
@@ -71,6 +74,8 @@ class ServerConnectionManager: public ConnectionManager
 		void getFilenamesList(Deserializer);
 		void handleListOperation(Deserializer);
 		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
+        void handleDownloadOperation(Deserializer);
+        const char* canonicalizeUserPath(const char*);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
         

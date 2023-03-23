@@ -626,7 +626,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
     EVP_CIPHER_CTX *context = EVP_CIPHER_CTX_new();
     if(context == nullptr)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt context" << std::endl;
 		exit(1);
 	}
 	
@@ -634,7 +634,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 										initialization_vector);
     if(return_value != 1)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt init" << std::endl;
 		exit(1);
 	}
 
@@ -643,7 +643,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 	return_value = EVP_DecryptUpdate(context, nullptr, &size, aad, aad_size);
     if(return_value != 1)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt update 1" << std::endl;
 		exit(1);
 	}
 
@@ -652,7 +652,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 									ciphertext_size);
     if(return_value != 1)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt update 2" << std::endl;
 		exit(1);
 	}
 
@@ -662,7 +662,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 										TAG_SIZE, tag);
     if(return_value != 1)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt ctrl" << std::endl;
 		exit(1);
 	}
     
@@ -675,7 +675,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 
 	if(return_value <= 0)
 	{
-		std::cout << "Error in authenticate and decrypt message" << std::endl;
+		std::cout << "Error in authenticate and decrypt final" << std::endl;
 		exit(1);
 	}
 

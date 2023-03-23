@@ -9,6 +9,8 @@
 #include <stdio.h> // TO DO: fgets, to delete? better cstdio
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <limits.h> // required for realpath()
+#include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
 #include "CryptographyManager.h"
 #include "Serializer.h"

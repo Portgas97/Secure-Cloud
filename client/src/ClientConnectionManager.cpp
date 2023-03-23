@@ -452,7 +452,18 @@ void ClientConnectionManager::uploadFile()
 
 void ClientConnectionManager::downloadFile()
 {
-    
+    std::cout << "DBG: starting the downloadFile() routine" << std::endl;
+    unsigned int request_message_size;
+    std::cout << "getMessageToSend() call" << std::endl;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)"prova.txt", 
+											request_message_size, 
+											DOWNLOAD_OPERATION_CODE);
+    std::cout << "getMessageToSend() called" << std::endl;
+    std::cout << "Sending packet" << std::endl;
+	sendPacket(request_message, request_message_size);
+	message_counter++;
+    std::cout << "packet sent" << std::endl;
 }
 
 
