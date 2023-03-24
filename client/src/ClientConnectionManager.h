@@ -14,6 +14,9 @@ class ClientConnectionManager: public ConnectionManager
     private:
         const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
+
+		const char* STORAGE_DIRECTORY_NAME_PREFIX = "client/files/";
+		const char* STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";		
         
         char username[MAX_USERNAME_SIZE];
 		EVP_PKEY* deserialized_ephemeral_server_key;
@@ -45,11 +48,12 @@ class ClientConnectionManager: public ConnectionManager
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
+		void sendFileContent(std::string);
 
         void showMenu();
-        void uploadFile();
+        void uploadFile(std::string);
         void downloadFile();
-        void deleteFile();
+        void deleteFile(std::string);
         void printFilenamesList();
         void renameFile();
         void logout();

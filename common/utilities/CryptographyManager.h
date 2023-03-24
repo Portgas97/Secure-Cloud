@@ -24,7 +24,7 @@ class CryptographyManager
 		static unsigned int getTagSize();
 		static void getInitializationVector(unsigned char*);
 		static unsigned char* getAad(unsigned char*, unsigned int, 
-									unsigned int&, int = -1);
+									unsigned int&);
 		static unsigned char* getSharedSecret(EVP_PKEY*, EVP_PKEY*, 
 											size_t*);
 		static unsigned char* getSharedKey(unsigned char*, unsigned int);
@@ -47,6 +47,7 @@ class CryptographyManager
 											unsigned int, unsigned char*,
 											unsigned char*, unsigned char*,
                                             unsigned int, unsigned char*);
+		static void unoptimizedMemset(unsigned char*, size_t);
      
     private:
         
@@ -63,7 +64,7 @@ class CryptographyManager
         X509_STORE* certification_authority_store;
         
         void loadCertificationAuthorityCertificate();
-		static void unoptimizedMemset(unsigned char*, size_t);
+
                                     
 };
 
