@@ -607,7 +607,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	storeFileContent(filename, file_content_buffer, file_content_size);
 
 	// TO DO: evalutate if it's ok do the free here and not in the function caller
-	free(file_content_buffer);
 	std::string command, file_content;
 	unsigned int command_first_delimiter_position;
 	while(operation == UPLOAD_MESSAGE)
