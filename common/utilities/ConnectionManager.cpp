@@ -140,8 +140,7 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 */
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
-												unsigned int& message_size,
-												int operation_code) // TO DO default value also here?
+												unsigned int& message_size)
 {
 	// check counter overflow
  	if(message_counter == UINT32_MAX)
@@ -168,11 +167,10 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size,
-													operation_code);
+													message_counter, aad_size);
 
 	// packet to be send: AAD | ciphertext | tag
-	// AAD: {operation_code} | counter | initialization vector
+	// AAD: counter | initialization vector
 	message_size = 
 					sizeof(initialization_vector_size) 
 					// AAD
@@ -183,11 +181,6 @@ unsigned char* ConnectionManager::getMessageToSend
 					// TAG
 					+ sizeof(CryptographyManager::getTagSize())
 					+ CryptographyManager::getTagSize();
-
-	// operation_code is added to the AAD in case of an operation
-	if(operation_code != -1)
-		message_size += sizeof(operation_code);
-	
 
 	unsigned char* message = (unsigned char*) calloc(1, message_size);
 	if(message == nullptr)
@@ -231,13 +224,7 @@ unsigned char* ConnectionManager::getMessageToSend
 
 	Serializer serializer = Serializer(message);
 
-	// operation case
-	if(operation_code != -1)
-		serializer.serializeInt(operation_code);
-
 	// AAD
-	if(operation_code != -1)
-		serializer.serializeInt(operation_code);
 	serializer.serializeInt(message_counter);
 	serializer.serializeInt(initialization_vector_size);
 	serializer.serializeByteStream(initialization_vector,
@@ -274,8 +261,7 @@ unsigned char* ConnectionManager::getMessageToSend
 	it exits.
 */
 unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer,
-											unsigned int& plaintext_size, 
-											unsigned int operation_code)
+											unsigned int& plaintext_size)
 {
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
@@ -345,8 +331,7 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 
 	unsigned int aad_size;
 	unsigned char* aad = CryptographyManager::getAad(initialization_vector,
-													message_counter, aad_size,
-													operation_code);
+													message_counter, aad_size);
 
     if(aad == nullptr)
     {
@@ -360,10 +345,7 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-
-	std::cout << "DBG: received plaintext: ";
-	printBuffer(plaintext, plaintext_size);
-
+	
 	free(aad);
     free(tag);
     free(ciphertext);
@@ -373,4 +355,28 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 	message_counter++;
 
 	return plaintext;
+}
+
+unsigned char* ConnectionManager::getSmallFileContent(FILE* file, 
+													unsigned int file_size)
+{
+	unsigned char* buffer = (unsigned char*) 
+											calloc(1, file_size);
+
+	if(buffer == nullptr) 
+	{ 
+		std::cout << "Error in calloc" << std::endl; 
+		exit(1); 
+	}
+
+	// actual read
+	unsigned int return_value = fread(buffer, 1, file_size, file);
+
+	if(return_value < file_size) 
+	{ 
+		std::cout << "Error in fread" << std::endl;
+		std::cout << "DBG file_size: " << file_size << ", return_value: " << return_value << std::endl;
+		exit(1); 
+	}
+	return buffer;
 }

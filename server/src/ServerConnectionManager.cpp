@@ -234,24 +234,8 @@ unsigned char* ServerConnectionManager::getCertificateFromFile
 	fseek(certificate_file, 0, SEEK_SET);
 	
 	
-	unsigned char* certificate_buffer = (unsigned char*) 
-											calloc(1, certificate_buffer_size);
-
-	if(certificate_buffer == nullptr) 
-	{ 
-		std::cout << "Error in calloc" << std::endl; 
-		exit(1); 
-	}
-
-	// actual read
-	unsigned int return_value = fread(certificate_buffer, 1, 
-									certificate_buffer_size, certificate_file);
-
-	if(return_value < certificate_buffer_size) 
-	{ 
-		std::cout << "Error in fread" << std::endl;
-		exit(1); 
-	}
+	unsigned char* certificate_buffer = getSmallFileContent(certificate_file,
+													certificate_buffer_size);
 
 	fclose(certificate_file);
 	return certificate_buffer;
@@ -474,29 +458,73 @@ unsigned int ServerConnectionManager::handleRequest()
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
-	unsigned char* request_message = nullptr;
-	receivePacket(request_message);
+	
+	std::string command = getRequestCommand();
 
-	// request_message: operation_code | operation_specific_fields
-	Deserializer deserializer = Deserializer(request_message);
+	unsigned int command_first_delimiter_position = 
+								command.find(" ") >= command.length() ? 
+								command.length() - 1: command.find(" ");
 
-	//  which operation has been selected by the client
-	unsigned int operation_code = deserializer.deserializeInt();
+	std::string operation = command.substr(0, command_first_delimiter_position);
 
-	switch(operation_code)
+	if(operation == DOWNLOAD_MESSAGE)
 	{
-		case 1:
-			handleDownloadOperation(deserializer);
-			break;
-		case 3:
-			handleListOperation(deserializer);
-			break;
-		default:
-			std::cout << "Error in operation code received" << std::endl;
-			exit(1);
+		//handleDownloadOperation(deserializer);
+	}
+	else if(operation == LIST_MESSAGE)
+	{
+		handleListOperation();
+	}
+	else if(operation == UPLOAD_MESSAGE || operation == LAST_UPLOAD_MESSAGE)
+	{
+		unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command_second_delimiter_position - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		std::string file_content = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+
+		handleUploadOperation(operation, file_path, 
+								(unsigned char*)file_content.c_str(), 
+								file_content.length() - 1);
+
+		// TO DO: send ack
+
+	}
+	else if(operation == DELETE_MESSAGE)
+	{
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command.length() - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		handleDeleteOperation(file_path);	
+	}
+	else
+	{
+		std::cout << "Error in command received" << std::endl;
+		exit(1);
 	}
 	
-	return 1;
+	return 0;
 }
 
 // TO DO: insert it in a utility file
@@ -527,28 +555,26 @@ std::string ServerConnectionManager::getDirectoryFilenames
 	return directory_filenames;
 }
 
+unsigned char* ServerConnectionManager::getMessagePlaintext
+											(unsigned char* message,
+											unsigned int& plaintext_size)
+{
+	Deserializer deserializer = Deserializer(message);
+
+	unsigned char* plaintext = parseReceivedMessage
+												(deserializer, 
+												plaintext_size);
+
+	return plaintext;
+}
+
 /*
 	It parses the received packet, checks if everything is correct and then
 	replies with the filenames list
 */
-void ServerConnectionManager::handleListOperation
-									(Deserializer request_message_deserializer)
+void ServerConnectionManager::handleListOperation()
 {
 
-	unsigned int received_plaintext_size;
-	unsigned char* received_plaintext = parseReceivedMessage
-												(request_message_deserializer, 
-												received_plaintext_size, 
-												LIST_OPERATION_CODE);
-
-	if(!areBuffersEqual(received_plaintext, received_plaintext_size, 
-						(unsigned char*) OPERATION_MESSAGE, 
-						strlen(OPERATION_MESSAGE) + 1))
-	{
-		std::cout << "Error: expected " << OPERATION_MESSAGE << std::endl;
-		exit(1);
-	}
-  
 	// building user's dedicated directory path
 	std::string directory_name = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 	directory_name += logged_username;
@@ -564,13 +590,14 @@ void ServerConnectionManager::handleListOperation
 
 	strcpy(plaintext, directory_filenames.c_str());
 	unsigned int message_size;
-	unsigned char* message = getMessageToSend(
-								(unsigned char*)directory_filenames.c_str(), 
+	unsigned char* message = getMessageToSend
+								((unsigned char*)directory_filenames.c_str(), 
 								message_size);
 
 	sendPacket(message, message_size);
 }
 
+/*
 void ServerConnectionManager::handleDownloadOperation
 									(Deserializer request_message_deserializer)
 {
@@ -588,4 +615,121 @@ void ServerConnectionManager::handleDownloadOperation
 
 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
 }
+*/
 
+void ServerConnectionManager::handleUploadOperation(std::string operation, 
+											std::string filename,
+											unsigned char* file_content_buffer,
+											unsigned int file_content_size)
+{
+	// TO DO: usable also for download
+	storeFileContent(filename, file_content_buffer, file_content_size);
+
+	// TO DO: evalutate if it's ok do the free here and not in the function caller
+
+	std::cout << "DBG filename: " << filename << std::endl;
+
+	// if the file already exists, remove it (it's replaced)
+	if(fileAlreadyExists(filename))
+	{
+		std::cout << "DBG file exists\n";
+		std::experimental::filesystem::remove(filename);
+	}
+
+	std::string command, file_content;
+	unsigned int command_first_delimiter_position;
+	while(operation == UPLOAD_MESSAGE)
+	{
+		command = getRequestCommand();
+		command_first_delimiter_position = 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" ");
+
+		operation = command.substr(0, command_first_delimiter_position);
+		
+		file_content = command.substr(command_first_delimiter_position + 1,
+										command.length() - 
+										command_first_delimiter_position - 1);
+		file_content_size = file_content.length();
+
+		// store the next file chunk
+		storeFileContent(filename, (unsigned char*)file_content.c_str(), 
+						file_content_size);
+	}	
+}
+
+// TO DO: insert in a utility file
+void ServerConnectionManager::storeFileContent(std::string filename, 
+												unsigned char* file_content,
+												unsigned int file_content_size)
+{
+	// TO DO: canonicalize filename
+
+	FILE* file = fopen(filename.c_str(), "wb");
+	if(file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}
+
+	unsigned int written_file_content_size = fwrite(file_content, 
+													sizeof(unsigned char),
+													file_content_size, 
+													file);
+
+	if(written_file_content_size >= UINT32_MAX || 
+								written_file_content_size < file_content_size)
+	{
+		std::cout << "Error in write file content" << std::endl;
+		exit(1);
+	}
+
+	fclose(file);
+	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
+}
+
+std::string ServerConnectionManager::getRequestCommand()
+{
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	unsigned int plaintext_size;
+	unsigned char* plaintext = getMessagePlaintext(request_message, 
+													plaintext_size);
+
+	// pointers to first and to last array element
+	std::string command(plaintext, 
+						plaintext + plaintext_size/sizeof(plaintext[0]));
+
+
+	free(request_message);
+	return command;
+}
+
+void ServerConnectionManager::handleDeleteOperation(std::string filename)
+{
+	std::cout << "DBG filename: " << filename << std::endl;
+	// remove the file if actually exists
+	if(fileAlreadyExists(filename))
+	{
+		std::experimental::filesystem::remove(filename);
+		std::cout << "DBG File removed" << std::endl;
+		// TO DO: send ack
+	}
+	else
+	{	
+		// the file does not exist
+		std::cout << "Error: the file the client wants to delete does " << 
+					"not exist" << std::endl;
+		// TO DO: reply an error code to the client
+		exit(1);
+	}
+
+}
+
+// TO DO: insert in a utility class
+bool ServerConnectionManager::fileAlreadyExists(std::string filename)
+{
+    std::ifstream infile(filename);
+    return infile.good();
+}
