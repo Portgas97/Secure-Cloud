@@ -52,6 +52,9 @@ class ConnectionManager
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
 		unsigned char* getSmallFileContent(FILE* file, unsigned int);
+		void storeFileContent(std::string, unsigned char*, unsigned int);
+		bool fileAlreadyExists(std::string);
+		void sendFileContent(std::string, int = 0);
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;
@@ -65,6 +68,7 @@ class ConnectionManager
 		const char* UPLOAD_MESSAGE = "UPLOAD";
 		const char* LAST_UPLOAD_MESSAGE = "LAST_UPLOAD";
 		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
+		const char* LAST_DOWNLOAD_MESSAGE = "LAST_DOWNLOAD";
 		const char* DELETE_MESSAGE = "DELETE";
 		const char* LIST_MESSAGE = "LIST";
 		const char* RENAME_MESSAGE = "RENAME";

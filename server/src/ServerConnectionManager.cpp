@@ -469,7 +469,21 @@ unsigned int ServerConnectionManager::handleRequest()
 
 	if(operation == DOWNLOAD_MESSAGE)
 	{
-		//handleDownloadOperation(deserializer);
+		std::cout << "DBG: Download operation starting" << std::endl;
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command.length() - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		std::cout << "DBG: Calling download on " << file_path << std::endl;
+		// TO DO canonicalization
+		// 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
+		handleDownloadOperation(file_path);
 	}
 	else if(operation == LIST_MESSAGE)
 	{
@@ -597,25 +611,13 @@ void ServerConnectionManager::handleListOperation()
 	sendPacket(message, message_size);
 }
 
-/*
+
 void ServerConnectionManager::handleDownloadOperation
-									(Deserializer request_message_deserializer)
+									(std::string filename)
 {
-	unsigned int received_plaintext_size;
-	unsigned char* received_plaintext =
-				parseReceivedMessage(request_message_deserializer,
-							received_plaintext_size, DOWNLOAD_OPERATION_CODE);
-
-	std::cout << "The download message has been parsed, user wants to download "
-	<< received_plaintext << std::endl;
-
-	char plaintext_string[received_plaintext_size + 1];
-	strncpy(plaintext_string, 
-				(char*)received_plaintext, received_plaintext_size);
-
-	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
+	sendFileContent(filename);
 }
-*/
+
 
 void ServerConnectionManager::handleUploadOperation(std::string operation, 
 											std::string filename,
@@ -658,35 +660,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	}	
 }
 
-// TO DO: insert in a utility file
-void ServerConnectionManager::storeFileContent(std::string filename, 
-												unsigned char* file_content,
-												unsigned int file_content_size)
-{
-	// TO DO: canonicalize filename
-
-	FILE* file = fopen(filename.c_str(), "wb");
-	if(file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}
-
-	unsigned int written_file_content_size = fwrite(file_content, 
-													sizeof(unsigned char),
-													file_content_size, 
-													file);
-
-	if(written_file_content_size >= UINT32_MAX || 
-								written_file_content_size < file_content_size)
-	{
-		std::cout << "Error in write file content" << std::endl;
-		exit(1);
-	}
-
-	fclose(file);
-	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
-}
 
 std::string ServerConnectionManager::getRequestCommand()
 {
@@ -727,9 +700,4 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 
 }
 
-// TO DO: insert in a utility class
-bool ServerConnectionManager::fileAlreadyExists(std::string filename)
-{
-    std::ifstream infile(filename);
-    return infile.good();
-}
+
