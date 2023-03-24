@@ -53,7 +53,7 @@ class ClientConnectionManager: public ConnectionManager
         void showMenu();
         void uploadFile(std::string);
         void downloadFile();
-        void deleteFile();
+        void deleteFile(std::string);
         void printFilenamesList();
         void renameFile();
         void logout();

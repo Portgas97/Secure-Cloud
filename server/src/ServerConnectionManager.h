@@ -75,6 +75,8 @@ class ServerConnectionManager: public ConnectionManager
 		void handleListOperation();
 		void handleUploadOperation(std::string, std::string, unsigned char*,
 									unsigned int);
+		void handleDeleteOperation(std::string);
+		bool fileAlreadyExists(std::string);
 		std::string getRequestCommand();
 		void storeFileContent(std::string, unsigned char*, unsigned int);
 		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);

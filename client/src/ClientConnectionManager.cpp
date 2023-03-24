@@ -425,7 +425,18 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(operation == "delete")
         {
-            deleteFile();
+			// take the filename argument
+			std::string filename = command.substr
+										(command_first_delimiter_position + 1,
+										command.length() -
+										command_first_delimiter_position - 1);
+			// build the file path
+			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+			file_path += username;
+			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+			file_path += filename;
+
+            deleteFile(file_path);
         }
         else if(operation == "list")
         {
@@ -546,8 +557,6 @@ void ClientConnectionManager::sendFileContent(std::string file_path)
 	}
 
 	fclose(file);
-
-
 }
 
 void ClientConnectionManager::uploadFile(std::string filename)
@@ -581,9 +590,42 @@ void ClientConnectionManager::downloadFile()
 }
 
 
-void ClientConnectionManager::deleteFile()
+void ClientConnectionManager::deleteFile(std::string file_path)
 {
-    
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+
+	// with rfind I search the passed symbol from the end towards the start
+	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
+											std::string::npos - 
+											file_path.rfind("/") - 1);
+
+	// +1 is for space character
+	unsigned int delete_message_size = strlen(DELETE_MESSAGE) + 
+										filename.length() + 1;
+	unsigned char* delete_message = 
+								(unsigned char*) calloc(1, delete_message_size);
+	if(delete_message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	// prepare fragment upload packet
+	Serializer serializer = Serializer(delete_message);
+
+	serializer.serializeString((char*)DELETE_MESSAGE, strlen(DELETE_MESSAGE));
+	serializer.serializeChar(' ');
+	serializer.serializeString((char*)filename.c_str(), filename.length());
+
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend(delete_message,
+														message_size);
+	sendPacket(message, message_size);
 }
 
 

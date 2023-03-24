@@ -12,6 +12,7 @@
 #include <limits.h> // required for realpath()
 #include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
+#include <fstream>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"

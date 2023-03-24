@@ -499,11 +499,27 @@ unsigned int ServerConnectionManager::handleRequest()
 								(unsigned char*)file_content.c_str(), 
 								file_content.length() - 1);
 
+		// TO DO: send ack
+
+	}
+	else if(operation == DELETE_MESSAGE)
+	{
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command.length() - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		handleDeleteOperation(file_path);	
 	}
 	else
 	{
-			std::cout << "Error in command received" << std::endl;
-			exit(1);
+		std::cout << "Error in command received" << std::endl;
+		exit(1);
 	}
 	
 	return 0;
@@ -607,6 +623,16 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	storeFileContent(filename, file_content_buffer, file_content_size);
 
 	// TO DO: evalutate if it's ok do the free here and not in the function caller
+
+	std::cout << "DBG filename: " << filename << std::endl;
+
+	// if the file already exists, remove it (it's replaced)
+	if(fileAlreadyExists(filename))
+	{
+		std::cout << "DBG file exists\n";
+		std::experimental::filesystem::remove(filename);
+	}
+
 	std::string command, file_content;
 	unsigned int command_first_delimiter_position;
 	while(operation == UPLOAD_MESSAGE)
@@ -675,4 +701,32 @@ std::string ServerConnectionManager::getRequestCommand()
 
 	free(request_message);
 	return command;
+}
+
+void ServerConnectionManager::handleDeleteOperation(std::string filename)
+{
+	std::cout << "DBG filename: " << filename << std::endl;
+	// remove the file if actually exists
+	if(fileAlreadyExists(filename))
+	{
+		std::experimental::filesystem::remove(filename);
+		std::cout << "DBG File removed" << std::endl;
+		// TO DO: send ack
+	}
+	else
+	{	
+		// the file does not exist
+		std::cout << "Error: the file the client wants to delete does " << 
+					"not exist" << std::endl;
+		// TO DO: reply an error code to the client
+		exit(1);
+	}
+
+}
+
+// TO DO: insert in a utility class
+bool ServerConnectionManager::fileAlreadyExists(std::string filename)
+{
+    std::ifstream infile(filename);
+    return infile.good();
 }
