@@ -360,9 +360,6 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 										aad_size, tag, shared_key, 
 										initialization_vector, 
                                         initialization_vector_size, plaintext);
-	
-	output_plaintext = plaintext;
-	output_plaintext_size = plaintext_size;
 
 	std::cout << "DBG: received plaintext: ";
 	printBuffer(plaintext, plaintext_size);

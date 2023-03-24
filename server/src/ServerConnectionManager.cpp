@@ -551,7 +551,7 @@ void ServerConnectionManager::handleListOperation
   
 	// building user's dedicated directory path
 	std::string directory_name = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
-	directory_name += logged_user_username;
+	directory_name += logged_username;
 	directory_name += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 
 	std::string directory_filenames = getDirectoryFilenames(directory_name);
@@ -574,16 +574,17 @@ void ServerConnectionManager::handleListOperation
 void ServerConnectionManager::handleDownloadOperation
 									(Deserializer request_message_deserializer)
 {
-	unsigned char* plaintext;
-	unsigned int plaintext_size;
-	parseReceivedMessage(request_message_deserializer, plaintext,
-									plaintext_size, DOWNLOAD_OPERATION_CODE);
+	unsigned int received_plaintext_size;
+	unsigned char* received_plaintext =
+				parseReceivedMessage(request_message_deserializer,
+							received_plaintext_size, DOWNLOAD_OPERATION_CODE);
 
 	std::cout << "The download message has been parsed, user wants to download "
-	<< plaintext << std::endl;
+	<< received_plaintext << std::endl;
 
-	char plaintext_string[plaintext_size + 1];
-	strncpy(plaintext_string, (char*)plaintext, plaintext_size);
+	char plaintext_string[received_plaintext_size + 1];
+	strncpy(plaintext_string, 
+				(char*)received_plaintext, received_plaintext_size);
 
 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
 }

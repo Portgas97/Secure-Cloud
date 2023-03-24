@@ -462,7 +462,6 @@ void ClientConnectionManager::downloadFile()
     std::cout << "getMessageToSend() called" << std::endl;
     std::cout << "Sending packet" << std::endl;
 	sendPacket(request_message, request_message_size);
-	message_counter++;
     std::cout << "packet sent" << std::endl;
 }
 
