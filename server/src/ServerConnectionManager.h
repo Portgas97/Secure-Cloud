@@ -67,8 +67,8 @@ class ServerConnectionManager: public ConnectionManager
 		unsigned char* getCertificateFromFile(const char*, unsigned int&);
         void sendHello();
         void receiveHello();
-		void receiveFinalMessage();
-		void sendFinalMessage();
+		void receiveFinalHandshakeMessage();
+		void sendAckMessage();
 		void setSharedKey();
         unsigned int getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
@@ -76,13 +76,15 @@ class ServerConnectionManager: public ConnectionManager
 		void handleUploadOperation(std::string, std::string, unsigned char*,
 									unsigned int);
 		void handleDeleteOperation(std::string);
-		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
         void handleDownloadOperation(std::string);
 		void handleLogoutOperation();
         const char* canonicalizeUserPath(const char*);
+		void sendError();
+		void handleRenameOperation(std::string, std::string);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
-		void sendError();
+		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
+
         
 };
 

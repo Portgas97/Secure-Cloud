@@ -382,7 +382,6 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 	return buffer;
 }
 
-
 // TO DO: to insert in utility file
 void ConnectionManager::sendFileContent(std::string file_path, int download)
 {
@@ -580,5 +579,10 @@ unsigned char* ConnectionManager::getMessagePlaintext
 												plaintext_size);
 
 	return plaintext;
+
+// TO DO: insert in a utility class
+bool ConnectionManager::isFilenameValid(std::string filename) 
+{
+	return regex_match(filename, regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
 }
 

@@ -94,9 +94,9 @@ void ClientConnectionManager::handleHandshake()
 {
     sendHello();
     receiveHello();
-	sendFinalMessage();
+	sendFinalHandshakeMessage();
 	setSharedKey();
-	receiveFinalMessage();
+	receiveAckMessage();
 }
 
 
@@ -254,7 +254,7 @@ void ClientConnectionManager::receiveHello()
     free(hello_packet);
 }
 
-void ClientConnectionManager::sendFinalMessage()
+void ClientConnectionManager::sendFinalHandshakeMessage()
 {
     ephemeral_private_key = CryptographyManager::getPrivateKey();
 
@@ -339,7 +339,7 @@ unsigned int ClientConnectionManager::getFinalMessage
 }
 
 
-void ClientConnectionManager::receiveFinalMessage()
+void ClientConnectionManager::receiveAckMessage()
 {
     unsigned char* final_message = nullptr;
 	receivePacket(final_message);
@@ -428,6 +428,11 @@ void ClientConnectionManager::retrieveCommand()
 			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 			file_path += filename;
             uploadFile(file_path);
+
+			// receive ack
+			receiveAckMessage();
+			
+			std::cout << "Upload operation completed" << std::endl;
         } 
         else if(operation == "download")
         {
@@ -463,6 +468,11 @@ void ClientConnectionManager::retrieveCommand()
 			file_path += filename;
 
             deleteFile(file_path);
+
+			// receive ack
+			receiveAckMessage();
+			
+			std::cout << "Delete operation completed" << std::endl;
         }
         else if(operation == "list")
         {
@@ -470,16 +480,46 @@ void ClientConnectionManager::retrieveCommand()
         } 
         else if(operation == "rename")
         {
-            renameFile();
-        }
-        else if(operation == "logout")
-        {
-            logout();
-            logout_exit = true;
-        }
-        else
-            std::cout << "Error the command" << std::endl;
-    }
+			unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+			std::string original_filename = command.substr
+										(command_first_delimiter_position + 1,
+										command_second_delimiter_position - 
+										command_first_delimiter_position - 1);
+
+			if(!isFilenameValid(original_filename))
+			{
+				std::cout << "Error: the original filename is not valid" 
+							<< std::endl;
+				exit(1);
+			}
+			std::string original_file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+			original_file_path += username;
+			original_file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+			original_file_path += original_filename;
+
+			std::string new_filename = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+
+	        renameFile(original_file_path, new_filename);
+
+			receiveAck();
+
+			std::cout << "Rename operation completed" << std::endl;
+		}
+	    else if(operation == "logout")
+	    {
+	        logout();
+	        logout_exit = true;
+	    }
+	    else
+	        std::cout << "Error in parsing the command" << std::endl;
+	}
 }
 
 
@@ -603,6 +643,8 @@ void ClientConnectionManager::deleteFile(std::string file_path)
 		exit(1);
 	}
 
+	// TO DO: check if the file exists
+
 	// with rfind I search the passed symbol from the end towards the start
 	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
 											std::string::npos - 
@@ -666,9 +708,49 @@ void ClientConnectionManager::printFilenamesList()
 }
 
 
-void ClientConnectionManager::renameFile()
+void ClientConnectionManager::renameFile(std::string original_file_path,
+										std::string new_filename)
 {
-    
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+
+	// TO DO: check if the file exists
+
+	// with rfind I search the passed symbol from the end towards the start
+	std::string original_filename = file_path.substr(file_path.rfind("/") + 1, 
+											std::string::npos - 
+											file_path.rfind("/") - 1);
+	// +1 is for space characters
+	unsigned int rename_message_size = strlen(RENAME_MESSAGE) + 
+										original_filename.length() + 1 +
+										new_filename + 1;
+	unsigned char* rename_message = 
+								(unsigned char*) calloc(1, rename_message_size);
+	if(rename_message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	// prepare fragment upload packet
+	Serializer serializer = Serializer(rename_message);
+
+	serializer.serializeString((char*)RENAME_MESSAGE, strlen(RENAME_MESSAGE));
+	serializer.serializeChar(' ');
+	serializer.serializeString((char*)original_filename.c_str(), 
+								original_filename.length());
+	serializer.serializeChar(' ');
+	serializer.serializeString((char*)new_filename.c_str(), 
+								new_filename.length());
+
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend(rename_message,
+														message_size);
+	sendPacket(message, message_size);
 }
 
 

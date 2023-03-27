@@ -13,6 +13,7 @@
 #include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
 #include <fstream>
+#include <bits/regex.h>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -58,8 +59,7 @@ class ConnectionManager
 		void sendFileContent(std::string, int = 0);
 		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
-
-
+		bool isFilenameValid(std::string);
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;

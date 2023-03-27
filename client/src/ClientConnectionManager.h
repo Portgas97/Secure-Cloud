@@ -43,8 +43,8 @@ class ClientConnectionManager: public ConnectionManager
         void obtainUsername();
         void sendHello();
         void receiveHello();
-		void sendFinalMessage();
-		void receiveFinalMessage();
+		void sendFinalHandshakeMessage();
+		void receiveAckMessage();
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
@@ -54,7 +54,7 @@ class ClientConnectionManager: public ConnectionManager
         void downloadFile(std::string);
         void deleteFile(std::string);
         void printFilenamesList();
-        void renameFile();
+        void renameFile(std::string, std::string);
         void logout();
 
 };
