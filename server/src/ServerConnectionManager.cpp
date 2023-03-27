@@ -575,18 +575,6 @@ std::string ServerConnectionManager::getDirectoryFilenames
 	return directory_filenames;
 }
 
-unsigned char* ServerConnectionManager::getMessagePlaintext
-											(unsigned char* message,
-											unsigned int& plaintext_size)
-{
-	Deserializer deserializer = Deserializer(message);
-
-	unsigned char* plaintext = parseReceivedMessage
-												(deserializer, 
-												plaintext_size);
-
-	return plaintext;
-}
 
 /*
 	It parses the received packet, checks if everything is correct and then

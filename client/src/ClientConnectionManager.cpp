@@ -528,7 +528,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	sendPacket(message, message_size);
 
 	std::cout << "Receiving..." << std::endl;
-
+	std::string operation;
+	
 	do
 	{
 		std::string command = getRequestCommand();
@@ -539,7 +540,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 									command.find(" ") >= command.length() ? 
 									command.length() - 1: command.find(" ");
 
-		std::string operation = command.substr(0, command_first_delimiter_position);
+		operation = command.substr(0, command_first_delimiter_position);
 
 		std::cout << "DBG: operation: " << operation << std::endl;
 
@@ -557,7 +558,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 		std::cout << "DBG: filename: " << filename << std::endl;
 
 		std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
-		file_path += logged_username;
+		file_path += username;
 		file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 		file_path += filename;
 
@@ -570,13 +571,16 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 		std::cout << "DBG: file content " << file_content << std::endl;
 		
-		file_content_size = file_content.length();
+		unsigned int file_content_size = file_content.length();
 
-		
-		storeFileContent(filename, (unsigned char*)file_content.c_str()
-												, file_content_size);
+		std::cout << "Callind storeFileContent with: " << std::endl;
+		std::cout << "filename: " << filename << std::endl;
+		std::cout << "file content OK" << std::endl;
+		std::cout << "file_content_size: " << file_content_size << std::endl;
+		storeFileContent(file_path, (unsigned char*)file_content.c_str(),
+														 file_content_size);
 
-	} while();
+	} while(operation == DOWNLOAD_MESSAGE);
 
 	
 }

@@ -57,6 +57,8 @@ class ConnectionManager
 		bool fileAlreadyExists(std::string);
 		void sendFileContent(std::string, int = 0);
 		std::string getRequestCommand();
+		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
+
 
 
 		// TO DO: insert in a file of constants

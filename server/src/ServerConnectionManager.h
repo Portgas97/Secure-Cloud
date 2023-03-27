@@ -81,7 +81,6 @@ class ServerConnectionManager: public ConnectionManager
         const char* canonicalizeUserPath(const char*);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
-		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
         
 };
 

@@ -553,6 +553,7 @@ void ConnectionManager::storeFileContent(std::string filename,
 
 	fclose(file);
 	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
+	std::cout << "CLOSING" << std::endl;
 }
 
 
@@ -581,3 +582,17 @@ std::string ConnectionManager::getRequestCommand()
 	free(request_message);
 	return command;
 }
+
+unsigned char* ConnectionManager::getMessagePlaintext
+											(unsigned char* message,
+											unsigned int& plaintext_size)
+{
+	Deserializer deserializer = Deserializer(message);
+
+	unsigned char* plaintext = parseReceivedMessage
+												(deserializer, 
+												plaintext_size);
+
+	return plaintext;
+}
+
