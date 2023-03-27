@@ -140,7 +140,8 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 */
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
-												unsigned int& message_size)
+												unsigned int& message_size, 
+												unsigned int plaintext_size) // default 0
 {
 	// check counter overflow
  	if(message_counter == UINT32_MAX)
@@ -149,8 +150,9 @@ unsigned char* ConnectionManager::getMessageToSend
 		exit(1);
 	}
 	
-	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
- 
+	if(!plaintext_size)
+		plaintext_size = strlen((char*)plaintext) + 1;
+
 	unsigned int initialization_vector_size = 	
 							CryptographyManager::getInitializationVectorSize();
 
@@ -375,11 +377,208 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 	if(return_value < file_size) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
-		std::cout << "DBG file_size: " << file_size << ", return_value: " << return_value << std::endl;
 		exit(1); 
 	}
 	return buffer;
 }
+
+// TO DO: to insert in utility file
+void ConnectionManager::sendFileContent(std::string file_path, int download)
+{
+	FILE* file = fopen(file_path.c_str(), "rb");
+	if(file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}	
+
+	// with rfind I search the passed symbol from the end towards the start
+	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
+											std::string::npos - 
+											file_path.rfind("/") - 1);
+
+	// get file size
+	// move the file pointer to the end of the file
+	fseek(file, 0, SEEK_END);
+	// returns the file pointer position
+	unsigned int file_size = ftell(file);
+	// move file pointer to the beginning of the file
+	fseek(file, 0, SEEK_SET);
+
+    if (file_size > UINT32_MAX) 
+	{
+		std::cout << "Error: the file is too big" << std::endl;
+		exit(1);
+    }
+
+	unsigned long int sent_bytes = 0;
+	unsigned int message_size;
+	unsigned char* message = nullptr; 
+	unsigned int fragment_size;
+	unsigned char* fragment = nullptr;
+	unsigned int message_to_send_size;
+	unsigned char* message_to_send = nullptr;
+	
+    while (sent_bytes < file_size) 
+	{
+		// check if it's the last send
+		if(file_size - sent_bytes >= CHUNK_SIZE)
+		{	
+			fragment_size = CHUNK_SIZE;
+			if(download)
+				message_size = strlen(DOWNLOAD_MESSAGE) + 1;
+			else
+				message_size = strlen(UPLOAD_MESSAGE) + 1;
+		}
+		else
+		{
+			// last send case
+			fragment_size = file_size - sent_bytes;
+			if(download)
+				message_size = strlen(LAST_DOWNLOAD_MESSAGE) + 1;
+			else
+			message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
+		}
+
+		// if it's the first send, add the filename to the request message
+		if(sent_bytes == 0)
+			message_size += filename.length() + 1;
+
+		message_size += fragment_size;
+
+		// +1 for the space character
+		message = (unsigned char*) calloc(1, message_size + 1);
+		if(message == nullptr)
+		{
+			std::cout << "Error in calloc" << std::endl;
+			exit(1);
+		}
+
+		// prepare fragment upload packet
+		Serializer serializer = Serializer(message);
+
+		switch(download)
+		{
+			case 0:
+				if(file_size - sent_bytes >= CHUNK_SIZE)
+					serializer.serializeString((char*)UPLOAD_MESSAGE, 
+													strlen(UPLOAD_MESSAGE));
+				else
+					serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
+												strlen(LAST_UPLOAD_MESSAGE));
+				break;
+			case 1:
+				if(file_size - sent_bytes >= CHUNK_SIZE)
+					serializer.serializeString((char*)DOWNLOAD_MESSAGE, 
+												strlen(DOWNLOAD_MESSAGE));
+				else
+					serializer.serializeString((char*)LAST_DOWNLOAD_MESSAGE, 
+												strlen(LAST_DOWNLOAD_MESSAGE));
+				break;
+			default:
+				break;
+		}
+
+		if(sent_bytes == 0)
+		{
+			// serialize the space after the operation name
+			serializer.serializeChar(' ');
+			serializer.serializeString((char*)filename.c_str(), 
+										filename.length());
+		}
+
+		fragment = (unsigned char*) calloc(1, fragment_size);
+		if(fragment == nullptr)
+		{
+			std::cout << "Error in calloc" << std::endl;
+			exit(1);
+		}
+		fragment = getSmallFileContent(file, fragment_size);
+
+		serializer.serializeChar(' ');
+		serializer.serializeByteStream(fragment, fragment_size);
+
+		message_to_send = getMessageToSend(message, message_to_send_size, 
+													serializer.getOffset());
+
+		sendPacket(message_to_send, message_to_send_size);
+							
+		sent_bytes += fragment_size;
+		free(fragment);
+		free(message);
+	}
+
+	fclose(file);
+}
+
+// TO DO: insert in a utility file
+void ConnectionManager::storeFileContent(std::string filename, 
+												unsigned char* file_content,
+												unsigned int file_content_size)
+{
+	// TO DO: canonicalize filename
+
+	FILE* file = fopen(filename.c_str(), "wb");
+	if(file == nullptr)
+	{
+		std::cout << "Error in fopen" << std::endl;
+		exit(1);
+	}
+
+	unsigned int written_file_content_size = fwrite(file_content, 
+													sizeof(unsigned char),
+													file_content_size, 
+													file);
+
+	if(written_file_content_size >= UINT32_MAX || 
+								written_file_content_size < file_content_size)
+	{
+		std::cout << "Error in write file content" << std::endl;
+		exit(1);
+	}
+
+	fclose(file);
+	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
+}
+
+
+// TO DO: insert in a utility class
+bool ConnectionManager::fileAlreadyExists(std::string filename)
+{
+    std::ifstream infile(filename);
+    return infile.good();
+}
+
+
+std::string ConnectionManager::getRequestCommand()
+{
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	unsigned int plaintext_size;
+	unsigned char* plaintext = getMessagePlaintext(request_message, 
+													plaintext_size);
+
+	// pointers to first and to last array element
+	std::string command(plaintext, 
+						plaintext + plaintext_size/sizeof(plaintext[0]));
+
+
+	free(request_message);
+	return command;
+}
+
+unsigned char* ConnectionManager::getMessagePlaintext
+											(unsigned char* message,
+											unsigned int& plaintext_size)
+{
+	Deserializer deserializer = Deserializer(message);
+
+	unsigned char* plaintext = parseReceivedMessage
+												(deserializer, 
+												plaintext_size);
+
+	return plaintext;
 
 // TO DO: insert in a utility class
 bool ConnectionManager::isFilenameValid(std::string filename) 

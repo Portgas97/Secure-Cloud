@@ -1,5 +1,4 @@
 #include "ServerConnectionManager.h"
-#include <stdio.h>
 
 ServerConnectionManager::ServerConnectionManager()
 {
@@ -55,7 +54,7 @@ void ServerConnectionManager::createConnection()
 
 void ServerConnectionManager::destroyConnection()
 {
-
+	close(socket_fd);
 }
 
 
@@ -413,33 +412,28 @@ void ServerConnectionManager::sendAckMessage()
 }
 
 
-const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
+const char* ServerConnectionManager::canonicalizeUserPath(const char* filepath)
 {
-	// the pattern is the following: server/files/<username>/<filename>
-	char file_path[strlen("server/files/") 
-				+ MAX_USERNAME_SIZE 
-				+ 1 
-				+ MAX_FILENAME_SIZE
-				+ 1
-				];
-
-	// not passing the '\0'
-	strncpy(file_path, "server/files/users/", strlen("server/files/users/") + 1);
-	strncat(file_path, logged_username, logged_username_size);
-	strncat(file_path, "/", strlen("/") + 1);
-	strncat(file_path, filename, strlen(filename) + 1);
-
-	std::cout << "file_path: " << file_path << std::endl;
-	
-	const char* canonicalized_filename = realpath(file_path, nullptr);
+	const char* canonicalized_filename = realpath(filepath, nullptr);
 
 	if(canonicalized_filename == nullptr)
+		return "error";
+
+	// TO DO this depends on where the project is built
+	std::string base_path = "/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/";
+
+	std::string prefix_path = "Secure-Cloud/server/files/users/";
+	std::string username_string = logged_username;
+	std::string suffix_path = "/storage/";
+	std::string correct_directory = base_path + prefix_path + username_string + 
+									suffix_path;
+
+	if(strncmp(canonicalized_filename, correct_directory.c_str(), 
+											correct_directory.size()) != 0)
 	{
-		std::cout << "Error in realpath" << std::endl;
+		std::cout << "Unauthorized path" << std::endl;
 		exit(1);
 	}
-
-	std::cout << "realpath: " << canonicalized_filename << std::endl;
 
 	return canonicalized_filename;
 }
@@ -457,6 +451,7 @@ unsigned int ServerConnectionManager::handleRequest()
 		exit(1);
 	}
 	
+	std::cout << "Waiting for the next operation..." << std::endl;
 	std::string command = getRequestCommand();
 
 	unsigned int command_first_delimiter_position = 
@@ -467,7 +462,27 @@ unsigned int ServerConnectionManager::handleRequest()
 
 	if(operation == DOWNLOAD_MESSAGE)
 	{
-		//handleDownloadOperation(deserializer);
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command.length() - 
+									command_first_delimiter_position - 1);
+
+		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		const char* canonicalized_filename =
+									canonicalizeUserPath(file_path.c_str());
+
+		if(strncmp(canonicalized_filename, "error", strlen("error")) == 0)
+		{
+			std::cout << "The file does not exist" << std::endl;
+			sendError();
+			return 0;
+		}
+		
+		handleDownloadOperation(canonicalized_filename);
 	}
 	else if(operation == LIST_MESSAGE)
 	{
@@ -525,6 +540,11 @@ unsigned int ServerConnectionManager::handleRequest()
 
 		handleDeleteOperation(file_path);	
 	}
+	else if(operation == LOGOUT_MESSAGE)
+	{
+		handleLogoutOperation();
+		return 1;
+
 	else if(operation == RENAME_MESSAGE)
 	{
 		unsigned int command_second_delimiter_position = 
@@ -566,7 +586,6 @@ unsigned int ServerConnectionManager::handleRequest()
 		new_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		new_file_path += new_filename;
 
-		
 	}
 	else
 	{
@@ -605,18 +624,6 @@ std::string ServerConnectionManager::getDirectoryFilenames
 	return directory_filenames;
 }
 
-unsigned char* ServerConnectionManager::getMessagePlaintext
-											(unsigned char* message,
-											unsigned int& plaintext_size)
-{
-	Deserializer deserializer = Deserializer(message);
-
-	unsigned char* plaintext = parseReceivedMessage
-												(deserializer, 
-												plaintext_size);
-
-	return plaintext;
-}
 
 /*
 	It parses the received packet, checks if everything is correct and then
@@ -647,42 +654,27 @@ void ServerConnectionManager::handleListOperation()
 	sendPacket(message, message_size);
 }
 
-/*
+
 void ServerConnectionManager::handleDownloadOperation
-									(Deserializer request_message_deserializer)
+									(std::string filename)
 {
-	unsigned char* plaintext;
-	unsigned int plaintext_size;
-	parseReceivedMessage(request_message_deserializer, plaintext,
-									plaintext_size, DOWNLOAD_OPERATION_CODE);
-
-	std::cout << "The download message has been parsed, user wants to download "
-	<< plaintext << std::endl;
-
-	char plaintext_string[plaintext_size + 1];
-	strncpy(plaintext_string, (char*)plaintext, plaintext_size);
-
-	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
+	sendFileContent(filename, 1);
 }
-*/
+
 
 void ServerConnectionManager::handleUploadOperation(std::string operation, 
 											std::string filename,
 											unsigned char* file_content_buffer,
 											unsigned int file_content_size)
 {
-	// TO DO: usable also for download
 	storeFileContent(filename, file_content_buffer, file_content_size);
 
 	// TO DO: evalutate if it's ok do the free here and not in the function caller
-
-	std::cout << "DBG filename: " << filename << std::endl;
 
 	// if the file already exists, remove it (it's replaced)
 	// TO DO: implement a working check
 	/*if(fileAlreadyExists(filename))
 	{
-		std::cout << "DBG file exists\n";
 		std::experimental::filesystem::remove(filename);
 	}*/
 
@@ -711,53 +703,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	sendAckMessage();
 }
 
-// TO DO: insert in a utility file
-void ServerConnectionManager::storeFileContent(std::string filename, 
-												unsigned char* file_content,
-												unsigned int file_content_size)
-{
-	// TO DO: canonicalize filename
-
-	FILE* file = fopen(filename.c_str(), "wb");
-	if(file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}
-
-	unsigned int written_file_content_size = fwrite(file_content, 
-													sizeof(unsigned char),
-													file_content_size, 
-													file);
-
-	if(written_file_content_size >= UINT32_MAX || 
-								written_file_content_size < file_content_size)
-	{
-		std::cout << "Error in write file content" << std::endl;
-		exit(1);
-	}
-
-	fclose(file);
-	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
-}
-
-std::string ServerConnectionManager::getRequestCommand()
-{
-	unsigned char* request_message = nullptr;
-	receivePacket(request_message);
-
-	unsigned int plaintext_size;
-	unsigned char* plaintext = getMessagePlaintext(request_message, 
-													plaintext_size);
-
-	// pointers to first and to last array element
-	std::string command(plaintext, 
-						plaintext + plaintext_size/sizeof(plaintext[0]));
-
-
-	free(request_message);
-	return command;
-}
 
 void ServerConnectionManager::handleRenameOperation
 												(std::string original_filename, 
@@ -771,12 +716,10 @@ void ServerConnectionManager::handleRenameOperation
 	
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {
-	std::cout << "DBG filename: " << filename << std::endl;
 	// remove the file if actually exists
 	if(fileAlreadyExists(filename))
 	{
 		std::experimental::filesystem::remove(filename);
-		std::cout << "DBG File removed" << std::endl;
 		// TO DO: send ack
 	}
 	else
@@ -791,6 +734,19 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 	// send ACK
 	sendAckMessage();
 }
+
+void ServerConnectionManager::handleLogoutOperation()
+{
+	destroyConnection();
+	CryptographyManager::deleteSharedKey(shared_key);
+}
+
+
+void ServerConnectionManager::sendError()
+{
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend((unsigned char*)ERROR, message_size);
+	sendPacket(message, message_size);
 
 // TO DO: insert in a utility class
 // TO DO: to implement a working version

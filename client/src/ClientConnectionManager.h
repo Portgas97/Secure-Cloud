@@ -48,11 +48,10 @@ class ClientConnectionManager: public ConnectionManager
 		void setSharedKey();	
         unsigned int getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
-		void sendFileContent(std::string);
 
         void showMenu();
         void uploadFile(std::string);
-        void downloadFile();
+        void downloadFile(std::string);
         void deleteFile(std::string);
         void printFilenamesList();
         void renameFile(std::string, std::string);

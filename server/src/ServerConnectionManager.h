@@ -76,13 +76,11 @@ class ServerConnectionManager: public ConnectionManager
 		void handleUploadOperation(std::string, std::string, unsigned char*,
 									unsigned int);
 		void handleDeleteOperation(std::string);
-		bool fileAlreadyExists(std::string);
-		std::string getRequestCommand();
-		void storeFileContent(std::string, unsigned char*, unsigned int);
-		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
-        void handleDownloadOperation(Deserializer);
-		void handleRenameOperation(std::string, std::string);
+        void handleDownloadOperation(std::string);
+		void handleLogoutOperation();
         const char* canonicalizeUserPath(const char*);
+		void sendError();
+		void handleRenameOperation(std::string, std::string);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);

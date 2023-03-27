@@ -10,7 +10,7 @@ ClientConnectionManager::ClientConnectionManager()
 
 ClientConnectionManager::~ClientConnectionManager()
 {
-    // TO DO what to free? shared_key leads to a double-free attempt
+
 }
 
 
@@ -52,7 +52,7 @@ void ClientConnectionManager::createConnection()
 
 void ClientConnectionManager::destroyConnection()
 {
-    // TO DO
+    close(socket_fd);
 }
 
 
@@ -244,9 +244,11 @@ void ClientConnectionManager::receiveHello()
     CryptographyManager::verifySignature(server_signature, 
 										server_signature_size, clear_message, 
 										clear_message_size, server_public_key);
-
-    free(server_certificate);
+	// TO DO for more security, is OK?
+	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
+												ephemeral_server_key_size);
 	free(ephemeral_server_key);
+    free(server_certificate);
 	free(server_signature);
 	free(clear_message);
     free(hello_packet);
@@ -368,13 +370,21 @@ void ClientConnectionManager::showMenu()
     
     std::cout << "Welcome, " << username << "! Please, select an operation:"
     << std::endl
-    << "\t- upload: ..." << std::endl
-    << "\t- download: ..." << std::endl
-    << "\t- delete: ..." << std::endl
+
+    << "\t- upload <filename>: ..." << std::endl
+
+    << "\t- download <filename>: download an existing file from the server, "
+	<< "ask confirmation for overwriting a local file" << std::endl
+
+    << "\t- delete <filename>: ..." << std::endl
+
     << "\t- list: it prints the list of the filenames of the available files" <<
 		 "in your dedicated storage" << std::endl
+
     << "\t- rename: ..." << std::endl
-    << "\t- logout: ..." << std::endl
+
+    << "\t- logout: close the connection to Secure Cloud" << std::endl
+
     << std::endl
     << ">";
 }
@@ -426,7 +436,23 @@ void ClientConnectionManager::retrieveCommand()
         } 
         else if(operation == "download")
         {
-            downloadFile();
+			// take the filename argument
+			if(command_first_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
+			std::string filename = command.substr
+										(command_first_delimiter_position + 1,
+										command.length() -
+										command_first_delimiter_position - 1);
+			// build the file path
+			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+			file_path += username;
+			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+			file_path += filename;
+
+            downloadFile(file_path);
         }
         else if(operation == "delete")
         {
@@ -496,108 +522,7 @@ void ClientConnectionManager::retrieveCommand()
 	}
 }
 
-// TO DO: to insert in utility file
-void ClientConnectionManager::sendFileContent(std::string file_path)
-{
-	FILE* file = fopen(file_path.c_str(), "rb");
-	if(file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}	
 
-	// with rfind I search the passed symbol from the end towards the start
-	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
-											std::string::npos - 
-											file_path.rfind("/") - 1);
-
-	// get file size
-	// move the file pointer to the end of the file
-	fseek(file, 0, SEEK_END);
-	// returns the file pointer position
-	unsigned int file_size = ftell(file);
-	// move file pointer to the beginning of the file
-	fseek(file, 0, SEEK_SET);
-
-    if (file_size > UINT32_MAX) 
-	{
-		std::cout << "Error: the file is too big" << std::endl;
-		exit(1);
-    }
-
-	unsigned long int sent_bytes = 0;
-	unsigned int upload_message_size;
-	unsigned char* upload_message = nullptr; 
-	unsigned int fragment_size;
-	unsigned char* fragment = nullptr;
-	unsigned int message_to_send_size;
-	unsigned char* message_to_send = nullptr;
-    while (sent_bytes < file_size) 
-	{
-		// check if it's the last send
-		if(file_size - sent_bytes >= CHUNK_SIZE)
-		{	
-			fragment_size = CHUNK_SIZE;
-			upload_message_size = strlen(UPLOAD_MESSAGE) + 1;
-		}
-		else
-		{
-			// last send case
-			fragment_size = file_size - sent_bytes;
-			upload_message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
-		}
-		// if it's the first send, add the filename to the request message
-		if(sent_bytes == 0)
-			upload_message_size += filename.length() + 1;
-
-		upload_message_size += fragment_size;
-		// +1 for the space character
-		upload_message = (unsigned char*) calloc(1, upload_message_size + 1);
-		if(upload_message == nullptr)
-		{
-			std::cout << "Error in calloc" << std::endl;
-			exit(1);
-		}
-
-		// prepare fragment upload packet
-		Serializer serializer = Serializer(upload_message);
-
-		if(file_size - sent_bytes >= CHUNK_SIZE)
-			serializer.serializeString((char*)UPLOAD_MESSAGE, 
-										strlen(UPLOAD_MESSAGE));
-		else
-			serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
-										strlen(LAST_UPLOAD_MESSAGE));
-
-		if(sent_bytes == 0)
-		{
-			// serialize the space after the operation name
-			serializer.serializeChar(' ');
-			serializer.serializeString((char*)filename.c_str(), 
-										filename.length());
-		}
-
-		fragment = (unsigned char*) calloc(1, fragment_size);
-		if(fragment == nullptr)
-		{
-			std::cout << "Error in calloc" << std::endl;
-			exit(1);
-		}
-		fragment = getSmallFileContent(file, fragment_size);
-		serializer.serializeChar(' ');
-		serializer.serializeByteStream(fragment, fragment_size);
-
-		message_to_send = getMessageToSend(upload_message, message_to_send_size);
-		sendPacket(message_to_send, message_to_send_size);
-							
-		sent_bytes += fragment_size;
-		free(fragment);
-		free(upload_message);
-		free(message_to_send);
-	}
-
-	fclose(file);
-}
 
 void ClientConnectionManager::uploadFile(std::string filename)
 {
@@ -612,21 +537,100 @@ void ClientConnectionManager::uploadFile(std::string filename)
 }
 
 
-void ClientConnectionManager::downloadFile()
+void ClientConnectionManager::downloadFile(std::string file_path)
 {
-/*    std::cout << "DBG: starting the downloadFile() routine" << std::endl;
-    unsigned int request_message_size;
-    std::cout << "getMessageToSend() call" << std::endl;
-	unsigned char* request_message = getMessageToSend
-											((unsigned char*)"prova.txt", 
-											request_message_size, 
-											DOWNLOAD_OPERATION_CODE);
-    std::cout << "getMessageToSend() called" << std::endl;
-    std::cout << "Sending packet" << std::endl;
-	sendPacket(request_message, request_message_size);
-	message_counter++;
-    std::cout << "packet sent_bytes" << std::endl;
-*/
+
+	if(fileAlreadyExists(file_path))
+	{
+		std::cout << "The file already exist, do you want to continue? yes/no"
+					<< std::endl;
+		std::string confirm;
+		std::getline(std::cin, confirm);
+        if(!std::cin)
+        {
+            std::cout << "Error in reading command" << std::endl;
+            exit(1);
+        }
+		if(confirm != "yes"){
+			std::cout << "Discard the download operation" << std::endl;
+			return;
+		}
+	}
+
+	// check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+
+	// with rfind I search the passed symbol from the end towards the start
+	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
+											std::string::npos - 
+											file_path.rfind("/") - 1);
+
+	// +1 is for space character
+	unsigned int download_message_size = strlen(DOWNLOAD_MESSAGE) + 1
+										+ 1 // space character
+										+ filename.length() + 1;
+	unsigned char* download_message = (unsigned char*) calloc(1, 
+														download_message_size);
+	if(download_message == nullptr)
+	{
+		std::cout << "Error in calloc" << std::endl;
+		exit(1);
+	}
+
+	// prepare fragment upload packet
+	Serializer serializer = Serializer(download_message);
+
+	serializer.serializeString((char*)DOWNLOAD_MESSAGE, 
+												strlen(DOWNLOAD_MESSAGE));
+	serializer.serializeChar(' ');
+	serializer.serializeString((char*)filename.c_str(), filename.length());
+	
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend(download_message,
+														message_size);
+	free(download_message);
+	sendPacket(message, message_size);
+
+	std::string operation;
+	do
+	{
+		std::string command = getRequestCommand();
+
+		unsigned int command_first_delimiter_position = 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" ");
+
+		operation = command.substr(0, command_first_delimiter_position);
+
+		if(operation == ERROR)
+		{
+			std::cout << "Error: file does not exist?" << std::endl;
+			return;
+		}
+
+		unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+
+		std::string file_content = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+		
+		unsigned int file_content_size = file_content.length();
+
+		storeFileContent(file_path, (unsigned char*)file_content.c_str(),
+														 file_content_size);
+
+	} while(operation == DOWNLOAD_MESSAGE);
+
+	
 }
 
 
@@ -752,6 +756,22 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 
 void ClientConnectionManager::logout()
 {
-    
+    // check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+
+	unsigned int request_message_size;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)LOGOUT_MESSAGE, 
+											request_message_size);
+	sendPacket(request_message, request_message_size);
+
+	destroyConnection();
+
+	CryptographyManager::deleteSharedKey(shared_key);
+	
 }
 

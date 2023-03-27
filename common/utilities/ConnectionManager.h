@@ -48,11 +48,17 @@ class ConnectionManager
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
 
-		unsigned char* getMessageToSend(unsigned char*, unsigned int&);     
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
+														unsigned int = 0);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
 		unsigned char* getSmallFileContent(FILE* file, unsigned int);
+		void storeFileContent(std::string, unsigned char*, unsigned int);
+		bool fileAlreadyExists(std::string);
+		void sendFileContent(std::string, int = 0);
+		std::string getRequestCommand();
+		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
 		bool isFilenameValid(std::string);
 
 		// TO DO: insert in a file of constants
@@ -62,16 +68,19 @@ class ConnectionManager
 		const unsigned int LIST_OPERATION_CODE = 3;
 		const unsigned int RENAME_OPERATION_CODE = 4;
 		const unsigned int LOGOUT_OPERATION_CODE = 5;
+		
 
 		// TO DO: insert in a file of constants
 		const char* UPLOAD_MESSAGE = "UPLOAD";
 		const char* LAST_UPLOAD_MESSAGE = "LAST_UPLOAD";
 		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
+		const char* LAST_DOWNLOAD_MESSAGE = "LAST_DOWNLOAD";
 		const char* DELETE_MESSAGE = "DELETE";
 		const char* LIST_MESSAGE = "LIST";
 		const char* RENAME_MESSAGE = "RENAME";
 		const char* LOGOUT_MESSAGE = "LOGOUT";
 		const char* ACK_MESSAGE = "ACK";		
+		const char* ERROR = "ERROR";
 
 		// TO DO: insert in a file of constants
 		const unsigned int CHUNK_SIZE = 500000; // 500 KB

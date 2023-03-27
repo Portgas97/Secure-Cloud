@@ -729,3 +729,8 @@ void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer,
 }
 #pragma GCC pop_options                           
 
+
+void CryptographyManager::deleteSharedKey(unsigned char* shared_key)
+{    
+	unoptimizedMemset(shared_key, SHARED_KEY_SIZE);
+}

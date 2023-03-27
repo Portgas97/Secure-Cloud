@@ -11,6 +11,7 @@ class Deserializer
 		Deserializer(unsigned char*);
 		// ~Deserializer();
 		int deserializeInt();
+		char deserializeChar();
 		void deserializeString(char*, unsigned int);
 		void deserializeByteStream(unsigned char*, unsigned int);
 		
@@ -18,8 +19,6 @@ class Deserializer
 		unsigned char* buffer;
 		unsigned int offset;
 
-		char deserializeChar();
-		
 };
 
 #endif
