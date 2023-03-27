@@ -52,7 +52,7 @@ void ClientConnectionManager::createConnection()
 
 void ClientConnectionManager::destroyConnection()
 {
-    // TO DO
+    close(socket_fd);
 }
 
 
@@ -246,6 +246,7 @@ void ClientConnectionManager::receiveHello()
 										clear_message_size, server_public_key);
 
     free(server_certificate);
+	// TO DO better to call unoptmized memset???
 	free(ephemeral_server_key);
 	free(server_signature);
 	free(clear_message);
@@ -539,6 +540,12 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 		operation = command.substr(0, command_first_delimiter_position);
 
+		if(operation == ERROR)
+		{
+			std::cout << "Error: file does not exist?" << std::endl;
+			return;
+		}
+
 
 		unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
@@ -642,6 +649,22 @@ void ClientConnectionManager::renameFile()
 
 void ClientConnectionManager::logout()
 {
-    
+    // check counter overflow
+ 	if(message_counter == UINT32_MAX)
+	{
+		std::cout << "Error: message counter overflow" << std::endl;
+		exit(1);
+	}
+
+	unsigned int request_message_size;
+	unsigned char* request_message = getMessageToSend
+											((unsigned char*)LOGOUT_MESSAGE, 
+											request_message_size);
+	sendPacket(request_message, request_message_size);
+
+	destroyConnection();
+
+	CryptographyManager::deleteSharedKey(shared_key);
+	
 }
 

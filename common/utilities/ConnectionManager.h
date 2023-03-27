@@ -68,6 +68,7 @@ class ConnectionManager
 		const unsigned int LIST_OPERATION_CODE = 3;
 		const unsigned int RENAME_OPERATION_CODE = 4;
 		const unsigned int LOGOUT_OPERATION_CODE = 5;
+		
 
 		// TO DO: insert in a file of constants
 		const char* UPLOAD_MESSAGE = "UPLOAD";
@@ -79,6 +80,7 @@ class ConnectionManager
 		const char* RENAME_MESSAGE = "RENAME";
 		const char* LOGOUT_MESSAGE = "LOGOUT";
 		const char* ACK_MESSAGE = "ACK";		
+		const char* ERROR = "ERROR";
 
 		// TO DO: insert in a file of constants
 		const unsigned int CHUNK_SIZE = 500000; // 500 KB

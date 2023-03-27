@@ -54,7 +54,7 @@ void ServerConnectionManager::createConnection()
 
 void ServerConnectionManager::destroyConnection()
 {
-
+	close(socket_fd);
 }
 
 
@@ -417,10 +417,7 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* filepath)
 	const char* canonicalized_filename = realpath(filepath, nullptr);
 
 	if(canonicalized_filename == nullptr)
-	{
-		std::cout << "Error in realpath" << std::endl;
-		exit(1);
-	}
+		return "error";
 
 	// TO DO this depends on where the project is built
 	std::string base_path = "/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/";
@@ -437,6 +434,7 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* filepath)
 		std::cout << "Unauthorized path" << std::endl;
 		exit(1);
 	}
+
 	return canonicalized_filename;
 }
 
@@ -476,6 +474,14 @@ unsigned int ServerConnectionManager::handleRequest()
 
 		const char* canonicalized_filename =
 									canonicalizeUserPath(file_path.c_str());
+
+		if(strncmp(canonicalized_filename, "error", strlen("error")) == 0)
+		{
+			std::cout << "The file does not exist" << std::endl;
+			sendError();
+			return 0;
+		}
+		
 		handleDownloadOperation(canonicalized_filename);
 	}
 	else if(operation == LIST_MESSAGE)
@@ -524,6 +530,11 @@ unsigned int ServerConnectionManager::handleRequest()
 		file_path += filename;
 
 		handleDeleteOperation(file_path);	
+	}
+	else if(operation == LOGOUT_MESSAGE)
+	{
+		handleLogoutOperation();
+		return 1;
 	}
 	else
 	{
@@ -658,4 +669,20 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 
 }
 
+void ServerConnectionManager::handleLogoutOperation()
+{
 
+	// TO DO parse request
+	destroyConnection();
+
+	CryptographyManager::deleteSharedKey(shared_key);
+}
+
+
+void ServerConnectionManager::sendError()
+{
+	unsigned int message_size;
+	unsigned char* message = getMessageToSend((unsigned char*)ERROR, message_size);
+
+	sendPacket(message, message_size);
+}
