@@ -616,7 +616,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 											unsigned char* file_content_buffer,
 											unsigned int file_content_size)
 {
-	// TO DO: usable also for download
 	storeFileContent(filename, file_content_buffer, file_content_size);
 
 	// TO DO: evalutate if it's ok do the free here and not in the function caller
@@ -671,10 +670,7 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 
 void ServerConnectionManager::handleLogoutOperation()
 {
-
-	// TO DO parse request
 	destroyConnection();
-
 	CryptographyManager::deleteSharedKey(shared_key);
 }
 
@@ -683,6 +679,5 @@ void ServerConnectionManager::sendError()
 {
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend((unsigned char*)ERROR, message_size);
-
 	sendPacket(message, message_size);
 }

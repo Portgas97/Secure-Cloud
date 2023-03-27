@@ -10,7 +10,7 @@ ClientConnectionManager::ClientConnectionManager()
 
 ClientConnectionManager::~ClientConnectionManager()
 {
-    // TO DO what to free? shared_key leads to a double-free attempt
+
 }
 
 
@@ -246,7 +246,9 @@ void ClientConnectionManager::receiveHello()
 										clear_message_size, server_public_key);
 
     free(server_certificate);
-	// TO DO better to call unoptmized memset???
+	// TO DO for more security, is OK?
+	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
+												ephemeral_server_key_size);
 	free(ephemeral_server_key);
 	free(server_signature);
 	free(clear_message);
@@ -369,13 +371,21 @@ void ClientConnectionManager::showMenu()
     
     std::cout << "Welcome, " << username << "! Please, select an operation:"
     << std::endl
-    << "\t- upload: ..." << std::endl
-    << "\t- download: ..." << std::endl
-    << "\t- delete: ..." << std::endl
+	
+    << "\t- upload <filename>: ..." << std::endl
+
+    << "\t- download <filename>: download an existing file from the server, "
+	<< "ask confirmation for overwriting a local file" << std::endl
+
+    << "\t- delete <filename>: ..." << std::endl
+
     << "\t- list: it prints the list of the filenames of the available files" <<
 		 "in your dedicated storage" << std::endl
+
     << "\t- rename: ..." << std::endl
-    << "\t- logout: ..." << std::endl
+
+    << "\t- logout: close the connection to Secure Cloud" << std::endl
+
     << std::endl
     << ">";
 }
@@ -488,8 +498,19 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 	if(fileAlreadyExists(file_path))
 	{
-		std::cout << "The file already exist" << std::endl;
-		// TO DO can ask to continue or stop the download operation
+		std::cout << "The file already exist, do you want to continue? yes/no"
+					<< std::endl;
+		std::string confirm;
+		std::getline(std::cin, confirm);
+        if(!std::cin)
+        {
+            std::cout << "Error in reading command" << std::endl;
+            exit(1);
+        }
+		if(confirm != "yes"){
+			std::cout << "Discard the download operation" << std::endl;
+			return;
+		}
 	}
 
 	// check counter overflow

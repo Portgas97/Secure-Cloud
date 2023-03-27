@@ -59,7 +59,7 @@ class CryptographyManager
 		
         static const unsigned int SHARED_KEY_SIZE = 32; // bytes
         const static unsigned int NONCE_SIZE = 16;
-        const static unsigned int INITIALIZATION_VECTOR_SIZE = 12; // TO DO, default is 12, can be set with EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, ivlen, NULL)
+        const static unsigned int INITIALIZATION_VECTOR_SIZE = 12; 
 		const static unsigned int TAG_SIZE = 16;
 
         X509_STORE* certification_authority_store;
