@@ -47,7 +47,8 @@ class ConnectionManager
         unsigned int ephemeral_public_key_size;
 		unsigned char* shared_key;
 
-		unsigned char* getMessageToSend(unsigned char*, unsigned int&);     
+		unsigned char* getMessageToSend(unsigned char*, unsigned int&, 
+														unsigned int = 0);     
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
@@ -55,6 +56,8 @@ class ConnectionManager
 		void storeFileContent(std::string, unsigned char*, unsigned int);
 		bool fileAlreadyExists(std::string);
 		void sendFileContent(std::string, int = 0);
+		std::string getRequestCommand();
+
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;

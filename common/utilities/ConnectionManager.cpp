@@ -140,7 +140,8 @@ void ConnectionManager::sendPacket(unsigned char* packet,
 */
 unsigned char* ConnectionManager::getMessageToSend
 												(unsigned char* plaintext, 
-												unsigned int& message_size)
+												unsigned int& message_size, 
+												unsigned int plaintext_size) // default 0
 {
 	// check counter overflow
  	if(message_counter == UINT32_MAX)
@@ -149,7 +150,11 @@ unsigned char* ConnectionManager::getMessageToSend
 		exit(1);
 	}
 	
-	unsigned int plaintext_size = strlen((char*)plaintext) + 1;
+	if(!plaintext_size)
+		plaintext_size = strlen((char*)plaintext) + 1;
+
+	std::cout << "DBG: plaintext to parse: ";
+	printBuffer(plaintext, plaintext_size);
  
 	unsigned int initialization_vector_size = 	
 							CryptographyManager::getInitializationVectorSize();
@@ -354,6 +359,9 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 	// TO DO: evaluate if it's ok put here the message_counter increment
 	message_counter++;
 
+	std::cout << "DBG: parsed plaintext: ";
+	printBuffer(plaintext, plaintext_size);
+
 	return plaintext;
 }
 
@@ -425,19 +433,27 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 		if(file_size - sent_bytes >= CHUNK_SIZE)
 		{	
 			fragment_size = CHUNK_SIZE;
-			message_size = strlen(UPLOAD_MESSAGE) + 1;
+			if(download)
+				message_size = strlen(DOWNLOAD_MESSAGE) + 1;
+			else
+				message_size = strlen(UPLOAD_MESSAGE) + 1;
 		}
 		else
 		{
 			// last send case
 			fragment_size = file_size - sent_bytes;
+			if(download)
+				message_size = strlen(LAST_DOWNLOAD_MESSAGE) + 1;
+			else
 			message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
 		}
+
 		// if it's the first send, add the filename to the request message
 		if(sent_bytes == 0)
 			message_size += filename.length() + 1;
 
 		message_size += fragment_size;
+
 		// +1 for the space character
 		message = (unsigned char*) calloc(1, message_size + 1);
 		if(message == nullptr)
@@ -466,6 +482,9 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 				else
 					serializer.serializeString((char*)LAST_DOWNLOAD_MESSAGE, 
 												strlen(LAST_DOWNLOAD_MESSAGE));
+				break;
+			default:
+				break;
 		}
 
 		if(sent_bytes == 0)
@@ -483,13 +502,17 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 			exit(1);
 		}
 		fragment = getSmallFileContent(file, fragment_size);
+
+		std::cout << "DBG: getSmallFileContent returend fragment: " << std::endl;
+		printBuffer(fragment, fragment_size);
 		serializer.serializeChar(' ');
 		serializer.serializeByteStream(fragment, fragment_size);
 
 		std::cout << "DBG: now server is sending: ";
 		printBuffer(message, serializer.getOffset());
 
-		message_to_send = getMessageToSend(message, message_to_send_size);
+		message_to_send = getMessageToSend(message, message_to_send_size, 
+													serializer.getOffset());
 
 		sendPacket(message_to_send, message_to_send_size);
 							
@@ -538,4 +561,23 @@ bool ConnectionManager::fileAlreadyExists(std::string filename)
 {
     std::ifstream infile(filename);
     return infile.good();
+}
+
+
+std::string ConnectionManager::getRequestCommand()
+{
+	unsigned char* request_message = nullptr;
+	receivePacket(request_message);
+
+	unsigned int plaintext_size;
+	unsigned char* plaintext = getMessagePlaintext(request_message, 
+													plaintext_size);
+
+	// pointers to first and to last array element
+	std::string command(plaintext, 
+						plaintext + plaintext_size/sizeof(plaintext[0]));
+
+
+	free(request_message);
+	return command;
 }

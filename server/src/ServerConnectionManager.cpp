@@ -461,11 +461,15 @@ unsigned int ServerConnectionManager::handleRequest()
 	
 	std::string command = getRequestCommand();
 
+	std::cout << "DBG: command received: " << command << std::endl;
+
 	unsigned int command_first_delimiter_position = 
 								command.find(" ") >= command.length() ? 
 								command.length() - 1: command.find(" ");
 
 	std::string operation = command.substr(0, command_first_delimiter_position);
+
+	std::cout << "DBG: operation: " << operation << std::endl;
 
 	if(operation == DOWNLOAD_MESSAGE)
 	{
@@ -475,12 +479,14 @@ unsigned int ServerConnectionManager::handleRequest()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
+		std::cout << "DBG: filename: " << filename << std::endl;
+
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
 		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		file_path += filename;
 
-		std::cout << "DBG: Calling download on " << file_path << std::endl;
+		std::cout << "DBG: file_path " << file_path << std::endl;
 		// TO DO canonicalization
 		// 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
 		handleDownloadOperation(file_path);
@@ -615,7 +621,7 @@ void ServerConnectionManager::handleListOperation()
 void ServerConnectionManager::handleDownloadOperation
 									(std::string filename)
 {
-	sendFileContent(filename);
+	sendFileContent(filename, 1);
 }
 
 
@@ -660,24 +666,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	}	
 }
 
-
-std::string ServerConnectionManager::getRequestCommand()
-{
-	unsigned char* request_message = nullptr;
-	receivePacket(request_message);
-
-	unsigned int plaintext_size;
-	unsigned char* plaintext = getMessagePlaintext(request_message, 
-													plaintext_size);
-
-	// pointers to first and to last array element
-	std::string command(plaintext, 
-						plaintext + plaintext_size/sizeof(plaintext[0]));
-
-
-	free(request_message);
-	return command;
-}
 
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {

@@ -528,20 +528,57 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	sendPacket(message, message_size);
 
 	std::cout << "Receiving..." << std::endl;
-	// receive the reply
-	unsigned char* reply_message = nullptr;
-	receivePacket(reply_message);
 
-	// TO DO from here, receive the metadata but not the data (file content)
+	do
+	{
+		std::string command = getRequestCommand();
 
-	Deserializer deserializer = Deserializer(reply_message);
-	unsigned int plaintext_size;
-	// TO DO: is it correct to send operation_code in clear?
-	unsigned char* plaintext = parseReceivedMessage(deserializer, 
-													plaintext_size);
+		std::cout << "DBG: command received: " << command << std::endl;
 
-	std::cout << "Plaintext:" << std::endl;
-	printBuffer(plaintext, plaintext_size);
+		unsigned int command_first_delimiter_position = 
+									command.find(" ") >= command.length() ? 
+									command.length() - 1: command.find(" ");
+
+		std::string operation = command.substr(0, command_first_delimiter_position);
+
+		std::cout << "DBG: operation: " << operation << std::endl;
+
+		unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+
+		std::string filename = command.substr
+									(command_first_delimiter_position + 1,
+									command_second_delimiter_position - 
+									command_first_delimiter_position - 1);
+		
+		std::cout << "DBG: filename: " << filename << std::endl;
+
+		std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+		file_path += logged_username;
+		file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+		file_path += filename;
+
+		std::cout << "DBG: filepath " << file_path << std::endl;
+
+		std::string file_content = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+
+		std::cout << "DBG: file content " << file_content << std::endl;
+		
+		file_content_size = file_content.length();
+
+		
+		storeFileContent(filename, (unsigned char*)file_content.c_str()
+												, file_content_size);
+
+	} while();
+
+	
 }
 
 

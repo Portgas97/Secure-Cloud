@@ -76,7 +76,6 @@ class ServerConnectionManager: public ConnectionManager
 		void handleUploadOperation(std::string, std::string, unsigned char*,
 									unsigned int);
 		void handleDeleteOperation(std::string);
-		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
         void handleDownloadOperation(std::string);
         const char* canonicalizeUserPath(const char*);
