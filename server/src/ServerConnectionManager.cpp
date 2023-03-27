@@ -124,9 +124,9 @@ void ServerConnectionManager::handleHandshake()
 {
 	receiveHello();
 	sendHello();
-	receiveFinalMessage();
+	receiveFinalHandshakeMessage();
 	setSharedKey();
-	sendFinalMessage();
+	sendAckMessage();
 }
 
 
@@ -307,7 +307,7 @@ void ServerConnectionManager::sendHello()
 
 }
 
-void ServerConnectionManager::receiveFinalMessage()
+void ServerConnectionManager::receiveFinalHandshakeMessage()
 {
 	unsigned char* final_handshake_message = nullptr;
 	receivePacket(final_handshake_message);
@@ -401,7 +401,7 @@ void ServerConnectionManager::setSharedKey()
 
 }												
 												
-void ServerConnectionManager::sendFinalMessage()
+void ServerConnectionManager::sendAckMessage()
 {
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend((unsigned char*)ACK_MESSAGE, 
@@ -485,6 +485,12 @@ unsigned int ServerConnectionManager::handleRequest()
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
 
+		if(!isFilenameValid(filename))
+		{
+			std::cout << "Error: the filename is not valid" << std::endl;
+			exit(1);
+		}
+
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
 		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
@@ -498,9 +504,6 @@ unsigned int ServerConnectionManager::handleRequest()
 		handleUploadOperation(operation, file_path, 
 								(unsigned char*)file_content.c_str(), 
 								file_content.length() - 1);
-
-		// TO DO: send ack
-
 	}
 	else if(operation == DELETE_MESSAGE)
 	{
@@ -509,12 +512,61 @@ unsigned int ServerConnectionManager::handleRequest()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
+		if(!isFilenameValid(filename))
+		{
+			std::cout << "Error: the filename is not valid" << std::endl;
+			exit(1);
+		}
+
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
 		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		file_path += filename;
 
 		handleDeleteOperation(file_path);	
+	}
+	else if(operation == RENAME_MESSAGE)
+	{
+		unsigned int command_second_delimiter_position = 
+					command.find(" ", command_first_delimiter_position + 1) >= 
+					command.length() ? 
+					command.length() - 1 : 
+					command.find(" ", command_first_delimiter_position + 1);
+		std::string original_filename = command.substr
+									(command_first_delimiter_position + 1,
+									command_second_delimiter_position - 
+									command_first_delimiter_position - 1);
+
+		if(!isFilenameValid(original_filename))
+		{
+			std::cout << "Error: the original filename is not valid" 
+						<< std::endl;
+			exit(1);
+		}
+
+		std::string original_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		original_file_path += logged_username;
+		original_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		original_file_path += original_filename;
+
+		std::string new_filename = command.substr
+										(command_second_delimiter_position + 1,
+										command.length() - 
+										command_second_delimiter_position - 1);
+
+		if(!isFilenameValid(new_filename))
+		{
+			std::cout << "Error: the new filename is not valid" << std::endl;
+			exit(1);
+		}
+
+
+		std::string new_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		new_file_path += logged_username;
+		new_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		new_file_path += new_filename;
+
+		
 	}
 	else
 	{
@@ -627,11 +679,12 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	std::cout << "DBG filename: " << filename << std::endl;
 
 	// if the file already exists, remove it (it's replaced)
-	if(fileAlreadyExists(filename))
+	// TO DO: implement a working check
+	/*if(fileAlreadyExists(filename))
 	{
 		std::cout << "DBG file exists\n";
 		std::experimental::filesystem::remove(filename);
-	}
+	}*/
 
 	std::string command, file_content;
 	unsigned int command_first_delimiter_position;
@@ -653,6 +706,9 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 		storeFileContent(filename, (unsigned char*)file_content.c_str(), 
 						file_content_size);
 	}	
+
+	// send ACK
+	sendAckMessage();
 }
 
 // TO DO: insert in a utility file
@@ -703,6 +759,16 @@ std::string ServerConnectionManager::getRequestCommand()
 	return command;
 }
 
+void ServerConnectionManager::handleRenameOperation
+												(std::string original_filename, 
+												std::string new_filename)
+{
+	rename(original_filename.c_str(), new_filename.c_str());
+	
+	// send ACK
+	sendAckMessage();
+}
+	
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {
 	std::cout << "DBG filename: " << filename << std::endl;
@@ -722,11 +788,16 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 		exit(1);
 	}
 
+	// send ACK
+	sendAckMessage();
 }
 
 // TO DO: insert in a utility class
+// TO DO: to implement a working version
 bool ServerConnectionManager::fileAlreadyExists(std::string filename)
 {
-    std::ifstream infile(filename);
-    return infile.good();
+	std::cout << "DBG check if exists file: " << filename.c_str() << std::endl;
+    return ( access( filename.c_str(), F_OK ) != -1 );
 }
+
+
