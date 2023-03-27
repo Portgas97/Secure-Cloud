@@ -490,12 +490,12 @@ void ClientConnectionManager::retrieveCommand()
 										command_second_delimiter_position - 
 										command_first_delimiter_position - 1);
 
-			if(!isFilenameValid(original_filename))
-			{
-				std::cout << "Error: the original filename is not valid" 
-							<< std::endl;
-				exit(1);
-			}
+			// if(!isFilenameValid(original_filename))
+			// {
+			// 	std::cout << "Error: the original filename is not valid" 
+			// 				<< std::endl;
+			// 	exit(1);
+			// }
 			std::string original_file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			original_file_path += username;
 			original_file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
@@ -508,7 +508,7 @@ void ClientConnectionManager::retrieveCommand()
 
 	        renameFile(original_file_path, new_filename);
 
-			receiveAck();
+			receiveAckMessage();
 
 			std::cout << "Rename operation completed" << std::endl;
 		}
@@ -606,7 +606,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 		operation = command.substr(0, command_first_delimiter_position);
 
-		if(operation == ERROR)
+		if(operation == ERROR_MESSAGE)
 		{
 			std::cout << "Error: file does not exist?" << std::endl;
 			return;
@@ -721,13 +721,13 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 	// TO DO: check if the file exists
 
 	// with rfind I search the passed symbol from the end towards the start
-	std::string original_filename = file_path.substr(file_path.rfind("/") + 1, 
+	std::string original_filename = original_file_path.substr(original_file_path.rfind("/") + 1, 
 											std::string::npos - 
-											file_path.rfind("/") - 1);
+											original_file_path.rfind("/") - 1);
 	// +1 is for space characters
 	unsigned int rename_message_size = strlen(RENAME_MESSAGE) + 
 										original_filename.length() + 1 +
-										new_filename + 1;
+										new_filename.length() + 1;
 	unsigned char* rename_message = 
 								(unsigned char*) calloc(1, rename_message_size);
 	if(rename_message == nullptr)

@@ -579,10 +579,23 @@ unsigned char* ConnectionManager::getMessagePlaintext
 												plaintext_size);
 
 	return plaintext;
+}
+
 
 // TO DO: insert in a utility class
 bool ConnectionManager::isFilenameValid(std::string filename) 
 {
-	return regex_match(filename, regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
+	// std::smatch match();
+	const std::regex pattern("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$");
+	return regex_match(filename, pattern);
+	// return regex_match(filename, std::regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
 }
+
+// TO DO: insert in a utility class
+// TO DO: to implement a working version
+// bool ConnectionManager::fileAlreadyExists(std::string filename)
+// {
+// 	std::cout << "DBG check if exists file: " << filename.c_str() << std::endl;
+//     return ( access( filename.c_str(), F_OK ) != -1 );
+// }
 

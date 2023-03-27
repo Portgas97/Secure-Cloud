@@ -13,7 +13,7 @@
 #include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
 #include <fstream>
-#include <bits/regex.h>
+#include <regex>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -80,7 +80,7 @@ class ConnectionManager
 		const char* RENAME_MESSAGE = "RENAME";
 		const char* LOGOUT_MESSAGE = "LOGOUT";
 		const char* ACK_MESSAGE = "ACK";		
-		const char* ERROR = "ERROR";
+		const char* ERROR_MESSAGE = "ERROR";
 
 		// TO DO: insert in a file of constants
 		const unsigned int CHUNK_SIZE = 500000; // 500 KB

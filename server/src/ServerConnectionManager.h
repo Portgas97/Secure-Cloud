@@ -85,7 +85,6 @@ class ServerConnectionManager: public ConnectionManager
 		std::string getFilename(std::string);
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
 
-        
 };
 
 #endif
