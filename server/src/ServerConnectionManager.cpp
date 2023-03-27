@@ -484,12 +484,12 @@ unsigned int ServerConnectionManager::handleRequest()
 									(command_first_delimiter_position + 1,
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
-
-		if(!isFilenameValid(filename))
+		// TO DO
+		/*if(!isFilenameValid(filename))
 		{
 			std::cout << "Error: the filename is not valid" << std::endl;
 			exit(1);
-		}
+		}*/
 
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
@@ -512,11 +512,13 @@ unsigned int ServerConnectionManager::handleRequest()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
-		if(!isFilenameValid(filename))
+		// TO DO
+		/*if(!isFilenameValid(filename))
 		{
 			std::cout << "Error: the filename is not valid" << std::endl;
+			std::cout << "DBG filename: " << filename;
 			exit(1);
-		}
+		}*/
 
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
@@ -537,12 +539,13 @@ unsigned int ServerConnectionManager::handleRequest()
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
 
-		if(!isFilenameValid(original_filename))
+		// TO DO
+		/*if(!isFilenameValid(original_filename))
 		{
 			std::cout << "Error: the original filename is not valid" 
 						<< std::endl;
 			exit(1);
-		}
+		}*/
 
 		std::string original_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		original_file_path += logged_username;
@@ -553,12 +556,12 @@ unsigned int ServerConnectionManager::handleRequest()
 										(command_second_delimiter_position + 1,
 										command.length() - 
 										command_second_delimiter_position - 1);
-
-		if(!isFilenameValid(new_filename))
+		// TO DO
+		/*if(!isFilenameValid(new_filename))
 		{
 			std::cout << "Error: the new filename is not valid" << std::endl;
 			exit(1);
-		}
+		}*/
 
 
 		std::string new_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
@@ -566,6 +569,9 @@ unsigned int ServerConnectionManager::handleRequest()
 		new_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		new_file_path += new_filename;
 
+		handleRenameOperation(original_file_path, new_file_path);
+		
+		sendAckMessage();
 		
 	}
 	else

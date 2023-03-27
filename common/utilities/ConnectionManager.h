@@ -13,7 +13,7 @@
 #include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
 #include <fstream>
-#include <bits/regex.h>
+#include <regex>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"

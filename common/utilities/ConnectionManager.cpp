@@ -384,6 +384,8 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 // TO DO: insert in a utility class
 bool ConnectionManager::isFilenameValid(std::string filename) 
 {
-	return regex_match(filename, regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
+	std::smatch match;
+	return regex_match(filename, match, 
+						std::regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
 }
 
