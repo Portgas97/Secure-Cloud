@@ -356,3 +356,34 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 
 	return plaintext;
 }
+
+unsigned char* ConnectionManager::getSmallFileContent(FILE* file, 
+													unsigned int file_size)
+{
+	unsigned char* buffer = (unsigned char*) 
+											calloc(1, file_size);
+
+	if(buffer == nullptr) 
+	{ 
+		std::cout << "Error in calloc" << std::endl; 
+		exit(1); 
+	}
+
+	// actual read
+	unsigned int return_value = fread(buffer, 1, file_size, file);
+
+	if(return_value < file_size) 
+	{ 
+		std::cout << "Error in fread" << std::endl;
+		std::cout << "DBG file_size: " << file_size << ", return_value: " << return_value << std::endl;
+		exit(1); 
+	}
+	return buffer;
+}
+
+// TO DO: insert in a utility class
+bool ConnectionManager::isFilenameValid(std::string filename) 
+{
+	return regex_match(filename, regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
+}
+

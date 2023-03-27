@@ -12,6 +12,8 @@
 #include <limits.h> // required for realpath()
 #include <stdlib.h> // required for realpath()
 #include <experimental/filesystem>
+#include <fstream>
+#include <bits/regex.h>
 #include "CryptographyManager.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -50,6 +52,8 @@ class ConnectionManager
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
+		unsigned char* getSmallFileContent(FILE* file, unsigned int);
+		bool isFilenameValid(std::string);
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;
@@ -61,12 +65,16 @@ class ConnectionManager
 
 		// TO DO: insert in a file of constants
 		const char* UPLOAD_MESSAGE = "UPLOAD";
+		const char* LAST_UPLOAD_MESSAGE = "LAST_UPLOAD";
 		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
 		const char* DELETE_MESSAGE = "DELETE";
 		const char* LIST_MESSAGE = "LIST";
 		const char* RENAME_MESSAGE = "RENAME";
 		const char* LOGOUT_MESSAGE = "LOGOUT";
 		const char* ACK_MESSAGE = "ACK";		
+
+		// TO DO: insert in a file of constants
+		const unsigned int CHUNK_SIZE = 500000; // 500 KB
 
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

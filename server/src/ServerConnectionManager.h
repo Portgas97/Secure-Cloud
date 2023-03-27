@@ -31,7 +31,7 @@ class ServerConnectionManager: public ConnectionManager
 
 		const char* CLIENT_STORAGE_DIRECTORY_NAME_PREFIX = 
 														"server/files/users/";
-		const char* CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX = "/storage";
+		const char* CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";
 		
 
 		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
@@ -67,18 +67,26 @@ class ServerConnectionManager: public ConnectionManager
 		unsigned char* getCertificateFromFile(const char*, unsigned int&);
         void sendHello();
         void receiveHello();
-		void receiveFinalMessage();
-		void sendFinalMessage();
+		void receiveFinalHandshakeMessage();
+		void sendAckMessage();
 		void setSharedKey();
         unsigned int getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
 		void handleListOperation();
+		void handleUploadOperation(std::string, std::string, unsigned char*,
+									unsigned int);
+		void handleDeleteOperation(std::string);
+		bool fileAlreadyExists(std::string);
+		std::string getRequestCommand();
+		void storeFileContent(std::string, unsigned char*, unsigned int);
 		unsigned char* getMessagePlaintext(Deserializer, unsigned int&);
         void handleDownloadOperation(Deserializer);
+		void handleRenameOperation(std::string, std::string);
         const char* canonicalizeUserPath(const char*);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
+
         
 };
 
