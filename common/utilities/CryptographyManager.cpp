@@ -733,4 +733,4 @@ void CryptographyManager::unoptimizedMemset(unsigned char* memory_buffer,
 void CryptographyManager::deleteSharedKey(unsigned char* shared_key)
 {    
 	unoptimizedMemset(shared_key, SHARED_KEY_SIZE);
-};
+}

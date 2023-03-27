@@ -507,7 +507,6 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 		sent_bytes += fragment_size;
 		free(fragment);
 		free(message);
-		free(message_to_send);
 	}
 
 	fclose(file);

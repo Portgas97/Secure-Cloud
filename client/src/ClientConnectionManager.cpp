@@ -244,12 +244,11 @@ void ClientConnectionManager::receiveHello()
     CryptographyManager::verifySignature(server_signature, 
 										server_signature_size, clear_message, 
 										clear_message_size, server_public_key);
-
-    free(server_certificate);
 	// TO DO for more security, is OK?
 	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
 												ephemeral_server_key_size);
 	free(ephemeral_server_key);
+    free(server_certificate);
 	free(server_signature);
 	free(clear_message);
     free(hello_packet);
@@ -371,7 +370,7 @@ void ClientConnectionManager::showMenu()
     
     std::cout << "Welcome, " << username << "! Please, select an operation:"
     << std::endl
-	
+
     << "\t- upload <filename>: ..." << std::endl
 
     << "\t- download <filename>: download an existing file from the server, "
@@ -433,6 +432,11 @@ void ClientConnectionManager::retrieveCommand()
         else if(operation == "download")
         {
 			// take the filename argument
+			if(command_first_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
 			std::string filename = command.substr
 										(command_first_delimiter_position + 1,
 										command.length() -
@@ -474,7 +478,7 @@ void ClientConnectionManager::retrieveCommand()
             logout_exit = true;
         }
         else
-            std::cout << "Error in parsing the command" << std::endl;
+            std::cout << "Error the command" << std::endl;
     }
 }
 
@@ -526,8 +530,9 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 											file_path.rfind("/") - 1);
 
 	// +1 is for space character
-	unsigned int download_message_size = strlen(DOWNLOAD_MESSAGE) + 
-										filename.length() + 1;
+	unsigned int download_message_size = strlen(DOWNLOAD_MESSAGE) + 1
+										+ 1 // space character
+										+ filename.length() + 1;
 	unsigned char* download_message = (unsigned char*) calloc(1, 
 														download_message_size);
 	if(download_message == nullptr)
@@ -547,7 +552,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend(download_message,
 														message_size);
-
+	free(download_message);
 	sendPacket(message, message_size);
 
 	std::string operation;
@@ -566,7 +571,6 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 			std::cout << "Error: file does not exist?" << std::endl;
 			return;
 		}
-
 
 		unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
