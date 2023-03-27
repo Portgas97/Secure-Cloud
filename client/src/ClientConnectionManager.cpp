@@ -432,7 +432,6 @@ void ClientConnectionManager::retrieveCommand()
 			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 			file_path += filename;
 
-			std::cout << "file path to download: " << file_path << std::endl;
             downloadFile(file_path);
         }
         else if(operation == "delete")
@@ -485,7 +484,13 @@ void ClientConnectionManager::uploadFile(std::string filename)
 
 void ClientConnectionManager::downloadFile(std::string file_path)
 {
-	std::cout << "Entering in downloadFile" << std::endl;
+
+	if(fileAlreadyExists(file_path))
+	{
+		std::cout << "The file already exist" << std::endl;
+		// TO DO can ask to continue or stop the download operation
+	}
+
 	// check counter overflow
  	if(message_counter == UINT32_MAX)
 	{
@@ -516,25 +521,17 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 												strlen(DOWNLOAD_MESSAGE));
 	serializer.serializeChar(' ');
 	serializer.serializeString((char*)filename.c_str(), filename.length());
-
-	std::cout << "download_message: " << std::endl;
-	printBuffer(download_message, download_message_size);
 	
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend(download_message,
 														message_size);
 
-	std::cout << "Got message to send, calling sendPacket()" << std::endl;
 	sendPacket(message, message_size);
 
-	std::cout << "Receiving..." << std::endl;
 	std::string operation;
-	
 	do
 	{
 		std::string command = getRequestCommand();
-
-		std::cout << "DBG: command received: " << command << std::endl;
 
 		unsigned int command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
@@ -542,7 +539,6 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 		operation = command.substr(0, command_first_delimiter_position);
 
-		std::cout << "DBG: operation: " << operation << std::endl;
 
 		unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
@@ -550,33 +546,13 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 					command.length() - 1 : 
 					command.find(" ", command_first_delimiter_position + 1);
 
-		std::string filename = command.substr
-									(command_first_delimiter_position + 1,
-									command_second_delimiter_position - 
-									command_first_delimiter_position - 1);
-		
-		std::cout << "DBG: filename: " << filename << std::endl;
-
-		std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
-		file_path += username;
-		file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
-		file_path += filename;
-
-		std::cout << "DBG: filepath " << file_path << std::endl;
-
 		std::string file_content = command.substr
 										(command_second_delimiter_position + 1,
 										command.length() - 
 										command_second_delimiter_position - 1);
-
-		std::cout << "DBG: file content " << file_content << std::endl;
 		
 		unsigned int file_content_size = file_content.length();
 
-		std::cout << "Callind storeFileContent with: " << std::endl;
-		std::cout << "filename: " << filename << std::endl;
-		std::cout << "file content OK" << std::endl;
-		std::cout << "file_content_size: " << file_content_size << std::endl;
 		storeFileContent(file_path, (unsigned char*)file_content.c_str(),
 														 file_content_size);
 

@@ -153,9 +153,6 @@ unsigned char* ConnectionManager::getMessageToSend
 	if(!plaintext_size)
 		plaintext_size = strlen((char*)plaintext) + 1;
 
-	std::cout << "DBG: plaintext to parse: ";
-	printBuffer(plaintext, plaintext_size);
- 
 	unsigned int initialization_vector_size = 	
 							CryptographyManager::getInitializationVectorSize();
 
@@ -359,9 +356,6 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
 	// TO DO: evaluate if it's ok put here the message_counter increment
 	message_counter++;
 
-	std::cout << "DBG: parsed plaintext: ";
-	printBuffer(plaintext, plaintext_size);
-
 	return plaintext;
 }
 
@@ -383,7 +377,6 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 	if(return_value < file_size) 
 	{ 
 		std::cout << "Error in fread" << std::endl;
-		std::cout << "DBG file_size: " << file_size << ", return_value: " << return_value << std::endl;
 		exit(1); 
 	}
 	return buffer;
@@ -503,13 +496,8 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 		}
 		fragment = getSmallFileContent(file, fragment_size);
 
-		std::cout << "DBG: getSmallFileContent returend fragment: " << std::endl;
-		printBuffer(fragment, fragment_size);
 		serializer.serializeChar(' ');
 		serializer.serializeByteStream(fragment, fragment_size);
-
-		std::cout << "DBG: now server is sending: ";
-		printBuffer(message, serializer.getOffset());
 
 		message_to_send = getMessageToSend(message, message_to_send_size, 
 													serializer.getOffset());
@@ -553,7 +541,6 @@ void ConnectionManager::storeFileContent(std::string filename,
 
 	fclose(file);
 	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
-	std::cout << "CLOSING" << std::endl;
 }
 
 

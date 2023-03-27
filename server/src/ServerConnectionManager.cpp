@@ -1,5 +1,4 @@
 #include "ServerConnectionManager.h"
-#include <stdio.h>
 
 ServerConnectionManager::ServerConnectionManager()
 {
@@ -413,25 +412,9 @@ void ServerConnectionManager::sendFinalMessage()
 }
 
 
-const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
+const char* ServerConnectionManager::canonicalizeUserPath(const char* filepath)
 {
-	// the pattern is the following: server/files/<username>/<filename>
-	char file_path[strlen("server/files/") 
-				+ MAX_USERNAME_SIZE 
-				+ 1 
-				+ MAX_FILENAME_SIZE
-				+ 1
-				];
-
-	// not passing the '\0'
-	strncpy(file_path, "server/files/users/", strlen("server/files/users/") + 1);
-	strncat(file_path, logged_username, logged_username_size);
-	strncat(file_path, "/", strlen("/") + 1);
-	strncat(file_path, filename, strlen(filename) + 1);
-
-	std::cout << "file_path: " << file_path << std::endl;
-	
-	const char* canonicalized_filename = realpath(file_path, nullptr);
+	const char* canonicalized_filename = realpath(filepath, nullptr);
 
 	if(canonicalized_filename == nullptr)
 	{
@@ -439,10 +422,21 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* filename)
 		exit(1);
 	}
 
-	std::cout << "realpath: " << canonicalized_filename << std::endl;
+	// TO DO this depends on where the project is built
+	std::string base_path = "/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/";
 
+	std::string prefix_path = "Secure-Cloud/server/files/users/";
+	std::string username_string = logged_username;
+	std::string suffix_path = "/storage/";
+	std::string correct_directory = base_path + prefix_path + username_string + 
+									suffix_path;
 
-	//NOTE errno is set
+	if(strncmp(canonicalized_filename, correct_directory.c_str(), 
+											correct_directory.size()) != 0)
+	{
+		std::cout << "Unauthorized path" << std::endl;
+		exit(1);
+	}
 	return canonicalized_filename;
 }
 
@@ -459,9 +453,8 @@ unsigned int ServerConnectionManager::handleRequest()
 		exit(1);
 	}
 	
+	std::cout << "Waiting for the next operation..." << std::endl;
 	std::string command = getRequestCommand();
-
-	std::cout << "DBG: command received: " << command << std::endl;
 
 	unsigned int command_first_delimiter_position = 
 								command.find(" ") >= command.length() ? 
@@ -469,27 +462,21 @@ unsigned int ServerConnectionManager::handleRequest()
 
 	std::string operation = command.substr(0, command_first_delimiter_position);
 
-	std::cout << "DBG: operation: " << operation << std::endl;
-
 	if(operation == DOWNLOAD_MESSAGE)
 	{
-		std::cout << "DBG: Download operation starting" << std::endl;
 		std::string filename = command.substr
 									(command_first_delimiter_position + 1,
 									command.length() - 
 									command_first_delimiter_position - 1);
-
-		std::cout << "DBG: filename: " << filename << std::endl;
 
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
 		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		file_path += filename;
 
-		std::cout << "DBG: file_path " << file_path << std::endl;
-		// TO DO canonicalization
-		// 	const char* canonicalized_filename = canonicalizeUserPath(plaintext_string);
-		handleDownloadOperation(file_path);
+		const char* canonicalized_filename =
+									canonicalizeUserPath(file_path.c_str());
+		handleDownloadOperation(canonicalized_filename);
 	}
 	else if(operation == LIST_MESSAGE)
 	{
@@ -623,12 +610,9 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 
 	// TO DO: evalutate if it's ok do the free here and not in the function caller
 
-	std::cout << "DBG filename: " << filename << std::endl;
-
 	// if the file already exists, remove it (it's replaced)
 	if(fileAlreadyExists(filename))
 	{
-		std::cout << "DBG file exists\n";
 		std::experimental::filesystem::remove(filename);
 	}
 
@@ -657,12 +641,10 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {
-	std::cout << "DBG filename: " << filename << std::endl;
 	// remove the file if actually exists
 	if(fileAlreadyExists(filename))
 	{
 		std::experimental::filesystem::remove(filename);
-		std::cout << "DBG File removed" << std::endl;
 		// TO DO: send ack
 	}
 	else
