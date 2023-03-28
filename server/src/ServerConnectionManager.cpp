@@ -412,21 +412,17 @@ void ServerConnectionManager::sendAckMessage()
 }
 
 
-const char* ServerConnectionManager::canonicalizeUserPath(const char* filepath)
+const char* ServerConnectionManager::canonicalizeUserPath(const char* file_path)
 {
-	const char* canonicalized_filename = realpath(filepath, nullptr);
+	const char* canonicalized_filename = realpath(file_path, nullptr);
 
 	if(canonicalized_filename == nullptr)
 		return nullptr;
 
-	// TO DO this depends on where the project is built
-	std::string base_path = "/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/";
-
-	std::string prefix_path = "Secure-Cloud/server/files/users/";
-	std::string username_string = logged_username;
-	std::string suffix_path = "/storage/";
-	std::string correct_directory = base_path + prefix_path + username_string + 
-									suffix_path;
+	std::string correct_directory = std::string(BASE_PATH) + 
+							std::string(CLIENT_STORAGE_DIRECTORY_NAME_PREFIX) + 
+							std::string(logged_username) + 
+							std::string(CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX);
 
 	if(strncmp(canonicalized_filename, correct_directory.c_str(), 
 											correct_directory.size()) != 0)
@@ -500,11 +496,11 @@ unsigned int ServerConnectionManager::handleRequest()
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
 
-		// if(!isFilenameValid(filename))
-		// {
-		// 	std::cout << "Error: the filename is not valid" << std::endl;
-		// 	exit(1);
-		// }
+		if(isFilenameValid(filename) == false)
+		{
+		 	std::cout << "Error: the new filename is not valid" << std::endl;
+		 	exit(1);
+		}
 
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
@@ -527,16 +523,20 @@ unsigned int ServerConnectionManager::handleRequest()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
-		// if(!isFilenameValid(filename))
-		// {
-		// 	std::cout << "Error: the filename is not valid" << std::endl;
-		// 	exit(1);
-		// }
-
 		std::string file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		file_path += logged_username;
 		file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		file_path += filename;
+
+		const char* canonicalized_filename =
+										canonicalizeUserPath(file_path.c_str());
+
+		if(canonicalized_filename == nullptr)
+		{
+			std::cout << "The file does not exist" << std::endl;
+			sendError(); // TO DO receive
+			return 0; // TO DO exit??
+		}
 
 		handleDeleteOperation(file_path);	
 	}
@@ -557,46 +557,41 @@ unsigned int ServerConnectionManager::handleRequest()
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
 
-		// if(!isFilenameValid(original_filename))
-		// {
-		// 	std::cout << "Error: the original filename is not valid" 
-		// 				<< std::endl;
-		// 	exit(1);
-		// }
+		std::string original_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
+		original_file_path += logged_username;
+		original_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
+		original_file_path += original_filename;
 
-		std::string canonicalized_original_filename =
-								canonicalizeUserPath(original_filename.c_str());
+		const char* canonicalized_original_filename = 
+								canonicalizeUserPath(original_file_path.c_str());
 
-		std::cout << "DBG: canonicalized_original_filename" << canonicalized_original_filename << std::endl;
 		if(canonicalized_original_filename == nullptr)
 		{
 			std::cout << "The file does not exist" << std::endl;
 			sendError(); // TO DO receive
 			return 0; // TO DO exit??
 		}
-		std::string original_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
-		original_file_path += logged_username;
-		original_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
-		original_file_path += canonicalized_original_filename;
 
 		std::string new_filename = command.substr
 										(command_second_delimiter_position + 1,
 										command.length() - 
-										command_second_delimiter_position - 1);
+										command_second_delimiter_position - 2);
 
 
-		// if(!isFilenameValid(new_filename))
-		// {
-		// 	std::cout << "Error: the new filename is not valid" << std::endl;
-		// 	exit(1);
-		// }
+		if(isFilenameValid(new_filename) == false)
+		{
+		 	std::cout << "Error: the new filename is not valid" << std::endl;
+			std::cout << "DBG new_filename: " << new_filename << "." << std::endl;
+			std::cout << "DBG new_filename.length() " << new_filename.length() << std::endl;
+		 	exit(1);
+		}
 
 
 		std::string new_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		new_file_path += logged_username;
 		new_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
-
-		std::string canonicalized_new_file_path =
+		
+		/*const char* canonicalized_new_file_path =
 								canonicalizeUserPath(new_file_path.c_str());
 
 		if(canonicalized_new_file_path == nullptr)
@@ -606,14 +601,21 @@ unsigned int ServerConnectionManager::handleRequest()
 			return 0; // TO DO exit??
 		}
 
-		canonicalized_new_file_path += new_filename;
+		const char* canonicalized_new_filename = (char*)calloc(1, 
+											strlen(canonicalized_new_file_path)
+											+ new_filename.length());
+		if(canonicalized_new_filename == nullptr)
+		{
+			std::cout << "Error in calloc" << std::endl;
+			exit(1);
+		}*/
 
-		
+//		strncat(canonicalized_new_filename, canonicalized_new_file_path, 
+//										strlen(canonicalized_new_file_path));
 
-		handleRenameOperation(canonicalized_original_filename, 
-												canonicalized_new_file_path);
-
-		sendAckMessage();
+		new_file_path += new_filename;
+		handleRenameOperation(canonicalized_original_filename, new_file_path);
+		//free(canonicalized_new_filename);
 
 	}
 	else
@@ -671,7 +673,8 @@ void ServerConnectionManager::handleListOperation()
 	if(plaintext == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
-		exit(1);
+		sendError();
+		return;
 	}
 
 	strcpy(plaintext, directory_filenames.c_str());
@@ -684,10 +687,13 @@ void ServerConnectionManager::handleListOperation()
 }
 
 
-void ServerConnectionManager::handleDownloadOperation
-									(std::string filename)
+void ServerConnectionManager::handleDownloadOperation(std::string filename)
 {
-	sendFileContent(filename, 1);
+	if(sendFileContent(filename, DOWNLOAD_MESSAGE) == -1)
+	{
+		std::cout << "Error in send file content" << std::endl;
+		sendError();
+	}
 }
 
 
@@ -696,16 +702,12 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 											unsigned char* file_content_buffer,
 											unsigned int file_content_size)
 {
-	storeFileContent(filename, file_content_buffer, file_content_size);
-
-	// TO DO: evalutate if it's ok do the free here and not in the function caller
-
-	// if the file already exists, remove it (it's replaced)
-	// TO DO: implement a working check
-	/*if(fileAlreadyExists(filename))
+	if(storeFileContent(filename, file_content_buffer, file_content_size) == -1)
 	{
-		std::experimental::filesystem::remove(filename);
-	}*/
+		std::cout << "Error in store file content" << std::endl;
+		sendError();
+		return;
+	}
 
 	std::string command, file_content;
 	unsigned int command_first_delimiter_position;
@@ -724,8 +726,13 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 		file_content_size = file_content.length();
 
 		// store the next file chunk
-		storeFileContent(filename, (unsigned char*)file_content.c_str(), 
-						file_content_size);
+		if(storeFileContent(filename, (unsigned char*)file_content.c_str(), 
+						file_content_size) == -1)
+		{
+				std::cout << "Error in store file content" << std::endl;
+				sendError();
+				return;
+		}
 	}	
 
 	// send ACK
@@ -734,10 +741,10 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 
 
 void ServerConnectionManager::handleRenameOperation
-												(std::string original_filename, 
+												(const char* original_filename, 
 												std::string new_filename)
 {
-	rename(original_filename.c_str(), new_filename.c_str());
+	rename(original_filename, new_filename.c_str());
 	
 	// send ACK
 	sendAckMessage();
@@ -768,6 +775,7 @@ void ServerConnectionManager::handleLogoutOperation()
 {
 	destroyConnection();
 	CryptographyManager::deleteSharedKey(shared_key);
+	sendAckMessage();
 }
 
 

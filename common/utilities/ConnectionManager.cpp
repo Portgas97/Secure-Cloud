@@ -383,15 +383,17 @@ unsigned char* ConnectionManager::getSmallFileContent(FILE* file,
 }
 
 // TO DO: to insert in utility file
-void ConnectionManager::sendFileContent(std::string file_path, int download)
+/*
+	It sends the file content stored in file having as path "file_path".
+	The operation message can be either "DOWNLOAD" or "UPLOAD".
+	It returns -1 in case of error, 0 otherwise.
+*/
+int ConnectionManager::sendFileContent(std::string file_path, 
+										const char* operation_message)
 {
 	FILE* file = fopen(file_path.c_str(), "rb");
 	if(file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}	
-
+		return -1;
 	// with rfind I search the passed symbol from the end towards the start
 	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
 											std::string::npos - 
@@ -406,10 +408,7 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 	fseek(file, 0, SEEK_SET);
 
     if (file_size > UINT32_MAX) 
-	{
-		std::cout << "Error: the file is too big" << std::endl;
-		exit(1);
-    }
+		return -1;
 
 	unsigned long int sent_bytes = 0;
 	unsigned int message_size;
@@ -425,19 +424,13 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 		if(file_size - sent_bytes >= CHUNK_SIZE)
 		{	
 			fragment_size = CHUNK_SIZE;
-			if(download)
-				message_size = strlen(DOWNLOAD_MESSAGE) + 1;
-			else
-				message_size = strlen(UPLOAD_MESSAGE) + 1;
+			message_size = strlen(operation_message) + 1;
 		}
 		else
 		{
 			// last send case
 			fragment_size = file_size - sent_bytes;
-			if(download)
-				message_size = strlen(LAST_DOWNLOAD_MESSAGE) + 1;
-			else
-			message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;			
+			message_size = strlen(operation_message) + 1;
 		}
 
 		// if it's the first send, add the filename to the request message
@@ -449,35 +442,22 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 		// +1 for the space character
 		message = (unsigned char*) calloc(1, message_size + 1);
 		if(message == nullptr)
-		{
-			std::cout << "Error in calloc" << std::endl;
-			exit(1);
-		}
+			return -1;
 
 		// prepare fragment upload packet
 		Serializer serializer = Serializer(message);
 
-		switch(download)
-		{
-			case 0:
-				if(file_size - sent_bytes >= CHUNK_SIZE)
-					serializer.serializeString((char*)UPLOAD_MESSAGE, 
-													strlen(UPLOAD_MESSAGE));
-				else
-					serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
-												strlen(LAST_UPLOAD_MESSAGE));
-				break;
-			case 1:
-				if(file_size - sent_bytes >= CHUNK_SIZE)
-					serializer.serializeString((char*)DOWNLOAD_MESSAGE, 
-												strlen(DOWNLOAD_MESSAGE));
-				else
-					serializer.serializeString((char*)LAST_DOWNLOAD_MESSAGE, 
-												strlen(LAST_DOWNLOAD_MESSAGE));
-				break;
-			default:
-				break;
-		}
+		if(file_size - sent_bytes >= CHUNK_SIZE)
+			serializer.serializeString((char*)operation_message, 
+											strlen(operation_message));
+		else 
+			if(strncmp(operation_message, DOWNLOAD_MESSAGE, 
+												strlen(DOWNLOAD_MESSAGE)) == 0)
+				serializer.serializeString((char*)LAST_DOWNLOAD_MESSAGE, 
+											strlen(LAST_DOWNLOAD_MESSAGE));
+			else
+				serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
+											strlen(LAST_UPLOAD_MESSAGE));
 
 		if(sent_bytes == 0)
 		{
@@ -489,10 +469,8 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 
 		fragment = (unsigned char*) calloc(1, fragment_size);
 		if(fragment == nullptr)
-		{
-			std::cout << "Error in calloc" << std::endl;
-			exit(1);
-		}
+			return -1;
+
 		fragment = getSmallFileContent(file, fragment_size);
 
 		serializer.serializeChar(' ');
@@ -509,21 +487,21 @@ void ConnectionManager::sendFileContent(std::string file_path, int download)
 	}
 
 	fclose(file);
+	return 0;
 }
 
 // TO DO: insert in a utility file
-void ConnectionManager::storeFileContent(std::string filename, 
+/*
+	It stores the file_content in the passed file.
+	It returns -1 in case of error, 0 otherwise.
+*/
+int ConnectionManager::storeFileContent(std::string filename, 
 												unsigned char* file_content,
 												unsigned int file_content_size)
 {
-	// TO DO: canonicalize filename
-
 	FILE* file = fopen(filename.c_str(), "wb");
 	if(file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}
+		return -1;
 
 	unsigned int written_file_content_size = fwrite(file_content, 
 													sizeof(unsigned char),
@@ -532,10 +510,7 @@ void ConnectionManager::storeFileContent(std::string filename,
 
 	if(written_file_content_size >= UINT32_MAX || 
 								written_file_content_size < file_content_size)
-	{
-		std::cout << "Error in write file content" << std::endl;
-		exit(1);
-	}
+		return -1;
 
 	fclose(file);
 	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
@@ -586,7 +561,8 @@ unsigned char* ConnectionManager::getMessagePlaintext
 bool ConnectionManager::isFilenameValid(std::string filename) 
 {
 	// std::smatch match();
-	const std::regex pattern("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$");
+	const std::regex pattern("^[A-Za-z0-9]+\\.[A-Za-z0-9]+$");
+	std::cout << "DBG regex_match: " << regex_match(filename, pattern) << std::endl;
 	return regex_match(filename, pattern);
 	// return regex_match(filename, std::regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
 }

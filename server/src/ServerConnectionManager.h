@@ -32,6 +32,9 @@ class ServerConnectionManager: public ConnectionManager
 		const char* CLIENT_STORAGE_DIRECTORY_NAME_PREFIX = 
 														"server/files/users/";
 		const char* CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";
+
+		const char* BASE_PATH = "/home/simone/Scrivania/Secure-Cloud/";
+								//"/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/"
 		
 
 		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
@@ -80,7 +83,7 @@ class ServerConnectionManager: public ConnectionManager
 		void handleLogoutOperation();
         const char* canonicalizeUserPath(const char*);
 		void sendError();
-		void handleRenameOperation(std::string, std::string);
+		void handleRenameOperation(const char*, std::string);
 		std::string getDirectoryFilenames(std::string);
 		std::string getFilename(std::string);
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);

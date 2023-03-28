@@ -54,9 +54,9 @@ class ConnectionManager
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
 		unsigned char* getSmallFileContent(FILE* file, unsigned int);
-		void storeFileContent(std::string, unsigned char*, unsigned int);
+		int storeFileContent(std::string, unsigned char*, unsigned int);
 		bool fileAlreadyExists(std::string);
-		void sendFileContent(std::string, int = 0);
+		int sendFileContent(std::string, const char*);
 		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
 		bool isFilenameValid(std::string);

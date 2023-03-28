@@ -533,7 +533,22 @@ void ClientConnectionManager::uploadFile(std::string filename)
 		exit(1);
 	}
 
-	sendFileContent(filename);
+	if(sendFileContent(filename, UPLOAD_MESSAGE) == -1)
+	{
+		std::cout << "Error in send file content" << std::endl;
+		exit(1);
+	}
+
+	std::string reply = getRequestCommand();
+
+	unsigned int reply_first_delimiter_position = 
+								reply.find(" ") >= reply.length() ? 
+								reply.length() - 1: reply.find(" ");
+
+	operation = reply.substr(0, reply_first_delimiter_position);
+
+	if(operation == ERROR_MESSAGE)
+		std::cout << "Error in upload" << std::endl;
 }
 
 
@@ -551,7 +566,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
             std::cout << "Error in reading command" << std::endl;
             exit(1);
         }
-		if(confirm != "yes"){
+		if(confirm != "yes")
+		{
 			std::cout << "Discard the download operation" << std::endl;
 			return;
 		}
@@ -691,20 +707,33 @@ void ClientConnectionManager::printFilenamesList()
 	// send the request
 	sendPacket(request_message, request_message_size);
 
-	// receive the reply
-	unsigned char* reply_message = nullptr;
-	receivePacket(reply_message);
+	std::string command = getRequestCommand();
 
-	Deserializer deserializer = Deserializer(reply_message);
-	unsigned int plaintext_size;
-	// TO DO: is it correct to send operation_code in clear?
-	unsigned char* plaintext = parseReceivedMessage(deserializer, 
-													plaintext_size);
+	unsigned int command_first_delimiter_position = 
+								command.find(" ") >= command.length() ? 
+								command.length() - 1: command.find(" ");
+
+	operation = command.substr(0, command_first_delimiter_position);
+
+	if(operation == ERROR_MESSAGE)
+	{
+		std::cout << "Error in list operation" << std::endl;
+		return;
+	}
+
+	unsigned int command_second_delimiter_position = 
+				command.find(" ", command_first_delimiter_position + 1) >= 
+				command.length() ? 
+				command.length() - 1 : 
+				command.find(" ", command_first_delimiter_position + 1);
+
+	std::string files_list = command.substr
+									(command_second_delimiter_position + 1,
+									command.length() - 
+									command_second_delimiter_position - 1);
 
 	std::cout << "File list: " << std::endl;
-	printBuffer(plaintext, plaintext_size);
-
-	
+	std::cout << files_list;
 }
 
 
@@ -721,7 +750,8 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 	// TO DO: check if the file exists
 
 	// with rfind I search the passed symbol from the end towards the start
-	std::string original_filename = original_file_path.substr(original_file_path.rfind("/") + 1, 
+	std::string original_filename = 
+					original_file_path.substr(original_file_path.rfind("/") + 1, 
 											std::string::npos - 
 											original_file_path.rfind("/") - 1);
 	// +1 is for space characters
@@ -768,6 +798,8 @@ void ClientConnectionManager::logout()
 											((unsigned char*)LOGOUT_MESSAGE, 
 											request_message_size);
 	sendPacket(request_message, request_message_size);
+
+	receiveAckMessage();
 
 	destroyConnection();
 
