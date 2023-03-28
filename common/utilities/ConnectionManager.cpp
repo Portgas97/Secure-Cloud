@@ -10,34 +10,6 @@ ConnectionManager::~ConnectionManager()
     
 }
 
-// TO DO: move in utility class
-void ConnectionManager::printBuffer(unsigned char* buffer, unsigned int buffer_size)
-{
-    for(unsigned int i = 0; i < buffer_size; i++)
-        std::cout << buffer[i];
-
-    std::cout << std::endl;
-}
-
-// TO DO: move in utility class
-/*
-	It compares two byteStreams and returns 1 if they are equal, 0 otherwise
-*/
-unsigned int ConnectionManager::areBuffersEqual(unsigned char* buffer1, 
-										unsigned int buffer1_size,
-										unsigned char* buffer2,
-										unsigned int buffer2_size)
-{
-	if(buffer1_size != buffer2_size)
-		return 0;
-
-    for(unsigned int i = 0; i < buffer1_size; i++)
-		if(buffer1[i] != buffer2[i])
-			return 0;
-
-	return 1;
-}
-
 /*
     it receives packet from the sender by receiving first the packet size, then
     the data packet and it returns the received data packet
@@ -251,19 +223,18 @@ unsigned char* ConnectionManager::getMessageToSend
 	free(tag);
 	free(ciphertext);
 
-	// TO DO: evaluate if it's ok put here the message_counter increment
 	message_counter++;
 
 	return message;
 }
 
-// TO DO: maybe the function name is misleading
 /*
 	It parses received message and check everything is correct, otherwise
 	it exits.
 */
-unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer,
-											unsigned int& plaintext_size)
+unsigned char* ConnectionManager::parseReceivedMessage
+												(Deserializer deserializer,
+												unsigned int& plaintext_size)
 {
 	unsigned int received_message_counter = deserializer.deserializeInt();
 	
@@ -353,36 +324,11 @@ unsigned char* ConnectionManager::parseReceivedMessage(Deserializer deserializer
     free(ciphertext);
     free(initialization_vector);
 
-	// TO DO: evaluate if it's ok put here the message_counter increment
 	message_counter++;
 
 	return plaintext;
 }
 
-unsigned char* ConnectionManager::getSmallFileContent(FILE* file, 
-													unsigned int file_size)
-{
-	unsigned char* buffer = (unsigned char*) 
-											calloc(1, file_size);
-
-	if(buffer == nullptr) 
-	{ 
-		std::cout << "Error in calloc" << std::endl; 
-		exit(1); 
-	}
-
-	// actual read
-	unsigned int return_value = fread(buffer, 1, file_size, file);
-
-	if(return_value < file_size) 
-	{ 
-		std::cout << "Error in fread" << std::endl;
-		exit(1); 
-	}
-	return buffer;
-}
-
-// TO DO: to insert in utility file
 /*
 	It sends the file content stored in file having as path "file_path".
 	The operation message can be either "DOWNLOAD" or "UPLOAD".
@@ -471,7 +417,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		if(fragment == nullptr)
 			return -1;
 
-		fragment = getSmallFileContent(file, fragment_size);
+		fragment = UtilityManager::getSmallFileContent(file, fragment_size);
 
 		serializer.serializeChar(' ');
 		serializer.serializeByteStream(fragment, fragment_size);
@@ -489,42 +435,6 @@ int ConnectionManager::sendFileContent(std::string file_path,
 	fclose(file);
 	return 0;
 }
-
-// TO DO: insert in a utility file
-/*
-	It stores the file_content in the passed file.
-	It returns -1 in case of error, 0 otherwise.
-*/
-int ConnectionManager::storeFileContent(std::string filename, 
-												unsigned char* file_content,
-												unsigned int file_content_size)
-{
-	FILE* file = fopen(filename.c_str(), "wb");
-	if(file == nullptr)
-		return -1;
-
-	unsigned int written_file_content_size = fwrite(file_content, 
-													sizeof(unsigned char),
-													file_content_size, 
-													file);
-
-	if(written_file_content_size >= UINT32_MAX || 
-								written_file_content_size < file_content_size)
-		return -1;
-
-	fclose(file);
-	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
-	return 0;
-}
-
-
-// TO DO: insert in a utility class
-bool ConnectionManager::fileAlreadyExists(std::string filename)
-{
-    std::ifstream infile(filename);
-    return infile.good();
-}
-
 
 std::string ConnectionManager::getRequestCommand()
 {
@@ -556,23 +466,3 @@ unsigned char* ConnectionManager::getMessagePlaintext
 
 	return plaintext;
 }
-
-
-// TO DO: insert in a utility class
-bool ConnectionManager::isFilenameValid(std::string filename) 
-{
-	// std::smatch match();
-	const std::regex pattern("^[A-Za-z0-9]+\\.[A-Za-z0-9]+$");
-	std::cout << "DBG regex_match: " << regex_match(filename, pattern) << std::endl;
-	return regex_match(filename, pattern);
-	// return regex_match(filename, std::regex("^[A-Za-z0-9]*\\.[A-Za-z0-9]+$"));
-}
-
-// TO DO: insert in a utility class
-// TO DO: to implement a working version
-// bool ConnectionManager::fileAlreadyExists(std::string filename)
-// {
-// 	std::cout << "DBG check if exists file: " << filename.c_str() << std::endl;
-//     return ( access( filename.c_str(), F_OK ) != -1 );
-// }
-

@@ -156,6 +156,13 @@ void ServerConnectionManager::receiveHello()
 
 	deserializer.deserializeString(received_logged_username, 
 									logged_username_size);
+
+	if(UtilityManager::isUserPresent(received_logged_username, USERS_DIRECTORY) 
+																	== false)
+	{
+		std::cout << "Error: the username does not exist" << std::endl;
+		exit(1);
+	}
 	
 	strncpy(logged_username, received_logged_username, logged_username_size);	
 
@@ -175,7 +182,6 @@ void ServerConnectionManager::receiveHello()
 		exit(1);
 	}
 
-    // TO DO check username existance
 	deserializer.deserializeByteStream(client_nonce, client_nonce_size);
 
 	free(hello_packet);
@@ -206,42 +212,6 @@ unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet
 	return serializer.getOffset();	
 }
 
-// TO DO: move into utility class?
-/*
-	it returns the buffer containing bytes read from the file whose filename is
-	passed as an argument.
-	It returns also the buffer size.  
-*/
-unsigned char* ServerConnectionManager::getCertificateFromFile
-										(const char* certificate_filename,
-										unsigned int& certificate_buffer_size)
-{
-	// get certificate
-	FILE* certificate_file = fopen(certificate_filename, "r");
-
-	if(certificate_file == nullptr)
-	{
-		std::cout << "Error in fopen" << std::endl;
-		exit(1);
-	}
-
-	// get file size
-	// move the file pointer to the end of the file
-	fseek(certificate_file, 0, SEEK_END);
-	// returns the file pointer position
-	certificate_buffer_size = ftell(certificate_file);
-	// move file pointer to the beginning of the file
-	fseek(certificate_file, 0, SEEK_SET);
-	
-	
-	unsigned char* certificate_buffer = getSmallFileContent(certificate_file,
-													certificate_buffer_size);
-
-	fclose(certificate_file);
-	return certificate_buffer;
-}
-
-
 /* 
 	It builds and sends the hello packet, which has the following structure
 	hello packet:
@@ -262,7 +232,8 @@ void ServerConnectionManager::sendHello()
     CryptographyManager::getRandomBytes(server_nonce, 
 										CryptographyManager::getNonceSize());
 
-	certificate = getCertificateFromFile(CERTIFICATE_FILENAME, certificate_size);
+	certificate = UtilityManager::getCertificateFromFile(CERTIFICATE_FILENAME, 
+														certificate_size);
 
 	ephemeral_private_key = CryptographyManager::getPrivateKey();
 	ephemeral_public_key = CryptographyManager::serializeKey(
@@ -372,7 +343,7 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
     strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
 
 	unsigned int client_certificate_size;
-	unsigned char* client_certificate = getCertificateFromFile
+	unsigned char* client_certificate = UtilityManager::getCertificateFromFile
 										(client_certificate_filename,
 										client_certificate_size);
 
@@ -497,7 +468,7 @@ unsigned int ServerConnectionManager::handleRequest()
 									command_second_delimiter_position - 
 									command_first_delimiter_position - 1);
 
-		if(isFilenameValid(filename) == false)
+		if(UtilityManager::isFilenameValid(filename) == false)
 		{
 		 	std::cout << "Error: the new filename is not valid" << std::endl;
 		 	exit(1);
@@ -535,8 +506,8 @@ unsigned int ServerConnectionManager::handleRequest()
 		if(canonicalized_filename == nullptr)
 		{
 			std::cout << "The file does not exist" << std::endl;
-			sendError(); // TO DO receive
-			return 0; // TO DO exit??
+			sendError();
+			return 0;
 		}
 
 		handleDeleteOperation(file_path);	
@@ -579,7 +550,7 @@ unsigned int ServerConnectionManager::handleRequest()
 										command_second_delimiter_position - 2);
 
 
-		if(isFilenameValid(new_filename) == false)
+		if(UtilityManager::isFilenameValid(new_filename) == false)
 		{
 		 	std::cout << "Error: the new filename is not valid" << std::endl;
 			sendError();
@@ -591,31 +562,9 @@ unsigned int ServerConnectionManager::handleRequest()
 		new_file_path += logged_username;
 		new_file_path += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 		
-		/*const char* canonicalized_new_file_path =
-								canonicalizeUserPath(new_file_path.c_str());
-
-		if(canonicalized_new_file_path == nullptr)
-		{
-			std::cout << "The file does not exist" << std::endl;
-			sendError(); // TO DO receive
-			return 0; // TO DO exit??
-		}
-
-		const char* canonicalized_new_filename = (char*)calloc(1, 
-											strlen(canonicalized_new_file_path)
-											+ new_filename.length());
-		if(canonicalized_new_filename == nullptr)
-		{
-			std::cout << "Error in calloc" << std::endl;
-			exit(1);
-		}*/
-
-//		strncat(canonicalized_new_filename, canonicalized_new_file_path, 
-//										strlen(canonicalized_new_file_path));
-
 		new_file_path += new_filename;
 		handleRenameOperation(canonicalized_original_filename, new_file_path);
-		//free(canonicalized_new_filename);
+		//free(canonicalized_new_filename); // TO DO?
 
 	}
 	else
@@ -627,33 +576,7 @@ unsigned int ServerConnectionManager::handleRequest()
 	return 0;
 }
 
-// TO DO: insert it in a utility file
-/*
-	It takes as argument the file path and obtain the relative filename
-*/
-std::string ServerConnectionManager::getFilename(std::string file_path_name)
-{
-	std::experimental::filesystem::path file_path(file_path_name);
-	return file_path.filename();
-}
 
-// TO DO: insert it in a utility file
-/*
-	It returns a list of filenames of file belonging to the directory whose
-	name is passed as argument
-*/
-std::string ServerConnectionManager::getDirectoryFilenames
-												(std::string directory_name)
-{
-	std::string directory_filenames;
-	// TO DO: evaluate if std::experimental::filesystem:: it's ok
-	//			added -lstdc++fs flag to compiler
-    for (const auto & file : 
-			std::experimental::filesystem::directory_iterator(directory_name))
-		directory_filenames += "\t" + getFilename(file.path()) + "\n";
-
-	return directory_filenames;
-}
 
 
 /*
@@ -668,7 +591,8 @@ void ServerConnectionManager::handleListOperation()
 	directory_name += logged_username;
 	directory_name += CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX;
 
-	std::string directory_filenames = getDirectoryFilenames(directory_name);
+	std::string directory_filenames = 
+						UtilityManager::getDirectoryFilenames(directory_name);
 	char* plaintext = (char*) calloc(1, directory_filenames.length() + 1);
 	if(plaintext == nullptr)
 	{
@@ -702,7 +626,8 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 											unsigned char* file_content_buffer,
 											unsigned int file_content_size)
 {
-	if(storeFileContent(filename, file_content_buffer, file_content_size) == -1)
+	if(UtilityManager::storeFileContent(filename, file_content_buffer, 
+													file_content_size) == -1)
 	{
 		std::cout << "Error in store file content" << std::endl;
 		sendError();
@@ -726,8 +651,8 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 		file_content_size = file_content.length();
 
 		// store the next file chunk
-		if(storeFileContent(filename, (unsigned char*)file_content.c_str(), 
-						file_content_size) == -1)
+		if(UtilityManager::storeFileContent(filename, 
+				(unsigned char*)file_content.c_str(), file_content_size) == -1)
 		{
 				std::cout << "Error in store file content" << std::endl;
 				sendError();
@@ -753,11 +678,9 @@ void ServerConnectionManager::handleRenameOperation
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {
 	// remove the file if actually exists
-	if(fileAlreadyExists(filename))
-	{
+	if(UtilityManager::fileAlreadyExists(filename))
 		std::experimental::filesystem::remove(filename);
-		// TO DO: send ack
-	}
+
 	else
 	{	
 		std::cout << "Error: the file the client wants to delete does " << 
@@ -785,7 +708,3 @@ void ServerConnectionManager::sendError()
 																message_size);
 	sendPacket(message, message_size);
 }
-
-
-
-

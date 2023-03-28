@@ -79,6 +79,14 @@ void ClientConnectionManager::obtainUsername()
     }
 
     username[strcspn(username, "\n")] = 0;
+
+	if(UtilityManager::isUserPresent(username, USERS_DIRECTORY) == false)
+	{
+		std::cout << "Error: the username you inserted does not exist" 
+					<< std::endl;
+		exit(1);
+	}
+
 }
 
 /*
@@ -244,6 +252,7 @@ void ClientConnectionManager::receiveHello()
     CryptographyManager::verifySignature(server_signature, 
 										server_signature_size, clear_message, 
 										clear_message_size, server_public_key);
+
 	// TO DO for more security, is OK?
 	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
 												ephemeral_server_key_size);
@@ -350,7 +359,7 @@ void ClientConnectionManager::receiveAckMessage()
 	unsigned char* plaintext = parseReceivedMessage(deserializer, 
 													plaintext_size);
 
-	if(!areBuffersEqual(plaintext, plaintext_size, 
+	if(!UtilityManager::areBuffersEqual(plaintext, plaintext_size, 
 				(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
 	{
 		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
@@ -372,17 +381,18 @@ void ClientConnectionManager::showMenu()
     std::cout << "Welcome, " << username << "! Please, select an operation:"
     << std::endl
 
-    << "\t- upload <filename>: ..." << std::endl
+    << "\t- upload <filename>: upload a local file on the server" << std::endl
 
     << "\t- download <filename>: download an existing file from the server, "
 	<< "ask confirmation for overwriting a local file" << std::endl
 
-    << "\t- delete <filename>: ..." << std::endl
+    << "\t- delete <filename>: delete an existing file from the server" << std::endl
 
-    << "\t- list: it prints the list of the filenames of the available files" <<
+    << "\t- list: print the list of the filenames of the available files" <<
 		 "in your dedicated storage" << std::endl
 
-    << "\t- rename: ..." << std::endl
+    << "\t- rename <original_filename> <new_filename>: rename an existing " <<
+		"file named original_filename in new_filename" << std::endl
 
     << "\t- logout: close the connection to Secure Cloud" << std::endl
 
@@ -408,14 +418,10 @@ void ClientConnectionManager::retrieveCommand()
 		unsigned int command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
 									command.length(): command.find(" ");
-		// TO DO: is this operation safe?
 		std::string operation = command.substr(0, 
 											command_first_delimiter_position);
 
         
-		// TO DO: security check on the inserted command
-		// TO DO: on commands which require filename execute check (maybe only on server)
-
         if(operation == "upload")
         {
 			// take the filename argument
@@ -487,12 +493,6 @@ void ClientConnectionManager::retrieveCommand()
 										command_second_delimiter_position - 
 										command_first_delimiter_position - 1);
 
-			// if(!isFilenameValid(original_filename))
-			// {
-			// 	std::cout << "Error: the original filename is not valid" 
-			// 				<< std::endl;
-			// 	exit(1);
-			// }
 			std::string original_file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			original_file_path += username;
 			original_file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
@@ -550,8 +550,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 
 void ClientConnectionManager::downloadFile(std::string file_path)
 {
-
-	if(fileAlreadyExists(file_path))
+	if(UtilityManager::fileAlreadyExists(file_path))
 	{
 		std::cout << "The file already exist, do you want to continue? yes/no"
 					<< std::endl;
@@ -637,8 +636,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 		
 		unsigned int file_content_size = file_content.length();
 
-		storeFileContent(file_path, (unsigned char*)file_content.c_str(),
-														 file_content_size);
+		UtilityManager::storeFileContent(file_path, 
+					(unsigned char*)file_content.c_str(), file_content_size);
 
 	} while(operation == DOWNLOAD_MESSAGE);
 
@@ -654,8 +653,6 @@ void ClientConnectionManager::deleteFile(std::string file_path)
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
-
-	// TO DO: check if the file exists
 
 	// with rfind I search the passed symbol from the end towards the start
 	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
@@ -717,18 +714,14 @@ void ClientConnectionManager::printFilenamesList()
 		return;
 	}
 
-	unsigned int command_second_delimiter_position = 
-				command.find(" ", command_first_delimiter_position + 1) >= 
-				command.length() ? 
-				command.length() - 1 : 
-				command.find(" ", command_first_delimiter_position + 1);
-
 	std::string files_list = command.substr
-									(command_second_delimiter_position + 1,
+									(command_first_delimiter_position + 1,
 									command.length() - 
-									command_second_delimiter_position - 1);
+									command_first_delimiter_position - 1);
 
-	std::cout << "File list: " << std::endl;
+	std::cout << "DBG reply: " << command << std::endl;
+
+	std::cout << "Files list: " << std::endl;
 	std::cout << files_list;
 }
 

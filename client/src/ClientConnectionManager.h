@@ -16,7 +16,9 @@ class ClientConnectionManager: public ConnectionManager
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
 
 		const char* STORAGE_DIRECTORY_NAME_PREFIX = "client/files/";
-		const char* STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";		
+		const char* STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";
+
+		const char* USERS_DIRECTORY = "server/files/users/";				
         
         char username[MAX_USERNAME_SIZE];
 		EVP_PKEY* deserialized_ephemeral_server_key;

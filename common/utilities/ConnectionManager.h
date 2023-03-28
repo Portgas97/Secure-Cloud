@@ -1,22 +1,7 @@
 #ifndef CONNECTION_MANAGER_H
 #define CONNECTION_MANAGER_H
 
-#include <iostream>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <cstring>
-#include <cstdlib>
-#include <stdio.h> // TO DO: fgets, to delete? better cstdio
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <limits.h> // required for realpath()
-#include <stdlib.h> // required for realpath()
-#include <experimental/filesystem>
-#include <fstream>
-#include <regex>
-#include "CryptographyManager.h"
-#include "Serializer.h"
-#include "Deserializer.h"
+#include "UtilityManager.h"
 
 class ConnectionManager
 {
@@ -27,11 +12,6 @@ class ConnectionManager
         //closeSocket();
 
         virtual ~ConnectionManager();
-
-        static void printBuffer(unsigned char*, unsigned int);
-		static unsigned int areBuffersEqual(unsigned char*, unsigned int,
-											unsigned char*, unsigned int);
-
 
     protected:
         int socket_fd;
@@ -53,13 +33,9 @@ class ConnectionManager
         void sendPacket(unsigned char*, unsigned int);
         void receivePacket(unsigned char*&);
 		unsigned char* parseReceivedMessage(Deserializer, unsigned int&);
-		unsigned char* getSmallFileContent(FILE* file, unsigned int);
-		int storeFileContent(std::string, unsigned char*, unsigned int);
-		bool fileAlreadyExists(std::string);
 		int sendFileContent(std::string, const char*);
 		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
-		bool isFilenameValid(std::string);
 
 		// TO DO: insert in a file of constants
 		const unsigned int UPLOAD_OPERATION_CODE = 0;

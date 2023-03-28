@@ -218,7 +218,6 @@ unsigned char* CryptographyManager::signMessage(unsigned char* message,
     return signature;
 }     
 
-// TO DO: change name and location?
 X509* CryptographyManager::deserializeCertificate(unsigned char* certificate, 
                                                 unsigned int certificate_size)
 {
@@ -318,14 +317,13 @@ void CryptographyManager::verifySignature   (unsigned char* signature,
         std::cout << "Error in signature verification" << std::endl;
         exit(1);
     }
-
+	
     return_value = EVP_VerifyFinal(context, signature, signature_size, 
                                                                     public_key);
 
     if(return_value == -1 || return_value == 0)
     {
         std::cout << "Error: signature not valid" << std::endl;
-		std::cout << "return_value: " << return_value << std::endl;
         exit(1);
     }
 

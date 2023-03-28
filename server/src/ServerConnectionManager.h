@@ -35,7 +35,8 @@ class ServerConnectionManager: public ConnectionManager
 
 		const char* BASE_PATH = "/home/simone/Scrivania/Secure-Cloud/";
 								//"/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/"
-		
+
+		const char* USERS_DIRECTORY = "server/files/users/";		
 
 		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
 									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
@@ -67,7 +68,6 @@ class ServerConnectionManager: public ConnectionManager
         void createConnection();
         void destroyConnection();
         void serveClient(int);
-		unsigned char* getCertificateFromFile(const char*, unsigned int&);
         void sendHello();
         void receiveHello();
 		void receiveFinalHandshakeMessage();
@@ -84,8 +84,6 @@ class ServerConnectionManager: public ConnectionManager
         const char* canonicalizeUserPath(const char*);
 		void sendError();
 		void handleRenameOperation(const char*, std::string);
-		std::string getDirectoryFilenames(std::string);
-		std::string getFilename(std::string);
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
 
 };
