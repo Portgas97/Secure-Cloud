@@ -88,7 +88,8 @@ void ServerConnectionManager::acceptRequest()
     }
 
     // the child will enter in the if block
-    if(child_pid == 0){
+    if(child_pid == 0)
+	{
 		std::cout << "Connection accepted, serving client..." << std::endl;
         serveClient(client_socket);
 		std::cout << "Client served, closing." << std::endl;
@@ -568,8 +569,8 @@ unsigned int ServerConnectionManager::handleRequest()
 		if(canonicalized_original_filename == nullptr)
 		{
 			std::cout << "The file does not exist" << std::endl;
-			sendError(); // TO DO receive
-			return 0; // TO DO exit??
+			sendError(); 
+			return 0;
 		}
 
 		std::string new_filename = command.substr
@@ -581,8 +582,7 @@ unsigned int ServerConnectionManager::handleRequest()
 		if(isFilenameValid(new_filename) == false)
 		{
 		 	std::cout << "Error: the new filename is not valid" << std::endl;
-			std::cout << "DBG new_filename: " << new_filename << "." << std::endl;
-			std::cout << "DBG new_filename.length() " << new_filename.length() << std::endl;
+			sendError();
 		 	exit(1);
 		}
 
@@ -760,11 +760,10 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 	}
 	else
 	{	
-		// the file does not exist
 		std::cout << "Error: the file the client wants to delete does " << 
 					"not exist" << std::endl;
-		// TO DO: reply an error code to the client
-		exit(1);
+		sendError();
+		return;
 	}
 
 	// send ACK

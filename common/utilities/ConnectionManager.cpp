@@ -514,6 +514,7 @@ int ConnectionManager::storeFileContent(std::string filename,
 
 	fclose(file);
 	CryptographyManager::unoptimizedMemset(file_content, file_content_size);
+	return 0;
 }
 
 

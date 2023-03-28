@@ -356,6 +356,7 @@ void ClientConnectionManager::receiveAckMessage()
 		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
 		exit(1);
 	}
+	std::cout << "Operation successfully completed" << std::endl;
 
 }
 
@@ -431,8 +432,6 @@ void ClientConnectionManager::retrieveCommand()
 
 			// receive ack
 			receiveAckMessage();
-			
-			std::cout << "Upload operation completed" << std::endl;
         } 
         else if(operation == "download")
         {
@@ -471,8 +470,6 @@ void ClientConnectionManager::retrieveCommand()
 
 			// receive ack
 			receiveAckMessage();
-			
-			std::cout << "Delete operation completed" << std::endl;
         }
         else if(operation == "list")
         {
@@ -510,7 +507,6 @@ void ClientConnectionManager::retrieveCommand()
 
 			receiveAckMessage();
 
-			std::cout << "Rename operation completed" << std::endl;
 		}
 	    else if(operation == "logout")
 	    {
@@ -545,7 +541,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 								reply.find(" ") >= reply.length() ? 
 								reply.length() - 1: reply.find(" ");
 
-	operation = reply.substr(0, reply_first_delimiter_position);
+	std::string operation = reply.substr(0, reply_first_delimiter_position);
 
 	if(operation == ERROR_MESSAGE)
 		std::cout << "Error in upload" << std::endl;
@@ -713,7 +709,7 @@ void ClientConnectionManager::printFilenamesList()
 								command.find(" ") >= command.length() ? 
 								command.length() - 1: command.find(" ");
 
-	operation = command.substr(0, command_first_delimiter_position);
+	std::string operation = command.substr(0, command_first_delimiter_position);
 
 	if(operation == ERROR_MESSAGE)
 	{
