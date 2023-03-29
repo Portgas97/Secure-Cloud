@@ -7,7 +7,8 @@ ConnectionManager::ConnectionManager()
 
 ConnectionManager::~ConnectionManager()
 {
-    
+    free(server_nonce);
+	free(client_nonce);
 }
 
 /*
@@ -186,7 +187,6 @@ unsigned char* ConnectionManager::getMessageToSend
 													aad, aad_size,
 													shared_key, 
 													initialization_vector,
-													initialization_vector_size,
 													ciphertext, tag);
 													
 	if(plaintext_size != ciphertext_size)
@@ -316,8 +316,7 @@ unsigned char* ConnectionManager::parseReceivedMessage
 	plaintext_size = CryptographyManager::authenticateAndDecryptMessage
 										(ciphertext, ciphertext_size, aad, 
 										aad_size, tag, shared_key, 
-										initialization_vector, 
-                                        initialization_vector_size, plaintext);
+										initialization_vector, plaintext);
 	
 	free(aad);
     free(tag);

@@ -56,15 +56,7 @@ class ServerConnectionManager: public ConnectionManager
 
         //  nonce_size   | nonce | certificate_size  | certificate   | 
         //  key_size     | key   | signature_size    | signature     |
-        const unsigned int MAX_HELLO_SIZE = 
-                                sizeof(CryptographyManager::getNonceSize())
-                                + CryptographyManager::getNonceSize()
-                                + sizeof(certificate_size)
-                                + certificate_size
-                                + sizeof(ephemeral_public_key_size)
-                                + ephemeral_public_key_size
-                                + sizeof(signature_size)
-                                + signature_size;
+        
         
         const unsigned int MAX_FILENAME_SIZE = 100;
 
@@ -76,7 +68,7 @@ class ServerConnectionManager: public ConnectionManager
 		void receiveFinalHandshakeMessage();
 		void sendAckMessage();
 		void setSharedKey();
-        unsigned int getHelloPacket(unsigned char*); 
+        void getHelloPacket(unsigned char*); 
 		void getFilenamesList(Deserializer);
 		void handleListOperation();
 		void handleUploadOperation(std::string, std::string, unsigned char*,

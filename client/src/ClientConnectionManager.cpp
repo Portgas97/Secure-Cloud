@@ -112,8 +112,7 @@ void ClientConnectionManager::handleHandshake()
     it creates the hello packet and returns it.
     It returns the hello packet size
 */
-unsigned int ClientConnectionManager::getHelloPacket
-												(unsigned char* hello_packet)
+void ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
 	Serializer serializer = Serializer(hello_packet);
 
@@ -124,7 +123,7 @@ unsigned int ClientConnectionManager::getHelloPacket
 	serializer.serializeByteStream(client_nonce, 
                                         CryptographyManager::getNonceSize());
 
-	return serializer.getOffset();	
+	
 }
 
 
@@ -146,8 +145,14 @@ void ClientConnectionManager::sendHello()
     CryptographyManager::getRandomBytes(client_nonce,
 							CryptographyManager::getNonceSize());
 
+	unsigned int hello_packet_size = 
+                    sizeof(MAX_USERNAME_SIZE) 
+                    + MAX_USERNAME_SIZE 
+                    + sizeof(CryptographyManager::getNonceSize()) 
+                    + CryptographyManager::getNonceSize();
+
     // hello_packet: username_size | username | nonce_size | nonce
-    unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
+    unsigned char* hello_packet = (unsigned char*)calloc(1, hello_packet_size);
 
     if (hello_packet == nullptr) 
     {
@@ -155,7 +160,7 @@ void ClientConnectionManager::sendHello()
         exit(1);
     }
 
-    unsigned int hello_packet_size = getHelloPacket(hello_packet);
+    getHelloPacket(hello_packet);
 
     sendPacket(hello_packet, hello_packet_size);
 
@@ -256,6 +261,8 @@ void ClientConnectionManager::receiveHello()
 	// TO DO for more security, is OK?
 	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
 												ephemeral_server_key_size);
+												
+	X509_free(deserialized_server_certificate);
 	free(ephemeral_server_key);
     free(server_certificate);
 	free(server_signature);
@@ -299,8 +306,13 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 	signature = CryptographyManager::signMessage(clear_message, 
 				clear_message_size, private_key_filename, signature_size);
 	
+	unsigned int final_handshake_message_size =                                 
+                                sizeof(ephemeral_public_key_size)
+                                + ephemeral_public_key_size
+                                + sizeof(signature_size)
+                                + signature_size;
     unsigned char* final_message = 
-                    (unsigned char*)calloc(1, MAX_FINAL_HANDSHAKE_MESSAGE_SIZE);
+                    (unsigned char*)calloc(1, final_handshake_message_size);
 
     if (final_message == nullptr) 
     {
@@ -312,6 +324,9 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 
     sendPacket(final_message, final_message_size);
 
+	CryptographyManager::unoptimizedMemset(ephemeral_public_key, ephemeral_public_key_size);
+	free(ephemeral_public_key);
+	free(signature);
     free(clear_message);
     free(private_key_filename);
 	free(final_message);
@@ -325,8 +340,9 @@ void ClientConnectionManager::setSharedKey()
 											(ephemeral_private_key,
 											deserialized_ephemeral_server_key,
 											&shared_secret_size);
+    EVP_PKEY_free(deserialized_ephemeral_server_key);
     
-    // derive session key
+	// derive session key
 	shared_key = CryptographyManager::getSharedKey(shared_secret, 
 													shared_secret_size);
 }

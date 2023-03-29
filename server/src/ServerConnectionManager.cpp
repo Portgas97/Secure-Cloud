@@ -192,24 +192,30 @@ void ServerConnectionManager::receiveHello()
     it creates the hello packet and returns it.
     It returns also the hello packet size
 */
-unsigned int ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
+void ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
 	Serializer serializer = Serializer(hello_packet);
 
     // nonce_size | nonce | certificate_size | certificate | key_size | key
     // signature_size | signature
+	
 	serializer.serializeInt(CryptographyManager::getNonceSize());
 	serializer.serializeByteStream(server_nonce, 
 									CryptographyManager::getNonceSize());
+	
+	std::cout << "DBG certificate_size: " << certificate_size << std::endl;
+	std::cout << "DBG certificate: " << std::endl;
+	UtilityManager::printBuffer(certificate, certificate_size);
+
 	serializer.serializeInt(certificate_size);
 	serializer.serializeByteStream(certificate, certificate_size);
+
 	serializer.serializeInt(ephemeral_public_key_size);
 	serializer.serializeByteStream(ephemeral_public_key, 
 													ephemeral_public_key_size);
 	serializer.serializeInt(signature_size);
 	serializer.serializeByteStream(signature, signature_size);														
-
-	return serializer.getOffset();	
+		
 }
 
 /* 
@@ -240,7 +246,7 @@ void ServerConnectionManager::sendHello()
 							ephemeral_private_key, 
 							ephemeral_public_key_size);
 
-
+	
 	// message: server_public_key | client_nonce
 	unsigned int clear_message_size =  ephemeral_public_key_size 
 						+ CryptographyManager::getNonceSize();
@@ -260,8 +266,18 @@ void ServerConnectionManager::sendHello()
 
 	signature = CryptographyManager::signMessage(clear_message, 
 				clear_message_size, PRIVATE_KEY_FILENAME, signature_size);
-	
-	unsigned char* hello_packet = (unsigned char*)calloc(1, MAX_HELLO_SIZE);
+
+	unsigned int hello_packet_size = 
+                                sizeof(CryptographyManager::getNonceSize())
+                                + CryptographyManager::getNonceSize()
+                                + sizeof(certificate_size)
+                                + certificate_size
+                                + sizeof(ephemeral_public_key_size)
+                                + ephemeral_public_key_size
+                                + sizeof(signature_size)
+                                + signature_size;
+
+	unsigned char* hello_packet = (unsigned char*)calloc(1, hello_packet_size);
 
 	if(hello_packet == nullptr)
 	{
@@ -269,11 +285,14 @@ void ServerConnectionManager::sendHello()
 		exit(1);
 	}
 
-	unsigned int hello_packet_size = getHelloPacket(hello_packet);
+	getHelloPacket(hello_packet);
 
     sendPacket(hello_packet, hello_packet_size);
-	free(hello_packet);
+
+	CryptographyManager::unoptimizedMemset(ephemeral_public_key, ephemeral_public_key_size);
+	free(ephemeral_public_key);
 	free(signature);
+	free(hello_packet);
 	free(clear_message);
 
 }
@@ -330,6 +349,9 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
 
     // build the client public key filename concatenating the prefix, 
 	// the client username and the suffix
+
+	// TO DO check is the value of MAX_CLIENT_CERTIFICATE_FILENAME_SIZE
+	// is correct, display subcomponents values
     char* client_certificate_filename = (char*)
 								calloc(1, MAX_CLIENT_CERTIFICATE_FILENAME_SIZE);
 	if(client_certificate_filename == nullptr)
@@ -355,7 +377,13 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
                             clear_message, clear_message_size, 
                             X509_get_pubkey(deserialized_client_certificate));
 
+	X509_free(deserialized_client_certificate);
 	free(client_certificate);	
+	free(client_certificate_filename);
+	free(clear_message);
+	free(client_signature);
+	CryptographyManager::unoptimizedMemset(ephemeral_client_key, ephemeral_client_key_size);
+	free(ephemeral_client_key);
 }
 
 void ServerConnectionManager::setSharedKey()
@@ -366,6 +394,8 @@ void ServerConnectionManager::setSharedKey()
 											(ephemeral_private_key,
 											deserialized_ephemeral_client_key,
 											&shared_secret_size);
+	EVP_PKEY_free(deserialized_ephemeral_client_key);
+	
 	// derive session key
 	shared_key = CryptographyManager::getSharedKey(shared_secret, 
 													shared_secret_size);

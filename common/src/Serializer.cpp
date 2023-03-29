@@ -8,12 +8,6 @@ Serializer::Serializer(unsigned char* buffer_to_serialize)
 }
 
 
-// Serializer::~Serializer()
-// {
-// 	free(buffer); // don't works
-// }
-
-
 void Serializer::serializeInt(int value)
 {
 	int *network_value_pointer = (int*)calloc(1,sizeof(int));

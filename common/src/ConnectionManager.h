@@ -59,7 +59,7 @@ class ConnectionManager
         virtual void destroyConnection() = 0;
         virtual void sendHello() = 0;
         virtual void receiveHello() = 0;
-        virtual unsigned int getHelloPacket(unsigned char*) = 0;
+        virtual void getHelloPacket(unsigned char*) = 0;
 		virtual void handleHandshake() = 0;
 		virtual void setSharedKey() = 0;
 

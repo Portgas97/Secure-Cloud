@@ -40,13 +40,12 @@ class CryptographyManager
 		static unsigned int authenticateAndEncryptMessage(unsigned char*, 
 											unsigned int, unsigned char*, 
 											unsigned int, unsigned char*,
-											unsigned char*, unsigned int,
+											unsigned char*,
 											unsigned char*, unsigned char*);
 		static unsigned int authenticateAndDecryptMessage(unsigned char*, 
 											unsigned int, unsigned char*, 
 											unsigned int, unsigned char*,
-											unsigned char*, unsigned char*,
-                                            unsigned int, unsigned char*);
+											unsigned char*, unsigned char*, unsigned char*);
         static void deleteSharedKey(unsigned char*);
 		static void unoptimizedMemset(unsigned char*, size_t);
      

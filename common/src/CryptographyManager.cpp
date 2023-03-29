@@ -542,8 +542,7 @@ unsigned int CryptographyManager::authenticateAndEncryptMessage
 								unsigned char *aad, 
 								unsigned int aad_size,
 								unsigned char *key,
-								unsigned char *initialization_vector, 
-								unsigned int initialization_vector_size,
+								unsigned char *initialization_vector,
 								unsigned char *ciphertext,
 								unsigned char *tag)
 {
@@ -616,8 +615,7 @@ unsigned int CryptographyManager::authenticateAndDecryptMessage
 										unsigned int aad_size,
 										unsigned char *tag,
 										unsigned char *key,
-										unsigned char *initialization_vector, 
-										unsigned int initialization_vector_size,
+										unsigned char *initialization_vector,
 										unsigned char *plaintext)
 {
     // Create and initialise the context

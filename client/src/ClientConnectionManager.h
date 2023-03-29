@@ -28,19 +28,8 @@ class ClientConnectionManager: public ConnectionManager
         const unsigned int MAX_PRIVATE_KEY_FILENAME_SIZE = 
                                 strlen(PRIVATE_KEY_FILENAME_PREFIX) + 
                                 MAX_USERNAME_SIZE +
-                                strlen(PRIVATE_KEY_FILENAME_SUFFIX) + 1;
-
-        const unsigned int MAX_FINAL_HANDSHAKE_MESSAGE_SIZE =                                 
-                                sizeof(ephemeral_public_key_size)
-                                + ephemeral_public_key_size
-                                + sizeof(signature_size)
-                                + signature_size;
+                                strlen(PRIVATE_KEY_FILENAME_SUFFIX) + 1;     
         
-        const unsigned int MAX_HELLO_SIZE = 
-                    sizeof(MAX_USERNAME_SIZE) 
-                    + MAX_USERNAME_SIZE 
-                    + sizeof(CryptographyManager::getNonceSize()) 
-                    + CryptographyManager::getNonceSize();
 
         void createConnection();
         void destroyConnection();
@@ -50,7 +39,7 @@ class ClientConnectionManager: public ConnectionManager
 		void sendFinalHandshakeMessage();
 		void receiveAckMessage();
 		void setSharedKey();	
-        unsigned int getHelloPacket(unsigned char*);
+        void getHelloPacket(unsigned char*);
         unsigned int getFinalMessage(unsigned char*);
 
         void showMenu();
