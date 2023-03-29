@@ -377,9 +377,7 @@ void ServerConnectionManager::sendAckMessage()
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend((unsigned char*)ACK_MESSAGE, 
 												message_size);
-	
 	sendPacket(message, message_size);
-
 	free(message);
 }
 
@@ -389,7 +387,10 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* file_path)
 	const char* canonicalized_filename = realpath(file_path, nullptr);
 
 	if(canonicalized_filename == nullptr)
+	{
+		std::cout << "Wrong path" << std::endl;
 		return nullptr;
+	}
 
 	std::string correct_directory = std::string(BASE_PATH) + 
 							std::string(CLIENT_STORAGE_DIRECTORY_NAME_PREFIX) + 
@@ -400,7 +401,8 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* file_path)
 											correct_directory.size()) != 0)
 	{
 		std::cout << "Unauthorized path" << std::endl;
-		exit(1);
+		// TO DO: changed from exit(1)
+		return nullptr;
 	}
 
 	return canonicalized_filename;
@@ -564,7 +566,6 @@ unsigned int ServerConnectionManager::handleRequest()
 		
 		new_file_path += new_filename;
 		handleRenameOperation(canonicalized_original_filename, new_file_path);
-		//free(canonicalized_new_filename); // TO DO?
 
 	}
 	else
@@ -593,18 +594,13 @@ void ServerConnectionManager::handleListOperation()
 
 	std::string directory_filenames = 
 						UtilityManager::getDirectoryFilenames(directory_name);
-	char* plaintext = (char*) calloc(1, directory_filenames.length() + 1);
-	if(plaintext == nullptr)
-	{
-		std::cout << "Error in calloc" << std::endl;
-		sendError();
-		return;
-	}
 
-	strcpy(plaintext, directory_filenames.c_str());
+	std::string plaintext = std::string(LIST_MESSAGE) + std::string(" ") + 
+							directory_filenames;
+	
 	unsigned int message_size;
 	unsigned char* message = getMessageToSend
-								((unsigned char*)directory_filenames.c_str(), 
+								((unsigned char*)plaintext.c_str(), 
 								message_size);
 
 	sendPacket(message, message_size);
@@ -658,6 +654,7 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 				sendError();
 				return;
 		}
+
 	}	
 
 	// send ACK

@@ -46,7 +46,7 @@ void ConnectionManager::receivePacket(unsigned char* &packet)
     uint32_t received_bytes = 0;
 
 
-    // hendle fragmented reception
+    // handle fragmented reception
     while(received_bytes < packet_size)
     {
         return_value = recv(socket_fd, (void*)received_packet, packet_size,  

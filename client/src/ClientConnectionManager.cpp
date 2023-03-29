@@ -363,10 +363,11 @@ void ClientConnectionManager::receiveAckMessage()
 				(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
 	{
 		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
-		exit(1);
+		return;
 	}
 	std::cout << "Operation successfully completed" << std::endl;
 
+	free(final_message);
 }
 
 
@@ -388,7 +389,7 @@ void ClientConnectionManager::showMenu()
 
     << "\t- delete <filename>: delete an existing file from the server" << std::endl
 
-    << "\t- list: print the list of the filenames of the available files" <<
+    << "\t- list: print the list of the filenames of the available files " <<
 		 "in your dedicated storage" << std::endl
 
     << "\t- rename <original_filename> <new_filename>: rename an existing " <<
@@ -437,7 +438,7 @@ void ClientConnectionManager::retrieveCommand()
             uploadFile(file_path);
 
 			// receive ack
-			receiveAckMessage();
+			//receiveAckMessage();
         } 
         else if(operation == "download")
         {
@@ -532,7 +533,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 	if(sendFileContent(filename, UPLOAD_MESSAGE) == -1)
 	{
 		std::cout << "Error in send file content" << std::endl;
-		exit(1);
+		return;
 	}
 
 	std::string reply = getRequestCommand();
@@ -545,6 +546,8 @@ void ClientConnectionManager::uploadFile(std::string filename)
 
 	if(operation == ERROR_MESSAGE)
 		std::cout << "Error in upload" << std::endl;
+	else
+		std::cout << "Operation successfully completed" << std::endl;
 }
 
 
@@ -552,8 +555,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 {
 	if(UtilityManager::fileAlreadyExists(file_path))
 	{
-		std::cout << "The file already exist, do you want to continue? yes/no"
-					<< std::endl;
+		std::cout << "The file already exist, do you want to continue?" <<
+																	" yes/no: ";
 		std::string confirm;
 		std::getline(std::cin, confirm);
         if(!std::cin)
@@ -719,7 +722,6 @@ void ClientConnectionManager::printFilenamesList()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
-	std::cout << "DBG reply: " << command << std::endl;
 
 	std::cout << "Files list: " << std::endl;
 	std::cout << files_list;

@@ -7,10 +7,6 @@ class ConnectionManager
 {
     public:
         ConnectionManager();
-
-
-        //closeSocket();
-
         virtual ~ConnectionManager();
 
     protected:
@@ -37,7 +33,7 @@ class ConnectionManager
 		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
 
-		// TO DO: insert in a file of constants
+		// operation codes
 		const unsigned int UPLOAD_OPERATION_CODE = 0;
 		const unsigned int DOWNLOAD_OPERATION_CODE = 1;
 		const unsigned int DELETE_OPERATION_CODE = 2;
@@ -45,8 +41,7 @@ class ConnectionManager
 		const unsigned int RENAME_OPERATION_CODE = 4;
 		const unsigned int LOGOUT_OPERATION_CODE = 5;
 		
-
-		// TO DO: insert in a file of constants
+		// operation messages
 		const char* UPLOAD_MESSAGE = "UPLOAD";
 		const char* LAST_UPLOAD_MESSAGE = "LAST_UPLOAD";
 		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
@@ -58,7 +53,6 @@ class ConnectionManager
 		const char* ACK_MESSAGE = "ACK";		
 		const char* ERROR_MESSAGE = "ERROR";
 
-		// TO DO: insert in a file of constants
 		const unsigned int CHUNK_SIZE = 500000; // 500 KB
 
         virtual void createConnection() = 0;

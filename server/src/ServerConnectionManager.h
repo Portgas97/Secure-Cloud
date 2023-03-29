@@ -1,6 +1,6 @@
 #ifndef SERVER_CONNECTION_MANAGER_H
 #define SERVER_CONNECTION_MANAGER_H
-#include "../../common/utilities/ConnectionManager.h"
+#include "../../common/src/ConnectionManager.h"
 
 class ServerConnectionManager: public ConnectionManager 
 {
@@ -20,6 +20,7 @@ class ServerConnectionManager: public ConnectionManager
 		char logged_username[MAX_USERNAME_SIZE];
         unsigned int logged_username_size;
 
+		// paths
 		const char* CERTIFICATE_FILENAME = 
 									"server/files/pem_files/Certificate.pem";
 
@@ -38,21 +39,23 @@ class ServerConnectionManager: public ConnectionManager
 
 		const char* USERS_DIRECTORY = "server/files/users/";		
 
-		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
-									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
-									MAX_USERNAME_SIZE +
-									strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 
-									1;
 
         unsigned char* certificate;
         unsigned int certificate_size;
 
 		EVP_PKEY* deserialized_ephemeral_client_key;
 
+        
+		// max sizes
+		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
+									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
+									MAX_USERNAME_SIZE +
+									strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 
+									1;
+        const unsigned int MAX_CONNECTIONS = 10;
+
         //  nonce_size   | nonce | certificate_size  | certificate   | 
         //  key_size     | key   | signature_size    | signature     |
-        
-        const unsigned int MAX_CONNECTIONS = 10;
         const unsigned int MAX_HELLO_SIZE = 
                                 sizeof(CryptographyManager::getNonceSize())
                                 + CryptographyManager::getNonceSize()

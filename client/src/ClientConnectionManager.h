@@ -1,6 +1,6 @@
 #ifndef CLIENT_CONNECTION_MANAGER_H
 #define CLIENT_CONNECTION_MANAGER_H
-#include "../../common/utilities/ConnectionManager.h"
+#include "../../common/src/ConnectionManager.h"
 
 class ClientConnectionManager: public ConnectionManager
 {
@@ -12,6 +12,7 @@ class ClientConnectionManager: public ConnectionManager
 
 
     private:
+		// paths
         const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
 
@@ -23,6 +24,7 @@ class ClientConnectionManager: public ConnectionManager
         char username[MAX_USERNAME_SIZE];
 		EVP_PKEY* deserialized_ephemeral_server_key;
         
+		// max sizes
         const unsigned int MAX_PRIVATE_KEY_FILENAME_SIZE = 
                                 strlen(PRIVATE_KEY_FILENAME_PREFIX) + 
                                 MAX_USERNAME_SIZE +
