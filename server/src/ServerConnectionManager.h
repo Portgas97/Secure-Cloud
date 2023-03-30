@@ -34,8 +34,8 @@ class ServerConnectionManager: public ConnectionManager
 														"server/files/users/";
 		const char* CLIENT_STORAGE_DIRECTORY_NAME_SUFFIX = "/storage/";
 
-		const char* BASE_PATH = "/home/simone/Scrivania/Secure-Cloud/";
-								//"/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/"
+		const char* BASE_PATH = //"/home/simone/Scrivania/Secure-Cloud/";
+								"/mnt/c/Users/Francesco/Documents/Cybersecurity/Primo Anno/Secondo Semestre/Applied Cryptography/Progetto/Secure-Cloud/";
 
 		const char* USERS_DIRECTORY = "server/files/users/";		
 

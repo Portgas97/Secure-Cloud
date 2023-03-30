@@ -133,6 +133,7 @@ void ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 */
 void ClientConnectionManager::sendHello()
 {
+	std::cout << "Starting the handshake" << std::endl;
 	client_nonce = (unsigned char*) calloc(1, 
 							CryptographyManager::getNonceSize());
 
@@ -378,12 +379,13 @@ void ClientConnectionManager::receiveAckMessage()
 	if(!UtilityManager::areBuffersEqual(plaintext, plaintext_size, 
 				(unsigned char*) ACK_MESSAGE, strlen(ACK_MESSAGE) + 1))
 	{
-		std::cout << "Error: expected " << ACK_MESSAGE << std::endl;
+		std::cout << "Error during operation" << std::endl;
 		return;
 	}
 	std::cout << "Operation successfully completed" << std::endl;
 
 	free(final_message);
+	free(plaintext);
 }
 
 
@@ -441,11 +443,22 @@ void ClientConnectionManager::retrieveCommand()
         
         if(operation == "upload")
         {
+			if(command_first_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
+			
 			// take the filename argument
 			std::string filename = command.substr
 										(command_first_delimiter_position + 1,
 										command.length() -
 										command_first_delimiter_position - 1);
+			if(!UtilityManager::isFilenameValid(filename))
+			{
+				std::cout << "Filename is not valid" << std::endl;
+				continue;
+			}
 			// build the file path
 			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			file_path += username;
@@ -468,6 +481,13 @@ void ClientConnectionManager::retrieveCommand()
 										(command_first_delimiter_position + 1,
 										command.length() -
 										command_first_delimiter_position - 1);
+
+			if(!UtilityManager::isFilenameValid(filename))
+			{
+				std::cout << "Filename is not valid" << std::endl;
+				continue;
+			}
+
 			// build the file path
 			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			file_path += username;
@@ -478,17 +498,31 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(operation == "delete")
         {
+			if(command_first_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
+			
 			// take the filename argument
 			std::string filename = command.substr
 										(command_first_delimiter_position + 1,
 										command.length() -
 										command_first_delimiter_position - 1);
+			
+			if(!UtilityManager::isFilenameValid(filename))
+			{
+				std::cout << "Filename is not valid" << std::endl;
+				continue;
+			}
+
 			// build the file path
 			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			file_path += username;
 			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 			file_path += filename;
 
+			
             deleteFile(file_path);
 
 			// receive ack
@@ -500,15 +534,33 @@ void ClientConnectionManager::retrieveCommand()
         } 
         else if(operation == "rename")
         {
+			if(command_first_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
 			unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
 					command.length() ? 
 					command.length() - 1 : 
 					command.find(" ", command_first_delimiter_position + 1);
+
+			if(command_second_delimiter_position + 1 > command.size())
+			{
+				std::cout << "Argument is missing!" << std::endl;
+				continue;
+			}
+
 			std::string original_filename = command.substr
 										(command_first_delimiter_position + 1,
 										command_second_delimiter_position - 
 										command_first_delimiter_position - 1);
+
+			if(!UtilityManager::isFilenameValid(original_filename))
+			{
+				std::cout << "Filename is not valid" << std::endl;
+				continue;
+			}
 
 			std::string original_file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			original_file_path += username;
@@ -520,10 +572,32 @@ void ClientConnectionManager::retrieveCommand()
 										command.length() - 
 										command_second_delimiter_position - 1);
 
+			if(!UtilityManager::isFilenameValid(new_filename))
+			{
+				std::cout << "Filename is not valid" << std::endl;
+				continue;
+			}
+
 	        renameFile(original_file_path, new_filename);
 
-			receiveAckMessage();
+			std::string received_command = getRequestCommand();
 
+			unsigned int received_command_first_delimiter_position = 
+										received_command.find(" ") >= received_command.length() ? 
+										received_command.length() - 1: received_command.find(" ");
+
+			std::string received_operation = received_command.substr(0, received_command_first_delimiter_position);
+
+			if(received_operation == ERROR_MESSAGE)
+			{
+				std::cout << "Error: file does not exist?" << std::endl;
+				continue;
+			} 
+			else if(received_operation == ACK_MESSAGE)
+				std::cout << "Operation successfully completed" << std::endl;
+			else
+				std::cout << "Error: expected ACK" << std::endl;
+			
 		}
 	    else if(operation == "logout")
 	    {
@@ -548,7 +622,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 
 	if(sendFileContent(filename, UPLOAD_MESSAGE) == -1)
 	{
-		std::cout << "Error in send file content" << std::endl;
+		std::cout << "Error in sending file" << std::endl;
 		return;
 	}
 
@@ -564,6 +638,7 @@ void ClientConnectionManager::uploadFile(std::string filename)
 		std::cout << "Error in upload" << std::endl;
 	else
 		std::cout << "Operation successfully completed" << std::endl;
+
 }
 
 
@@ -624,6 +699,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 														message_size);
 	free(download_message);
 	sendPacket(message, message_size);
+	free(message);
 
 	std::string operation;
 	do
@@ -657,8 +733,10 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 		UtilityManager::storeFileContent(file_path, 
 					(unsigned char*)file_content.c_str(), file_content_size);
-
+		
 	} while(operation == DOWNLOAD_MESSAGE);
+
+	std::cout << "Operation successfully completed" << std::endl;
 
 	
 }
@@ -679,7 +757,8 @@ void ClientConnectionManager::deleteFile(std::string file_path)
 											file_path.rfind("/") - 1);
 
 	// +1 is for space character
-	unsigned int delete_message_size = strlen(DELETE_MESSAGE) + 
+	unsigned int delete_message_size = strlen(DELETE_MESSAGE) + 1 +
+										1 +
 										filename.length() + 1;
 	unsigned char* delete_message = 
 								(unsigned char*) calloc(1, delete_message_size);
@@ -700,6 +779,8 @@ void ClientConnectionManager::deleteFile(std::string file_path)
 	unsigned char* message = getMessageToSend(delete_message,
 														message_size);
 	sendPacket(message, message_size);
+	free(message);
+	free(delete_message);
 }
 
 
@@ -718,6 +799,7 @@ void ClientConnectionManager::printFilenamesList()
 											request_message_size);
 	// send the request
 	sendPacket(request_message, request_message_size);
+	free(request_message);
 
 	std::string command = getRequestCommand();
 
@@ -741,6 +823,7 @@ void ClientConnectionManager::printFilenamesList()
 
 	std::cout << "Files list: " << std::endl;
 	std::cout << files_list;
+
 }
 
 
@@ -763,7 +846,9 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 											original_file_path.rfind("/") - 1);
 	// +1 is for space characters
 	unsigned int rename_message_size = strlen(RENAME_MESSAGE) + 
+										1 +
 										original_filename.length() + 1 +
+										1 + 
 										new_filename.length() + 1;
 	unsigned char* rename_message = 
 								(unsigned char*) calloc(1, rename_message_size);
@@ -788,6 +873,8 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 	unsigned char* message = getMessageToSend(rename_message,
 														message_size);
 	sendPacket(message, message_size);
+	free(rename_message);
+	free(message);
 }
 
 
@@ -805,6 +892,7 @@ void ClientConnectionManager::logout()
 											((unsigned char*)LOGOUT_MESSAGE, 
 											request_message_size);
 	sendPacket(request_message, request_message_size);
+	free(request_message);
 
 	receiveAckMessage();
 

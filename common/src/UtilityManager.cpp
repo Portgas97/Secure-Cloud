@@ -129,9 +129,13 @@ unsigned int UtilityManager::areBuffersEqual(unsigned char* buffer1,
 
 bool UtilityManager::isFilenameValid(std::string filename) 
 {
+	if(filename.length() > MAX_FILENAME_SIZE)
+		return false;
+
 	const std::regex pattern("^[A-Za-z0-9]+\\.[A-Za-z0-9]+$");
 	return regex_match(filename, pattern);
 }
+
 
 bool UtilityManager::fileAlreadyExists(std::string filename)
 {

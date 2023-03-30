@@ -367,25 +367,33 @@ int ConnectionManager::sendFileContent(std::string file_path,
 	{
 		// check if it's the last send
 		if(file_size - sent_bytes >= CHUNK_SIZE)
-		{	
 			fragment_size = CHUNK_SIZE;
-			message_size = strlen(operation_message) + 1;
-		}
-		else
-		{
-			// last send case
+		else 
 			fragment_size = file_size - sent_bytes;
-			message_size = strlen(operation_message) + 1;
-		}
 
-		// if it's the first send, add the filename to the request message
-		if(sent_bytes == 0)
+			
+		// setting the first part of the message size depending on the operation 
+		if(file_size - sent_bytes >= CHUNK_SIZE)
+				message_size = strlen(operation_message) + 1;
+		else 
+			if(strncmp(operation_message, DOWNLOAD_MESSAGE, 
+												strlen(DOWNLOAD_MESSAGE)) == 0)
+				message_size = strlen(LAST_DOWNLOAD_MESSAGE) + 1;
+			else
+				message_size = strlen(LAST_UPLOAD_MESSAGE) + 1;
+
+		// space character
+		message_size++; 
+
+		// if it's the first send, add the filename length to the request message
+		if(sent_bytes == 0){
 			message_size += filename.length() + 1;
+			message_size++; // space character
+		}
 
 		message_size += fragment_size;
 
-		// +1 for the space character
-		message = (unsigned char*) calloc(1, message_size + 1);
+		message = (unsigned char*) calloc(1, message_size);
 		if(message == nullptr)
 			return -1;
 
@@ -399,7 +407,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 			if(strncmp(operation_message, DOWNLOAD_MESSAGE, 
 												strlen(DOWNLOAD_MESSAGE)) == 0)
 				serializer.serializeString((char*)LAST_DOWNLOAD_MESSAGE, 
-											strlen(LAST_DOWNLOAD_MESSAGE));
+												strlen(LAST_DOWNLOAD_MESSAGE));
 			else
 				serializer.serializeString((char*)LAST_UPLOAD_MESSAGE, 
 											strlen(LAST_UPLOAD_MESSAGE));
@@ -415,7 +423,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		fragment = (unsigned char*) calloc(1, fragment_size);
 		if(fragment == nullptr)
 			return -1;
-
+		
 		fragment = UtilityManager::getSmallFileContent(file, fragment_size);
 
 		serializer.serializeChar(' ');
@@ -429,6 +437,8 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		sent_bytes += fragment_size;
 		free(fragment);
 		free(message);
+		free(message_to_send);
+		
 	}
 
 	fclose(file);
@@ -448,7 +458,7 @@ std::string ConnectionManager::getRequestCommand()
 	std::string command(plaintext, 
 						plaintext + plaintext_size/sizeof(plaintext[0]));
 
-
+	free(plaintext);
 	free(request_message);
 	return command;
 }

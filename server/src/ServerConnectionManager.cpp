@@ -184,6 +184,7 @@ void ServerConnectionManager::receiveHello()
 
 	deserializer.deserializeByteStream(client_nonce, client_nonce_size);
 
+	free(received_logged_username);
 	free(hello_packet);
 }
 
@@ -202,10 +203,6 @@ void ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
 	serializer.serializeInt(CryptographyManager::getNonceSize());
 	serializer.serializeByteStream(server_nonce, 
 									CryptographyManager::getNonceSize());
-	
-	std::cout << "DBG certificate_size: " << certificate_size << std::endl;
-	std::cout << "DBG certificate: " << std::endl;
-	UtilityManager::printBuffer(certificate, certificate_size);
 
 	serializer.serializeInt(certificate_size);
 	serializer.serializeByteStream(certificate, certificate_size);
@@ -377,6 +374,7 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
                             clear_message, clear_message_size, 
                             X509_get_pubkey(deserialized_client_certificate));
 
+	free(final_handshake_message);
 	X509_free(deserialized_client_certificate);
 	free(client_certificate);	
 	free(client_certificate_filename);
@@ -414,13 +412,10 @@ void ServerConnectionManager::sendAckMessage()
 
 const char* ServerConnectionManager::canonicalizeUserPath(const char* file_path)
 {
-	const char* canonicalized_filename = realpath(file_path, nullptr);
+	char* canonicalized_filename = realpath(file_path, nullptr);
 
 	if(canonicalized_filename == nullptr)
-	{
-		std::cout << "Wrong path" << std::endl;
 		return nullptr;
-	}
 
 	std::string correct_directory = std::string(BASE_PATH) + 
 							std::string(CLIENT_STORAGE_DIRECTORY_NAME_PREFIX) + 
@@ -462,6 +457,7 @@ unsigned int ServerConnectionManager::handleRequest()
 
 	if(operation == DOWNLOAD_MESSAGE)
 	{
+		std::cout << "Starting download operation" << std::endl;
 		std::string filename = command.substr
 									(command_first_delimiter_position + 1,
 									command.length() - 
@@ -483,13 +479,18 @@ unsigned int ServerConnectionManager::handleRequest()
 		}
 		
 		handleDownloadOperation(canonicalized_filename);
+		free((char*)canonicalized_filename);
+		std::cout << "download operation completed" << std::endl;
 	}
 	else if(operation == LIST_MESSAGE)
 	{
+		std::cout << "Starting list operation" << std::endl;
 		handleListOperation();
+		std::cout << "list operation completed" << std::endl;
 	}
 	else if(operation == UPLOAD_MESSAGE || operation == LAST_UPLOAD_MESSAGE)
 	{
+		std::cout << "Starting upload operation" << std::endl;
 		unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
 					command.length() ? 
@@ -519,9 +520,11 @@ unsigned int ServerConnectionManager::handleRequest()
 		handleUploadOperation(operation, file_path, 
 								(unsigned char*)file_content.c_str(), 
 								file_content.length() - 1);
+		std::cout << "upload operation completed" << std::endl;
 	}
 	else if(operation == DELETE_MESSAGE)
 	{
+		std::cout << "Starting delete operation" << std::endl;
 		std::string filename = command.substr
 									(command_first_delimiter_position + 1,
 									command.length() - 
@@ -542,15 +545,20 @@ unsigned int ServerConnectionManager::handleRequest()
 			return 0;
 		}
 
-		handleDeleteOperation(file_path);	
+		handleDeleteOperation(canonicalized_filename);	
+		free((char*)canonicalized_filename);
+		std::cout << "delete operation completed" << std::endl;
 	}
 	else if(operation == LOGOUT_MESSAGE)
 	{
+		std::cout << "Starting logout operation" << std::endl;
 		handleLogoutOperation();
+		std::cout << "logout operation completed" << std::endl;
 		return 1;
 	}
 	else if(operation == RENAME_MESSAGE)
 	{
+		std::cout << "Starting rename operation" << std::endl;
 		unsigned int command_second_delimiter_position = 
 					command.find(" ", command_first_delimiter_position + 1) >= 
 					command.length() ? 
@@ -596,7 +604,8 @@ unsigned int ServerConnectionManager::handleRequest()
 		
 		new_file_path += new_filename;
 		handleRenameOperation(canonicalized_original_filename, new_file_path);
-
+		free((char*)canonicalized_original_filename);
+		std::cout << "rename operation completed" << std::endl;
 	}
 	else
 	{
@@ -634,6 +643,7 @@ void ServerConnectionManager::handleListOperation()
 								message_size);
 
 	sendPacket(message, message_size);
+	free(message);
 }
 
 
@@ -707,7 +717,6 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 	// remove the file if actually exists
 	if(UtilityManager::fileAlreadyExists(filename))
 		std::experimental::filesystem::remove(filename);
-
 	else
 	{	
 		std::cout << "Error: the file the client wants to delete does " << 
@@ -722,9 +731,10 @@ void ServerConnectionManager::handleDeleteOperation(std::string filename)
 
 void ServerConnectionManager::handleLogoutOperation()
 {
+	sendAckMessage();
 	destroyConnection();
 	CryptographyManager::deleteSharedKey(shared_key);
-	sendAckMessage();
+	//exit(1); // DBG 
 }
 
 
@@ -734,4 +744,6 @@ void ServerConnectionManager::sendError()
 	unsigned char* message = getMessageToSend((unsigned char*)ERROR_MESSAGE, 
 																message_size);
 	sendPacket(message, message_size);
+	free(message);
 }
+           

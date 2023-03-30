@@ -32,14 +32,6 @@ class ConnectionManager
 		int sendFileContent(std::string, const char*);
 		std::string getRequestCommand();
 		unsigned char* getMessagePlaintext(unsigned char*, unsigned int&);
-
-		// operation codes
-		const unsigned int UPLOAD_OPERATION_CODE = 0;
-		const unsigned int DOWNLOAD_OPERATION_CODE = 1;
-		const unsigned int DELETE_OPERATION_CODE = 2;
-		const unsigned int LIST_OPERATION_CODE = 3;
-		const unsigned int RENAME_OPERATION_CODE = 4;
-		const unsigned int LOGOUT_OPERATION_CODE = 5;
 		
 		// operation messages
 		const char* UPLOAD_MESSAGE = "UPLOAD";
@@ -53,7 +45,7 @@ class ConnectionManager
 		const char* ACK_MESSAGE = "ACK";		
 		const char* ERROR_MESSAGE = "ERROR";
 
-		const unsigned int CHUNK_SIZE = 500000; // 500 KB
+		const unsigned int CHUNK_SIZE = 10; // 500 KB
 
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;

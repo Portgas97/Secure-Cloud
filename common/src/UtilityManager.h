@@ -34,6 +34,9 @@ class UtilityManager
 		static bool isFilenameValid(std::string);
 		static bool fileAlreadyExists(std::string);
 		static int storeFileContent(std::string, unsigned char*, unsigned int);
+	
+	private:
+		const static unsigned int MAX_FILENAME_SIZE = 260;
 
 };
 
