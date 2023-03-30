@@ -493,6 +493,7 @@ void ClientConnectionManager::retrieveCommand()
 			file_path += username;
 			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 			file_path += filename;
+			
 
             downloadFile(file_path);
         }
@@ -662,6 +663,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 		}
 	}
 
+	std::experimental::filesystem::remove(file_path);
+
 	// check counter overflow
  	if(message_counter == UINT32_MAX)
 	{
@@ -701,40 +704,67 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	sendPacket(message, message_size);
 	free(message);
 
-	std::string operation;
-	do
-	{
-		std::string command = getRequestCommand();
 
-		unsigned int command_first_delimiter_position = 
+	std::string operation;
+	std::string command = getRequestCommand();
+
+	std::cout << "DBG command: " << command << std::endl;
+
+	unsigned int command_first_delimiter_position = 
+								command.find(" ") >= command.length() ? 
+								command.length() - 1: command.find(" ");
+
+	operation = command.substr(0, command_first_delimiter_position);
+
+	if(operation == ERROR_MESSAGE)
+	{
+		std::cout << "Error: file does not exist?" << std::endl;
+		return;
+	}
+
+	unsigned int command_second_delimiter_position = 
+				command.find(" ", command_first_delimiter_position + 1) >= 
+				command.length() ? 
+				command.length() - 1 : 
+				command.find(" ", command_first_delimiter_position + 1);
+
+	std::string received_filename = command.substr
+									(command_first_delimiter_position + 1,
+									command_second_delimiter_position - 
+									command_first_delimiter_position - 1);
+	
+	std::string file_content = command.substr
+									(command_second_delimiter_position + 1,
+									command.length() - 
+									command_second_delimiter_position - 1);
+	
+	std::cout << "DBG filename: " << received_filename << std::endl;
+	std::cout << "DBG file_content: " << file_content << std::endl;
+
+	UtilityManager::storeFileContent(file_path, 
+				(unsigned char*)file_content.c_str(), file_content.length());
+
+	while(operation == DOWNLOAD_MESSAGE)
+	{
+		command = getRequestCommand();
+
+		std::cout << "DBG command: " << command << std::endl;
+
+		command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
 									command.length() - 1: command.find(" ");
 
 		operation = command.substr(0, command_first_delimiter_position);
 
-		if(operation == ERROR_MESSAGE)
-		{
-			std::cout << "Error: file does not exist?" << std::endl;
-			return;
-		}
-
-		unsigned int command_second_delimiter_position = 
-					command.find(" ", command_first_delimiter_position + 1) >= 
-					command.length() ? 
-					command.length() - 1 : 
-					command.find(" ", command_first_delimiter_position + 1);
-
-		std::string file_content = command.substr
-										(command_second_delimiter_position + 1,
-										command.length() - 
-										command_second_delimiter_position - 1);
-		
-		unsigned int file_content_size = file_content.length();
+		file_content = command.substr
+									(command_first_delimiter_position + 1,
+									command.length() - 
+									command_first_delimiter_position - 1);
+		std::cout << "DBG file_content: " << file_content << std::endl;
 
 		UtilityManager::storeFileContent(file_path, 
-					(unsigned char*)file_content.c_str(), file_content_size);
-		
-	} while(operation == DOWNLOAD_MESSAGE);
+				(unsigned char*)file_content.c_str(), file_content.length());
+	}
 
 	std::cout << "Operation successfully completed" << std::endl;
 

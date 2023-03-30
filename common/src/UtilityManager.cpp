@@ -152,8 +152,8 @@ int UtilityManager::storeFileContent(std::string filename,
 												unsigned char* file_content,
 												unsigned int file_content_size)
 {
-	FILE* file = fopen(filename.c_str(), "wb");
-	if(file == nullptr)
+	FILE* file = fopen(filename.c_str(), "ab");
+	if(file == nullptr) 
 		return -1;
 
 	unsigned int written_file_content_size = fwrite(file_content, 

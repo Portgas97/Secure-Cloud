@@ -45,7 +45,7 @@ class ConnectionManager
 		const char* ACK_MESSAGE = "ACK";		
 		const char* ERROR_MESSAGE = "ERROR";
 
-		const unsigned int CHUNK_SIZE = 10; // 500 KB
+		const unsigned int CHUNK_SIZE = 43; // 500 KB
 
         virtual void createConnection() = 0;
         virtual void destroyConnection() = 0;
