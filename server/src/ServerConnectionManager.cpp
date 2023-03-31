@@ -1,20 +1,37 @@
 #include "ServerConnectionManager.h"
 
+
+/*
+	Constructor, creates the socket, binds and listens to it
+*/
 ServerConnectionManager::ServerConnectionManager()
 {
     createConnection();
 }
 
+
+/*
+	Destructor
+*/
 ServerConnectionManager::~ServerConnectionManager()
 {
 
 }
 
+
+/*
+	Constructor to pass a socket file descriptor
+*/
 ServerConnectionManager::ServerConnectionManager(int socket)
 {
 	socket_fd = socket;
 }
 
+
+/*
+	It instantiates a socket that is subsequently bound to an address 
+	and a port, finally calls listen()
+*/
 void ServerConnectionManager::createConnection()
 {
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -52,12 +69,19 @@ void ServerConnectionManager::createConnection()
 }
 
 
+/*
+	Terminates the connection closing the socket
+*/
 void ServerConnectionManager::destroyConnection()
 {
 	close(socket_fd);
 }
 
 
+/*
+	Calls accept to the class member socket, 
+	implements a classical forking server
+*/
 void ServerConnectionManager::acceptRequest()
 {
     int client_socket;
@@ -97,9 +121,10 @@ void ServerConnectionManager::acceptRequest()
 
 }
 
+
 /*
-	it first performs the handshake with the client connected to client_socket,
-	then it shows it a menu, receives its requests and serves them
+	First, it performs the handshake with the client connected to client_socket.
+	Then, handle possible requests coming from the clients
 */
 void ServerConnectionManager::serveClient(int client_socket)
 {
@@ -110,6 +135,7 @@ void ServerConnectionManager::serveClient(int client_socket)
 	while(!has_user_logged_out)   
 		has_user_logged_out = request_handler.handleRequest(); 
 }
+
 
 /*
 	handshake:
@@ -131,7 +157,7 @@ void ServerConnectionManager::handleHandshake()
 
 
 /*
-    it receives and parses client hello packet and sends back server 
+    Receives and parses client hello packet and sends back server 
 	hello packet
 */
 void ServerConnectionManager::receiveHello()
@@ -190,8 +216,7 @@ void ServerConnectionManager::receiveHello()
 
 
 /*
-    it creates the hello packet and returns it.
-    It returns also the hello packet size
+    Crafts the hello packet and returns it in the passed parameter.
 */
 void ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
@@ -212,14 +237,20 @@ void ServerConnectionManager::getHelloPacket(unsigned char* hello_packet)
 													ephemeral_public_key_size);
 	serializer.serializeInt(signature_size);
 	serializer.serializeByteStream(signature, signature_size);														
-		
 }
 
+
 /* 
-	It builds and sends the hello packet, which has the following structure
-	hello packet:
-	//  nonce_size   | nonce | certificate_size  | certificate   | 
-    //  key_size     | key   | signature_size    | signature     |
+	It sends the previously built hello packet.
+	
+	hello packet structure:
+	
+	--------------------------------------------------------------
+	|	nonce_size   | nonce |  certificate_size |  certificate  | 
+	--------------------------------------------------------------
+    |	 key_size    |  key  |   signature_size  |   signature   |
+	--------------------------------------------------------------
+
 */
 void ServerConnectionManager::sendHello()
 {
@@ -294,6 +325,9 @@ void ServerConnectionManager::sendHello()
 
 }
 
+/*
+	Receives the client handshake final message
+*/
 void ServerConnectionManager::receiveFinalHandshakeMessage()
 {
 	unsigned char* final_handshake_message = nullptr;
