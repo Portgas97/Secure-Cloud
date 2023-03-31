@@ -662,9 +662,6 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 											unsigned char* file_content_buffer,
 											unsigned int file_content_size)
 {
-	// std::cout << "DBG file_content_buffer: ";
-	// UtilityManager::printBuffer(file_content_buffer, file_content_size);
-
 	if(UtilityManager::fileAlreadyExists(filename))
 		std::experimental::filesystem::remove(filename);
 
@@ -682,20 +679,16 @@ void ServerConnectionManager::handleUploadOperation(std::string operation,
 	{
 		command = getRequestCommand();
 
-		// std::cout << "DBG command: " << command << std::endl;
 		command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
 									command.length() - 1: command.find(" ");
 
 		operation = command.substr(0, command_first_delimiter_position);
-		// std::cout << "DBG operation: " << operation << std::endl;
 
 		file_content = command.substr(command_first_delimiter_position + 1,
 										command.length() - 
 										command_first_delimiter_position - 1);
 		file_content_size = file_content.length();
-
-		// std::cout << "DBG file_content: " << file_content << std::endl;
 
 		// store the next file chunk
 		if(UtilityManager::storeFileContent(filename, 

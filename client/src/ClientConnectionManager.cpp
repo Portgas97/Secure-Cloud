@@ -1,6 +1,9 @@
 #include "ClientConnectionManager.h"
 
 
+/*
+	Constructor
+*/
 ClientConnectionManager::ClientConnectionManager()
 {
     createConnection();
@@ -8,6 +11,9 @@ ClientConnectionManager::ClientConnectionManager()
 }
 
 
+/*
+	Destructor
+*/
 ClientConnectionManager::~ClientConnectionManager()
 {
 
@@ -50,6 +56,9 @@ void ClientConnectionManager::createConnection()
 }
 
 
+/*
+	Closes the socket used for the communication
+*/
 void ClientConnectionManager::destroyConnection()
 {
     close(socket_fd);
@@ -57,8 +66,7 @@ void ClientConnectionManager::destroyConnection()
 
 
 /*
-    it asks the username to the user and assigns it to the relative 
-    class attribute
+    It asks the username and assigns it to the relative class attribute
 */
 void ClientConnectionManager::obtainUsername()
 {
@@ -89,13 +97,14 @@ void ClientConnectionManager::obtainUsername()
 
 }
 
+
 /*
 	handshake:
 	1) client sends client_hello
 	2) server receives client_hello and reply with server_hello
 	3) client receives server_hello, performs some checks and reply with a final
 		handshake message
-	4) server receives client final handshake message and performs a check
+	4) server receives client final handshake message and performs checks
 	5) handshake completed, client and server obtained the shared key
 */
 void ClientConnectionManager::handleHandshake()
@@ -109,8 +118,7 @@ void ClientConnectionManager::handleHandshake()
 
 
 /*
-    it creates the hello packet and returns it.
-    It returns the hello packet size
+    It creates the hello packet and returns it.
 */
 void ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 {
@@ -122,13 +130,11 @@ void ClientConnectionManager::getHelloPacket(unsigned char* hello_packet)
 	serializer.serializeInt(CryptographyManager::getNonceSize());
 	serializer.serializeByteStream(client_nonce, 
                                         CryptographyManager::getNonceSize());
-
-	
 }
 
 
 /*
-    it creates the client nonce, the client hello and sends the client
+    It creates the client nonce, the client hello and sends the client
     hello to the server
 */
 void ClientConnectionManager::sendHello()
@@ -168,6 +174,10 @@ void ClientConnectionManager::sendHello()
 	free(hello_packet);
 }
 
+
+/*
+	Receive the server hello message and verifies it
+*/
 void ClientConnectionManager::receiveHello()
 {
     unsigned char* hello_packet = nullptr;
@@ -259,7 +269,6 @@ void ClientConnectionManager::receiveHello()
 										server_signature_size, clear_message, 
 										clear_message_size, server_public_key);
 
-	// TO DO for more security, is OK?
 	CryptographyManager::unoptimizedMemset(ephemeral_server_key, 
 												ephemeral_server_key_size);
 												
@@ -271,6 +280,10 @@ void ClientConnectionManager::receiveHello()
     free(hello_packet);
 }
 
+
+/*
+	Sends the last message of the handshake, e.g. the ephemeral public key
+*/
 void ClientConnectionManager::sendFinalHandshakeMessage()
 {
     ephemeral_private_key = CryptographyManager::getPrivateKey();
@@ -325,7 +338,8 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 
     sendPacket(final_message, final_message_size);
 
-	CryptographyManager::unoptimizedMemset(ephemeral_public_key, ephemeral_public_key_size);
+	CryptographyManager::unoptimizedMemset(ephemeral_public_key, 
+													ephemeral_public_key_size);
 	free(ephemeral_public_key);
 	free(signature);
     free(clear_message);
@@ -333,6 +347,10 @@ void ClientConnectionManager::sendFinalHandshakeMessage()
 	free(final_message);
 }
 
+
+/*
+	Derives a shared secret and derives the session key from it
+*/
 void ClientConnectionManager::setSharedKey()
 {
 	// derive shared secret that will be used to derive the session key
@@ -348,6 +366,10 @@ void ClientConnectionManager::setSharedKey()
 													shared_secret_size);
 }
 
+
+/*
+	Builds the buffer containing the final handshake message
+*/
 unsigned int ClientConnectionManager::getFinalMessage
 												(unsigned char* final_message)
 {
@@ -365,6 +387,9 @@ unsigned int ClientConnectionManager::getFinalMessage
 }
 
 
+/*
+	Receives and parse an ACK message
+*/
 void ClientConnectionManager::receiveAckMessage()
 {
     unsigned char* final_message = nullptr;
@@ -389,6 +414,9 @@ void ClientConnectionManager::receiveAckMessage()
 }
 
 
+/*
+	Prints the available operations and their sintax
+*/
 void ClientConnectionManager::showMenu()
 {
     std::cout << std::endl 
@@ -420,6 +448,9 @@ void ClientConnectionManager::showMenu()
 }
 
 
+/*
+	Read and parse the inserted command to orchestrate the operations
+*/
 void ClientConnectionManager::retrieveCommand()
 {
     bool logout_exit = false;
@@ -629,7 +660,10 @@ void ClientConnectionManager::retrieveCommand()
 }
 
 
-
+/*
+	Utility function for the upload operation, sends the file content
+	and parse the server response
+*/
 void ClientConnectionManager::uploadFile(std::string filename)
 {
 	// check counter overflow
@@ -661,6 +695,10 @@ void ClientConnectionManager::uploadFile(std::string filename)
 }
 
 
+/*
+	Utility function for the download operation, sends the request and
+	receives the file content
+*/
 void ClientConnectionManager::downloadFile(std::string file_path)
 {
 	if(UtilityManager::fileAlreadyExists(file_path))
@@ -726,8 +764,6 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	std::string operation;
 	std::string command = getRequestCommand();
 
-	// std::cout << "DBG command: " << command << std::endl;
-
 	unsigned int command_first_delimiter_position = 
 								command.find(" ") >= command.length() ? 
 								command.length() - 1: command.find(" ");
@@ -756,17 +792,12 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 									command.length() - 
 									command_second_delimiter_position - 1);
 	
-	// std::cout << "DBG filename: " << received_filename << std::endl;
-	// std::cout << "DBG file_content: " << file_content << std::endl;
-
 	UtilityManager::storeFileContent(file_path, 
 				(unsigned char*)file_content.c_str(), file_content.length());
 
 	while(operation == DOWNLOAD_MESSAGE)
 	{
 		command = getRequestCommand();
-
-		// std::cout << "DBG command: " << command << std::endl;
 
 		command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
@@ -778,7 +809,6 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 									(command_first_delimiter_position + 1,
 									command.length() - 
 									command_first_delimiter_position - 1);
-		// std::cout << "DBG file_content: " << file_content << std::endl;
 
 		UtilityManager::storeFileContent(file_path, 
 				(unsigned char*)file_content.c_str(), file_content.length());
@@ -786,10 +816,12 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 
 	std::cout << "Operation successfully completed" << std::endl;
 
-	
 }
 
 
+/*
+	Sends the delete operation request
+*/
 void ClientConnectionManager::deleteFile(std::string file_path)
 {
 	// check counter overflow
@@ -832,6 +864,9 @@ void ClientConnectionManager::deleteFile(std::string file_path)
 }
 
 
+/*
+		Sends the list operation request, parse and print the response
+*/
 void ClientConnectionManager::printFilenamesList()
 {
 	// check counter overflow
@@ -875,6 +910,9 @@ void ClientConnectionManager::printFilenamesList()
 }
 
 
+/*
+	Parse the command and sends the operation request
+*/
 void ClientConnectionManager::renameFile(std::string original_file_path,
 										std::string new_filename)
 {
@@ -926,6 +964,10 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 }
 
 
+/*
+	Sends the operation statement, receives ACK,
+	gracefully closes the connection and securely delete the shared key 
+*/
 void ClientConnectionManager::logout()
 {
     // check counter overflow
@@ -949,4 +991,3 @@ void ClientConnectionManager::logout()
 	CryptographyManager::deleteSharedKey(shared_key);
 	
 }
-
