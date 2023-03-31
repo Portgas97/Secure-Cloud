@@ -339,6 +339,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 	FILE* file = fopen(file_path.c_str(), "rb");
 	if(file == nullptr)
 		return -1;
+
 	// with rfind I search the passed symbol from the end towards the start
 	std::string filename = file_path.substr(file_path.rfind("/") + 1, 
 											std::string::npos - 
@@ -352,7 +353,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 	// move file pointer to the beginning of the file
 	fseek(file, 0, SEEK_SET);
 
-	std::cout << "DBG file_size: " << file_size << std::endl;
+	// std::cout << "DBG file_size: " << file_size << std::endl;
 
     if (file_size > UINT32_MAX) 
 		return -1;
@@ -431,8 +432,8 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		serializer.serializeChar(' ');
 		serializer.serializeByteStream(fragment, fragment_size);
 
-		std::cout << "DBG message: ";
-		UtilityManager::printBuffer(message, message_size);
+		// std::cout << "DBG message: ";
+		// UtilityManager::printBuffer(message, message_size);
 
 		message_to_send = getMessageToSend(message, message_to_send_size, 
 													serializer.getOffset());
@@ -444,7 +445,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		free(message);
 		free(message_to_send);
 
-		std::cout << "sent_bytes: " << sent_bytes << std::endl;
+		// std::cout << "sent_bytes: " << sent_bytes << std::endl;
 		
 	}
 

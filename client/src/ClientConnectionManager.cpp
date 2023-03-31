@@ -454,11 +454,13 @@ void ClientConnectionManager::retrieveCommand()
 										(command_first_delimiter_position + 1,
 										command.length() -
 										command_first_delimiter_position - 1);
+
 			if(!UtilityManager::isFilenameValid(filename))
 			{
 				std::cout << "Filename is not valid" << std::endl;
 				continue;
 			}
+
 			// build the file path
 			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			file_path += username;
@@ -499,6 +501,7 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(operation == "delete")
         {
+			// TO DO specifications say to ask for confirmation
 			if(command_first_delimiter_position + 1 > command.size())
 			{
 				std::cout << "Argument is missing!" << std::endl;
@@ -708,7 +711,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	std::string operation;
 	std::string command = getRequestCommand();
 
-	std::cout << "DBG command: " << command << std::endl;
+	// std::cout << "DBG command: " << command << std::endl;
 
 	unsigned int command_first_delimiter_position = 
 								command.find(" ") >= command.length() ? 
@@ -738,8 +741,8 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 									command.length() - 
 									command_second_delimiter_position - 1);
 	
-	std::cout << "DBG filename: " << received_filename << std::endl;
-	std::cout << "DBG file_content: " << file_content << std::endl;
+	// std::cout << "DBG filename: " << received_filename << std::endl;
+	// std::cout << "DBG file_content: " << file_content << std::endl;
 
 	UtilityManager::storeFileContent(file_path, 
 				(unsigned char*)file_content.c_str(), file_content.length());
@@ -748,7 +751,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 	{
 		command = getRequestCommand();
 
-		std::cout << "DBG command: " << command << std::endl;
+		// std::cout << "DBG command: " << command << std::endl;
 
 		command_first_delimiter_position = 
 									command.find(" ") >= command.length() ? 
@@ -760,7 +763,7 @@ void ClientConnectionManager::downloadFile(std::string file_path)
 									(command_first_delimiter_position + 1,
 									command.length() - 
 									command_first_delimiter_position - 1);
-		std::cout << "DBG file_content: " << file_content << std::endl;
+		// std::cout << "DBG file_content: " << file_content << std::endl;
 
 		UtilityManager::storeFileContent(file_path, 
 				(unsigned char*)file_content.c_str(), file_content.length());
