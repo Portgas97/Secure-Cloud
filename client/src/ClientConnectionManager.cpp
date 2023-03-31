@@ -520,6 +520,21 @@ void ClientConnectionManager::retrieveCommand()
 				continue;
 			}
 
+			std::cout << "Are you sure you want to delete" << filename 
+						<< "? yes/no: ";
+			std::string confirm;
+			std::getline(std::cin, confirm);
+			if(!std::cin)
+			{
+				std::cout << "Error in reading command" << std::endl;
+				exit(1);
+			}
+			if(confirm != "yes")
+			{
+				std::cout << "Discard the delete operation" << std::endl;
+				continue;
+			}
+
 			// build the file path
 			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
 			file_path += username;
