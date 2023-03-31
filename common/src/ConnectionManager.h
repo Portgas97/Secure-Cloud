@@ -39,6 +39,7 @@ class ConnectionManager
 		const char* DOWNLOAD_MESSAGE = "DOWNLOAD";
 		const char* LAST_DOWNLOAD_MESSAGE = "LAST_DOWNLOAD";
 		const char* DELETE_MESSAGE = "DELETE";
+		const char* CONFIRM_MESSAGE = "CONFIRM";
 		const char* LIST_MESSAGE = "LIST";
 		const char* RENAME_MESSAGE = "RENAME";
 		const char* LOGOUT_MESSAGE = "LOGOUT";

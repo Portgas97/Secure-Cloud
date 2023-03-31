@@ -719,19 +719,39 @@ void ServerConnectionManager::handleRenameOperation
 	
 void ServerConnectionManager::handleDeleteOperation(std::string filename)
 {
-	// remove the file if actually exists
+	// check if the file exists
 	if(UtilityManager::fileAlreadyExists(filename))
-		std::experimental::filesystem::remove(filename);
+	{
+		// request for client confirmation before actual deletion
+		unsigned int message_size;
+		unsigned char* message = getMessageToSend
+											((unsigned char*)CONFIRM_MESSAGE, 
+											message_size);
+		sendPacket(message, message_size);
+		free(message);
+		
+		std::string command = getRequestCommand();
+		unsigned int command_first_delimiter_position = 
+								command.find(" ") >= command.length() ? 
+								command.length() - 1: command.find(" ");
+
+		std::string operation = command.substr(0, 
+											command_first_delimiter_position);
+
+		if(operation == CONFIRM_MESSAGE)
+		{
+			std::experimental::filesystem::remove(filename);
+			sendAckMessage();
+		}
+		else
+			sendError();
+	}
 	else
 	{	
 		std::cout << "Error: the file the client wants to delete does " << 
 					"not exist" << std::endl;
 		sendError();
-		return;
 	}
-
-	// send ACK
-	sendAckMessage();
 }
 
 void ServerConnectionManager::handleLogoutOperation()

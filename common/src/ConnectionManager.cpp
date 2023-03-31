@@ -439,10 +439,7 @@ int ConnectionManager::sendFileContent(std::string file_path,
 		free(message);
 		free(message_to_send);
 
-		// std::cout << "sent_bytes: " << sent_bytes << std::endl;
-		
 	}
-
 
 	fclose(file);
 	return 0;

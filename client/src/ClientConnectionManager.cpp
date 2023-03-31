@@ -403,6 +403,34 @@ void ClientConnectionManager::receiveAckMessage()
 	free(plaintext);
 }
 
+/*
+	Receives and parse a CONFIRM message
+*/
+bool ClientConnectionManager::receiveConfirmMessage()
+{
+    unsigned char* final_message = nullptr;
+	receivePacket(final_message);
+
+    Deserializer deserializer = Deserializer(final_message);
+
+	unsigned int plaintext_size;
+	unsigned char* plaintext = parseReceivedMessage(deserializer, 
+													plaintext_size);
+
+	if(UtilityManager::areBuffersEqual(plaintext, plaintext_size, 
+				(unsigned char*) CONFIRM_MESSAGE, strlen(CONFIRM_MESSAGE) + 1))
+	{
+		free(final_message);
+		free(plaintext);
+		return true;
+	}
+	
+	std::cout << "Error during operation" << std::endl;
+	free(final_message);
+	free(plaintext);
+	return false;
+}
+
 
 /*
 	Prints the available operations and their sintax
@@ -494,9 +522,6 @@ void ClientConnectionManager::retrieveCommand()
 			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
 			file_path += filename;
             uploadFile(file_path);
-
-			// receive ack
-			//receiveAckMessage();
         } 
         else if(operation == "download")
         {
@@ -546,6 +571,17 @@ void ClientConnectionManager::retrieveCommand()
 				continue;
 			}
 
+			// build the file path
+			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
+			file_path += username;
+			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
+			file_path += filename;
+			
+            deleteFile(file_path);
+
+			if(receiveConfirmMessage() == false)
+				continue;
+
 			std::cout << "Are you sure you want to delete " << filename 
 						<< "? yes/no: ";
 			std::string confirm;
@@ -558,23 +594,33 @@ void ClientConnectionManager::retrieveCommand()
 			if(confirm != "yes")
 			{
 				std::cout << "Discard the delete operation" << std::endl;
+				unsigned int message_size;
+				unsigned char* message = getMessageToSend
+												((unsigned char*)ERROR_MESSAGE, 
+												message_size);
+				sendPacket(message, message_size);
+				free(message);
+				receiveAckMessage();
 				continue;
-			}
+			}			
 
-			// build the file path
-			std::string file_path = STORAGE_DIRECTORY_NAME_PREFIX;
-			file_path += username;
-			file_path += STORAGE_DIRECTORY_NAME_SUFFIX;
-			file_path += filename;
-
-			
-            deleteFile(file_path);
+			unsigned int message_size;
+			unsigned char* message = getMessageToSend
+											((unsigned char*)CONFIRM_MESSAGE, 
+											message_size);
+			sendPacket(message, message_size);
+			free(message);
 
 			// receive ack
 			receiveAckMessage();
         }
         else if(operation == "list")
         {
+			if(command_first_delimiter_position < command.size() - 1)
+			{
+				std::cout << "The command is wrong" << std::endl;
+				continue;
+			}
             printFilenamesList();
         } 
         else if(operation == "rename")
@@ -648,6 +694,11 @@ void ClientConnectionManager::retrieveCommand()
 		}
 	    else if(operation == "logout")
 	    {
+			if(command_first_delimiter_position < command.size() - 1)
+			{
+				std::cout << "The command is wrong" << std::endl;
+				continue;
+			}
 	        logout();
 	        logout_exit = true;
 	    }
