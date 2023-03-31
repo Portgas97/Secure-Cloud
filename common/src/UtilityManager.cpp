@@ -90,9 +90,7 @@ unsigned char* UtilityManager::getSmallFileContent(FILE* file,
 std::string UtilityManager::getDirectoryFilenames(std::string directory_name)
 {
 	std::string directory_filenames;
-	// TO DO: evaluate if std::experimental::filesystem:: it's ok
-	//			added -lstdc++fs flag to compiler
-    for (const auto & file : 
+    for (const auto & file: 
 			std::experimental::filesystem::directory_iterator(directory_name))
 		directory_filenames += "\t" + getFilename(file.path()) + "\n";
 

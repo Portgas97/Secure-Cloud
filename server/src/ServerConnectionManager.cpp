@@ -346,9 +346,6 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
 
     // build the client public key filename concatenating the prefix, 
 	// the client username and the suffix
-
-	// TO DO check is the value of MAX_CLIENT_CERTIFICATE_FILENAME_SIZE
-	// is correct, display subcomponents values
     char* client_certificate_filename = (char*)
 								calloc(1, MAX_CLIENT_CERTIFICATE_FILENAME_SIZE);
 	if(client_certificate_filename == nullptr)
@@ -426,7 +423,6 @@ const char* ServerConnectionManager::canonicalizeUserPath(const char* file_path)
 											correct_directory.size()) != 0)
 	{
 		std::cout << "Unauthorized path" << std::endl;
-		// TO DO: changed from exit(1)
 		return nullptr;
 	}
 
@@ -446,7 +442,7 @@ unsigned int ServerConnectionManager::handleRequest()
 		exit(1);
 	}
 	
-	std::cout << "Waiting for the next operation..." << std::endl;
+	std::cout << "Waiting for the next operation..." << std::endl << std::endl;
 	std::string command = getRequestCommand();
 
 	unsigned int command_first_delimiter_position = 
@@ -594,7 +590,7 @@ unsigned int ServerConnectionManager::handleRequest()
 		{
 		 	std::cout << "Error: the new filename is not valid" << std::endl;
 			sendError();
-		 	exit(1); // TO DO abort or better return 0?
+			return 0;
 		}
 
 		std::string new_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
@@ -611,7 +607,6 @@ unsigned int ServerConnectionManager::handleRequest()
 		std::cout << "Error in command received" << std::endl;
 		exit(1);
 	}
-	
 	return 0;
 }
 
@@ -744,7 +739,6 @@ void ServerConnectionManager::handleLogoutOperation()
 	sendAckMessage();
 	destroyConnection();
 	CryptographyManager::deleteSharedKey(shared_key);
-	//exit(1); // DBG 
 }
 
 

@@ -210,7 +210,6 @@ unsigned char* ConnectionManager::getMessageToSend
 	serializer.serializeInt(tag_size);
 	serializer.serializeByteStream(tag, tag_size);
 	
-	// already defined, this is used for DBG
 	unsigned int serialized_final_message_size = serializer.getOffset();
 	if(serialized_final_message_size != message_size)
 	{

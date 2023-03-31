@@ -8,13 +8,6 @@ Deserializer::Deserializer(unsigned char* buffer_to_deserialize)
 	offset = 0;
 }
 
-
-// Deserializer::~Deserializer()
-// {
-// 	free(buffer);
-// }
-
-
 int Deserializer::deserializeInt()
 {
 	int* network_value_pointer = (int*)calloc(1, sizeof(int));

@@ -33,7 +33,6 @@ void Serializer::serializeChar(char value)
 
 void Serializer::serializeString(char* string, unsigned int string_size)
 {
-	// std::cout << "Starting serializing string " << string << " for " << string_size << std::endl;
 	for(unsigned int i = 0; i < string_size; i++)
 		serializeChar(string[i]);	
 	

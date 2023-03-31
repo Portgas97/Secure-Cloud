@@ -411,7 +411,6 @@ void CryptographyManager::loadCertificationAuthorityCertificate()
         exit(1); 
     }
 
-    // TO DO: change location?
     X509_free(certification_authority_certificate);
     X509_CRL_free(certification_authority_crl);
 }

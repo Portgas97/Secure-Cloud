@@ -10,16 +10,6 @@ ClientConnectionManager::ClientConnectionManager()
     obtainUsername();
 }
 
-
-/*
-	Destructor
-*/
-ClientConnectionManager::~ClientConnectionManager()
-{
-
-}
-
-
 /*
     it initializes the connection socket and performs the actual connection
 */
@@ -538,7 +528,6 @@ void ClientConnectionManager::retrieveCommand()
         }
         else if(operation == "delete")
         {
-			// TO DO specifications say to ask for confirmation
 			if(command_first_delimiter_position + 1 > command.size())
 			{
 				std::cout << "Argument is missing!" << std::endl;
@@ -557,7 +546,7 @@ void ClientConnectionManager::retrieveCommand()
 				continue;
 			}
 
-			std::cout << "Are you sure you want to delete" << filename 
+			std::cout << "Are you sure you want to delete " << filename 
 						<< "? yes/no: ";
 			std::string confirm;
 			std::getline(std::cin, confirm);
@@ -911,9 +900,13 @@ void ClientConnectionManager::printFilenamesList()
 									command.length() - 
 									command_first_delimiter_position - 1);
 
-
-	std::cout << "Files list: " << std::endl;
-	std::cout << files_list;
+	if(files_list.length() <= 1)
+		std::cout << "The server storage is empty" << std::endl;
+	else
+	{
+		std::cout << "Files list: " << std::endl;
+		std::cout << files_list;
+	}
 
 }
 
@@ -930,8 +923,6 @@ void ClientConnectionManager::renameFile(std::string original_file_path,
 		std::cout << "Error: message counter overflow" << std::endl;
 		exit(1);
 	}
-
-	// TO DO: check if the file exists
 
 	// with rfind I search the passed symbol from the end towards the start
 	std::string original_filename = 

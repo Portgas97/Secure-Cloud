@@ -6,7 +6,6 @@ class ClientConnectionManager: public ConnectionManager
 {
     public:
         ClientConnectionManager();
-        ~ClientConnectionManager();
 		void handleHandshake();	
         void retrieveCommand();
 
