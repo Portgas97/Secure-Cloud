@@ -428,20 +428,26 @@ void ClientConnectionManager::showMenu()
     std::cout << "Welcome, " << username << "! Please, select an operation:"
     << std::endl
 
-    << "\t- upload <filename>: upload a local file on the server" << std::endl
+    << "\t- upload <filename>: upload a local file on the server"
+	<< std::endl
 
     << "\t- download <filename>: download an existing file from the server, "
-	<< "ask confirmation for overwriting a local file" << std::endl
+	<< "ask confirmation for overwriting a local file" 
+	<< std::endl
 
-    << "\t- delete <filename>: delete an existing file from the server" << std::endl
+    << "\t- delete <filename>: delete an existing file from the server" 
+	<< std::endl
 
-    << "\t- list: print the list of the filenames of the available files " <<
-		 "in your dedicated storage" << std::endl
+    << "\t- list: print the list of the filenames of the available files "
+	<< "in your dedicated storage"
+	<< std::endl
 
-    << "\t- rename <original_filename> <new_filename>: rename an existing " <<
-		"file named original_filename in new_filename" << std::endl
+    << "\t- rename <original_filename> <new_filename>: rename an existing " 
+	<< "file named original_filename in new_filename" 
+	<< std::endl
 
-    << "\t- logout: close the connection to Secure Cloud" << std::endl
+    << "\t- logout: close the connection to Secure Cloud" 
+	<< std::endl
 
     << std::endl
     << ">";
@@ -633,14 +639,16 @@ void ClientConnectionManager::retrieveCommand()
 			std::string received_command = getRequestCommand();
 
 			unsigned int received_command_first_delimiter_position = 
-										received_command.find(" ") >= received_command.length() ? 
-										received_command.length() - 1: received_command.find(" ");
+					received_command.find(" ") >= received_command.length() ? 
+					received_command.length() - 1: received_command.find(" ");
 
-			std::string received_operation = received_command.substr(0, received_command_first_delimiter_position);
+			std::string received_operation = received_command.substr(0, 
+									received_command_first_delimiter_position);
 
 			if(received_operation == ERROR_MESSAGE)
 			{
-				std::cout << "Error: file does not exist?" << std::endl;
+				std::cout << "Error: overwriting existing file" <<
+				" or file does not exist" << std::endl;
 				continue;
 			} 
 			else if(received_operation == ACK_MESSAGE)

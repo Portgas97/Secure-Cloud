@@ -594,9 +594,8 @@ unsigned int ServerConnectionManager::handleRequest()
 		{
 		 	std::cout << "Error: the new filename is not valid" << std::endl;
 			sendError();
-		 	exit(1);
+		 	exit(1); // TO DO abort or better return 0?
 		}
-
 
 		std::string new_file_path = CLIENT_STORAGE_DIRECTORY_NAME_PREFIX;
 		new_file_path += logged_username;
@@ -710,8 +709,15 @@ void ServerConnectionManager::handleRenameOperation
 												(const char* original_filename, 
 												std::string new_filename)
 {
+	if(UtilityManager::fileAlreadyExists(new_filename))
+	{
+		std::cout << "The filename already exist" << std::endl;
+		sendError(); 
+		return;
+	}
+
 	rename(original_filename, new_filename.c_str());
-	
+
 	// send ACK
 	sendAckMessage();
 }
