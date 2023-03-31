@@ -1,7 +1,3 @@
 .vscode/
 server.out
 client.out
-server/files/users/Alice/storage/*
-server/files/users/Bob/storage/*
-client/files/Alice/storage/*
-client/files/Bob/storage/*
