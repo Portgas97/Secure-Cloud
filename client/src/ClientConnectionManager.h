@@ -12,7 +12,7 @@ class ClientConnectionManager: public ConnectionManager
 
     private:
 		// paths
-        const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/Key.pem";
+        const char* PRIVATE_KEY_FILENAME_SUFFIX = "/pem_files/PrivateKey.pem";
         const char* PRIVATE_KEY_FILENAME_PREFIX = "client/files/";
 
 		const char* STORAGE_DIRECTORY_NAME_PREFIX = "client/files/";

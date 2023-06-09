@@ -26,9 +26,9 @@ class ServerConnectionManager: public ConnectionManager
 
         const char* PRIVATE_KEY_FILENAME = "server/files/pem_files/Key.pem";
 
-		const char* CLIENT_CERTIFICATE_FILENAME_PREFIX = "server/files/users/";
-		const char* CLIENT_CERTIFICATE_FILENAME_SUFFIX = 
-												"/pem_files/Certificate.pem";
+		const char* CLIENT_PUBLIC_KEY_FILENAME_PREFIX = "server/files/users/";
+		const char* CLIENT_PUBLIC_KEY_FILENAME_SUFFIX = 
+												"/pem_files/PublicKey.pem";
 
 		const char* CLIENT_STORAGE_DIRECTORY_NAME_PREFIX = 
 														"server/files/users/";
@@ -46,10 +46,10 @@ class ServerConnectionManager: public ConnectionManager
 
         
 		// max sizes
-		const unsigned int MAX_CLIENT_CERTIFICATE_FILENAME_SIZE = 
-									strlen(CLIENT_CERTIFICATE_FILENAME_PREFIX) +
+		const unsigned int MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE = 
+									strlen(CLIENT_PUBLIC_KEY_FILENAME_PREFIX) +
 									MAX_USERNAME_SIZE +
-									strlen(CLIENT_CERTIFICATE_FILENAME_SUFFIX) + 
+									strlen(CLIENT_PUBLIC_KEY_FILENAME_SUFFIX) + 
 									1;
         const unsigned int MAX_CONNECTIONS = 10;
 

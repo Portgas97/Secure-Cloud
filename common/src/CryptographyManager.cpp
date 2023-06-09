@@ -65,7 +65,8 @@ EVP_PKEY* CryptographyManager::getPrivateKey()
     }
 
     // NID_X9_62_prime256v1 is the used curve
-    return_value = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(context, NID_X9_62_prime256v1);
+    return_value = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(context, 
+														NID_X9_62_prime256v1);
     if (1 != return_value) 
     {
         std::cout << "Error in private key generation" << std::endl;

@@ -13,10 +13,7 @@ ServerConnectionManager::ServerConnectionManager()
 /*
 	Destructor
 */
-ServerConnectionManager::~ServerConnectionManager()
-{
-
-}
+ServerConnectionManager::~ServerConnectionManager() {}
 
 
 /*
@@ -171,6 +168,12 @@ void ServerConnectionManager::receiveHello()
 	// received_packet: username_size | username | nonce_size | nonce
 	logged_username_size = deserializer.deserializeInt();
 
+	if(logged_username_size > MAX_USERNAME_SIZE)
+	{
+		std::cout << "Error: the username size is too big" << std::endl;
+		exit(1);
+	}
+
 	char* received_logged_username = (char*)calloc(1, 
 												logged_username_size);
 
@@ -317,7 +320,8 @@ void ServerConnectionManager::sendHello()
 
     sendPacket(hello_packet, hello_packet_size);
 
-	CryptographyManager::unoptimizedMemset(ephemeral_public_key, ephemeral_public_key_size);
+	CryptographyManager::unoptimizedMemset(ephemeral_public_key, 
+													ephemeral_public_key_size);
 	free(ephemeral_public_key);
 	free(signature);
 	free(hello_packet);
@@ -380,38 +384,34 @@ void ServerConnectionManager::receiveFinalHandshakeMessage()
 
     // build the client public key filename concatenating the prefix, 
 	// the client username and the suffix
-    char* client_certificate_filename = (char*)
-								calloc(1, MAX_CLIENT_CERTIFICATE_FILENAME_SIZE);
-	if(client_certificate_filename == nullptr)
+    char* client_public_key_filename = (char*)
+								calloc(1, MAX_CLIENT_PUBLIC_KEY_FILENAME_SIZE);
+	if(client_public_key_filename == nullptr)
 	{
 		std::cout << "Error in calloc" << std::endl;
 		exit(1);
 	}
 
-    strcpy(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_PREFIX);
-    strcat(client_certificate_filename, logged_username);
-    strcat(client_certificate_filename, CLIENT_CERTIFICATE_FILENAME_SUFFIX);
+    strcpy(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_PREFIX);
+    strcat(client_public_key_filename, logged_username);
+    strcat(client_public_key_filename, CLIENT_PUBLIC_KEY_FILENAME_SUFFIX);
 
-	unsigned int client_certificate_size;
-	unsigned char* client_certificate = UtilityManager::getCertificateFromFile
-										(client_certificate_filename,
-										client_certificate_size);
-
-	X509* deserialized_client_certificate = 
-							CryptographyManager::deserializeCertificate
-								(client_certificate, client_certificate_size);
+	FILE *client_public_key_file = fopen(client_public_key_filename, "rb");
+	EVP_PKEY* client_public_key = PEM_read_PUBKEY(client_public_key_file, 
+													nullptr, nullptr, nullptr);
 
 	CryptographyManager::verifySignature(client_signature,client_signature_size, 
-                            clear_message, clear_message_size, 
-                            X509_get_pubkey(deserialized_client_certificate));
+								            clear_message, clear_message_size,
+											client_public_key);
 
+	fclose(client_public_key_file);
 	free(final_handshake_message);
-	X509_free(deserialized_client_certificate);
-	free(client_certificate);	
-	free(client_certificate_filename);
+	free(client_public_key);	
+	free(client_public_key_filename);
 	free(clear_message);
 	free(client_signature);
-	CryptographyManager::unoptimizedMemset(ephemeral_client_key, ephemeral_client_key_size);
+	CryptographyManager::unoptimizedMemset(ephemeral_client_key, 
+													ephemeral_client_key_size);
 	free(ephemeral_client_key);
 }
 
